@@ -106,8 +106,11 @@ export class MessageDetailPanel {
             case 'reply':
             case 'replyAll':
             case 'forward':
-                // These will be implemented when SMTP send is added
-                vscode.window.showInformationMessage(`${message.type} is not yet implemented.`);
+                vscode.commands.executeCommand(`mailClient.${message.type}`, {
+                    accountId: this.accountId,
+                    folderPath: this.folderPath,
+                    uid: this.uid,
+                });
                 break;
             case 'delete':
                 this.deleteMessage();
@@ -145,12 +148,15 @@ export class MessageDetailPanel {
 
     private getHtmlContent(): string {
         const nonce = getNonce();
+        const config = vscode.workspace.getConfiguration('mailClient');
+        const configLocale = config.get<string>('locale');
+        const locale = configLocale || vscode.env.language;
 
         return /* html */ `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}'; img-src * data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Message</title>
     <style nonce="${nonce}">
@@ -262,6 +268,40 @@ export class MessageDetailPanel {
             font-family: var(--vscode-editor-font-family);
         }
 
+        /* Lists */
+        .message-body ul, .message-body ol {
+            margin-left: 24px;
+            padding-left: 10px;
+        }
+        .message-body li {
+            margin-bottom: 4px;
+        }
+
+        /* External Images Warning */
+        .images-blocked-warning {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--vscode-editorInfo-background);
+            color: var(--vscode-editorInfo-foreground);
+            padding: 8px 16px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .images-blocked-warning button {
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 4px 12px;
+            border-radius: 2px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .images-blocked-warning button:hover {
+            background: var(--vscode-button-hoverBackground);
+        }
+
         /* Reply section */
         .reply-section {
             border-top: 2px solid var(--vscode-focusBorder);
@@ -350,6 +390,8 @@ export class MessageDetailPanel {
 
     <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
+        const userLocale = '${locale}';
+        console.log('Using locale:', userLocale);
         const contentEl = document.getElementById('content');
 
         document.getElementById('btnReply').addEventListener('click', () => {
@@ -370,8 +412,8 @@ export class MessageDetailPanel {
 
         function formatDate(isoStr) {
             const d = new Date(isoStr);
-            return d.toLocaleDateString([], { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
-                + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return d.toLocaleDateString(userLocale, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+                + ' ' + d.toLocaleTimeString(userLocale, { hour: '2-digit', minute: '2-digit' });
         }
 
         function escapeHtml(str) {
@@ -403,13 +445,44 @@ export class MessageDetailPanel {
 
             // Body
             html += '<div class="message-body">';
+            
+            let bodyContent = '';
+            let hasBlockedImages = false;
+
             if (msg.html) {
-                html += '<div id="htmlBody">' + msg.html + '</div>';
+                // Parse and process HTML for external images
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(msg.html, 'text/html');
+                const images = doc.querySelectorAll('img');
+                
+                images.forEach(img => {
+                    const src = img.getAttribute('src');
+                    if (src && (src.startsWith('http://') || src.startsWith('https://'))) {
+                        img.setAttribute('data-original-src', src);
+                        img.removeAttribute('src');
+                        // Optional: set a placeholder or style
+                        img.style.border = '1px dashed var(--vscode-descriptionForeground)';
+                        img.style.padding = '10px';
+                        img.setAttribute('alt', '[Image Blocked]');
+                        hasBlockedImages = true;
+                    }
+                });
+                
+                bodyContent = '<div id="htmlBody">' + doc.body.innerHTML + '</div>';
             } else if (msg.text) {
-                html += '<pre>' + escapeHtml(msg.text) + '</pre>';
+                bodyContent = '<pre>' + escapeHtml(msg.text) + '</pre>';
             } else {
-                html += '<p style="color: var(--vscode-descriptionForeground)">No content available.</p>';
+                bodyContent = '<p style="color: var(--vscode-descriptionForeground)">No content available.</p>';
             }
+
+            if (hasBlockedImages) {
+                html += '<div class="images-blocked-warning" id="imagesBlockedWarning">';
+                html += '<span>External images were blocked to protect your privacy.</span>';
+                html += '<button id="btnShowImages">Show Images</button>';
+                html += '</div>';
+            }
+
+            html += bodyContent;
             html += '</div>';
 
             // Reply editor (hidden initially)
@@ -427,6 +500,23 @@ export class MessageDetailPanel {
             html += '</div>';
 
             contentEl.innerHTML = html;
+
+            if (hasBlockedImages) {
+                document.getElementById('btnShowImages').addEventListener('click', () => {
+                   const images = document.querySelectorAll('img[data-original-src]');
+                   console.log('Found ' + images.length + ' blocked images to restore.');
+                   
+                   images.forEach(img => {
+                       const original = img.getAttribute('data-original-src');
+                       console.log('Restoring image: ' + original);
+                       img.setAttribute('src', original);
+                       img.removeAttribute('data-original-src');
+                       img.style.border = '';
+                       img.style.padding = '';
+                   });
+                   document.getElementById('imagesBlockedWarning').remove();
+                });
+            }
 
             // Format buttons
             document.querySelectorAll('.format-btn').forEach(btn => {

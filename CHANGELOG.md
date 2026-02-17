@@ -10,3 +10,7 @@
 - Basic message actions: Reply, Reply All, Forward, Delete.
 - Support for locale settings and refresh interval.
 - Support for opening folders in a new tab.
+- **Compose Message**: Write emails in markdown with live preview, send via SMTP.
+- Improved email parsing with `mailparser` for better body extraction.
+- Fixed date localization in message detail view.
+

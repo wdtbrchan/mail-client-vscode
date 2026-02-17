@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { MailExplorerProvider, MailTreeItem } from '../providers/mailExplorerProvider';
 import { MessageListPanel } from '../panels/messageListPanel';
 import { MessageDetailPanel } from '../panels/messageDetailPanel';
+import { ComposePanel, ComposeMode } from '../panels/composePanel';
+import { AccountManager } from '../services/accountManager';
 
 /**
  * Registers all message-related commands.
@@ -9,7 +11,66 @@ import { MessageDetailPanel } from '../panels/messageDetailPanel';
 export function registerMessageCommands(
     context: vscode.ExtensionContext,
     explorerProvider: MailExplorerProvider,
+    accountManager: AccountManager,
 ): void {
+
+    /**
+     * Opens the compose panel for reply/replyAll/forward.
+     * Loads the original message from IMAP and opens the editor + preview.
+     */
+    async function openCompose(
+        mode: ComposeMode,
+        args?: { accountId: string; folderPath: string; uid: number },
+    ): Promise<void> {
+        try {
+            let account;
+
+            if (args) {
+                // Reply/Forward – we know the account
+                account = accountManager.getAccount(args.accountId);
+            } else {
+                // New compose – let user pick an account if multiple
+                const accounts = accountManager.getAccounts();
+                if (accounts.length === 0) {
+                    vscode.window.showWarningMessage('No mail accounts configured.');
+                    return;
+                }
+                if (accounts.length === 1) {
+                    account = accounts[0];
+                } else {
+                    const picked = await vscode.window.showQuickPick(
+                        accounts.map(a => ({ label: a.name, description: a.username, id: a.id })),
+                        { placeHolder: 'Select account to send from' },
+                    );
+                    if (!picked) {
+                        return;
+                    }
+                    account = accounts.find(a => a.id === picked.id);
+                }
+            }
+
+            if (!account) {
+                vscode.window.showErrorMessage('Account not found.');
+                return;
+            }
+
+            let originalMessage;
+            if (args && mode !== 'compose') {
+                const service = explorerProvider.getImapService(args.accountId);
+                originalMessage = await service.getMessage(args.folderPath, args.uid);
+            }
+
+            await ComposePanel.open(accountManager, {
+                account,
+                mode,
+                originalMessage,
+            });
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Failed to open compose';
+            vscode.window.showErrorMessage(errorMsg);
+        }
+    }
+
     context.subscriptions.push(
         vscode.commands.registerCommand('mailClient.openFolder', (item: MailTreeItem) => {
             if (!item?.folderPath) {
@@ -51,13 +112,16 @@ export function registerMessageCommands(
             );
         }),
 
+        vscode.commands.registerCommand('mailClient.compose', (args?: { accountId: string }) => {
+            openCompose('compose', args as any);
+        }),
+
         vscode.commands.registerCommand('mailClient.reply', (args: {
             accountId: string;
             folderPath: string;
             uid: number;
         }) => {
-            // TODO: Implement SMTP reply functionality
-            vscode.window.showInformationMessage('Reply functionality will be implemented with SMTP support.');
+            openCompose('reply', args);
         }),
 
         vscode.commands.registerCommand('mailClient.replyAll', (args: {
@@ -65,8 +129,7 @@ export function registerMessageCommands(
             folderPath: string;
             uid: number;
         }) => {
-            // TODO: Implement SMTP reply-all functionality
-            vscode.window.showInformationMessage('Reply All functionality will be implemented with SMTP support.');
+            openCompose('replyAll', args);
         }),
 
         vscode.commands.registerCommand('mailClient.forward', (args: {
@@ -74,8 +137,7 @@ export function registerMessageCommands(
             folderPath: string;
             uid: number;
         }) => {
-            // TODO: Implement SMTP forward functionality
-            vscode.window.showInformationMessage('Forward functionality will be implemented with SMTP support.');
+            openCompose('forward', args);
         }),
 
         vscode.commands.registerCommand('mailClient.deleteMessage', async (args: {

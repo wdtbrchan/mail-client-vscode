@@ -1,9 +1,9 @@
 # TODO
 
 ## Functionality
-- [ ] Add Reply, Reply All, Forward actions.
-- [ ] Add support for mimetypes
-- [ ] Implement email sending (SMTP).
+- [x] Add Reply, Reply All, Forward actions.
+- [x] Add support for mimetypes
+- [x] Implement email sending (SMTP).
 - [ ] Support for attachments (uploading and downloading).
 - [ ] Message searching.
 - [ ] Message filtering and sorting.

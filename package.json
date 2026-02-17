@@ -109,6 +109,12 @@
         "title": "Delete Message",
         "category": "Mail Client",
         "icon": "$(trash)"
+      },
+      {
+        "command": "mailClient.compose",
+        "title": "New Message",
+        "category": "Mail Client",
+        "icon": "$(edit)"
       }
     ],
     "configuration": {
@@ -117,8 +123,42 @@
         "mailClient.locale": {
           "type": "string",
           "default": "",
-          "enum": ["", "en-US", "en-GB", "cs-CZ", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-BR", "ja-JP", "zh-CN", "ko-KR", "ru-RU", "pl-PL", "nl-NL", "sv-SE"],
-          "enumItemLabels": ["System default", "English (US)", "English (UK)", "Čeština", "Deutsch", "Français", "Español", "Italiano", "Português (BR)", "日本語", "中文", "한국어", "Русский", "Polski", "Nederlands", "Svenska"],
+          "enum": [
+            "",
+            "en-US",
+            "en-GB",
+            "cs-CZ",
+            "de-DE",
+            "fr-FR",
+            "es-ES",
+            "it-IT",
+            "pt-BR",
+            "ja-JP",
+            "zh-CN",
+            "ko-KR",
+            "ru-RU",
+            "pl-PL",
+            "nl-NL",
+            "sv-SE"
+          ],
+          "enumItemLabels": [
+            "System default",
+            "English (US)",
+            "English (UK)",
+            "Čeština",
+            "Deutsch",
+            "Français",
+            "Español",
+            "Italiano",
+            "Português (BR)",
+            "日本語",
+            "中文",
+            "한국어",
+            "Русский",
+            "Polski",
+            "Nederlands",
+            "Svenska"
+          ],
           "description": "Locale used for date and time formatting in message lists."
         },
         "mailClient.refreshInterval": {
@@ -144,7 +184,7 @@
         {
           "command": "mailClient.addAccount",
           "when": "view == mailExplorer",
-          "group": "navigation@3"
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
@@ -178,10 +218,15 @@
     "package": "vsce package"
   },
   "dependencies": {
-    "imapflow": "^1.0.167"
+    "imapflow": "^1.0.167",
+    "mailparser": "^3.9.3",
+    "marked": "^17.0.2",
+    "nodemailer": "^8.0.1"
   },
   "devDependencies": {
+    "@types/mailparser": "^3.4.6",
     "@types/node": "^20.11.0",
+    "@types/nodemailer": "^7.0.10",
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.24.0",
     "typescript": "^5.3.0"

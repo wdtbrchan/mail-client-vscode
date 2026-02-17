@@ -175,6 +175,11 @@ export class MessageListPanel {
             case 'refresh':
                 this.loadMessages();
                 break;
+            case 'compose':
+                vscode.commands.executeCommand('mailClient.compose', {
+                    accountId: this.accountId,
+                });
+                break;
         }
     }
 
@@ -291,6 +296,7 @@ export class MessageListPanel {
 <body>
     <div class="toolbar">
         <span class="toolbar-title" id="folderTitle">Messages</span>
+        <button id="btnCompose" title="New Message">✉ New Message</button>
         <button id="btnRefresh" title="Refresh">↻ Refresh</button>
     </div>
 
@@ -305,6 +311,10 @@ export class MessageListPanel {
 
         document.getElementById('btnRefresh').addEventListener('click', () => {
             vscode.postMessage({ type: 'refresh' });
+        });
+
+        document.getElementById('btnCompose').addEventListener('click', () => {
+            vscode.postMessage({ type: 'compose' });
         });
 
         let currentLocale = undefined;

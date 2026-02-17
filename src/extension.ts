@@ -25,7 +25,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Register commands
     registerAccountCommands(context, accountManager, explorerProvider);
-    registerMessageCommands(context, explorerProvider);
+    registerMessageCommands(context, explorerProvider, accountManager);
 
     // Open extension settings command
     context.subscriptions.push(

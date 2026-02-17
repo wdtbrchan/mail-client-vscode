@@ -1,4 +1,5 @@
 import { ImapFlow, MailboxObject } from 'imapflow';
+import { simpleParser } from 'mailparser';
 import { IMailAccount } from '../types/account';
 import { IMailFolder } from '../types/folder';
 import { IMailMessage, IMailMessageDetail, IMailAddress, IMailAttachment } from '../types/message';
@@ -125,62 +126,54 @@ export class ImapService {
 
         const lock = await this.client!.getMailboxLock(folderPath);
         try {
-            const msg = await this.client!.fetchOne(
-                String(uid),
-                {
-                    uid: true,
-                    envelope: true,
-                    flags: true,
-                    bodyStructure: true,
-                    size: true,
-                    source: true,
-                },
-                { uid: true }
-            );
-
-            if (!msg) {
-                throw new Error(`Message UID ${uid} not found`);
-            }
-
-            const envelope = msg.envelope;
-            if (!envelope) {
-                throw new Error(`Failed to fetch envelope for UID ${uid}`);
-            }
-
-            // Download and parse the message source for body content
             const downloadResult = await this.client!.download(String(uid), undefined, { uid: true });
-            let html: string | undefined;
-            let text: string | undefined;
-            const attachments: IMailAttachment[] = [];
-
-            if (downloadResult) {
-                const chunks: Buffer[] = [];
-                for await (const chunk of downloadResult.content) {
-                    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-                }
-                const source = Buffer.concat(chunks).toString();
-
-                // Simple extraction - in production, use mailparser
-                html = this.extractHtmlBody(source);
-                text = this.extractTextBody(source);
+            
+            if (!downloadResult) {
+                throw new Error(`Failed to download message UID ${uid}`);
             }
 
-            // Extract attachment info from body structure
-            this.extractAttachments(msg.bodyStructure, attachments);
+            const chunks: Buffer[] = [];
+            for await (const chunk of downloadResult.content) {
+                chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+            }
+            const source = Buffer.concat(chunks);
+
+            const flagsMsg = await this.client!.fetchOne(String(uid), { flags: true, uid: true }, { uid: true });
+            const seen = (flagsMsg && typeof flagsMsg === 'object' && flagsMsg.flags && flagsMsg.flags.has('\\Seen')) || false;
+
+            const parsed = await simpleParser(source);
+
+            const mapAddresses = (field: any): IMailAddress[] => {
+                if (!field) return [];
+                if (field.value && Array.isArray(field.value)) {
+                    return field.value.map((a: any) => ({ name: a.name, address: a.address || 'unknown' }));
+                }
+                if (Array.isArray(field)) {
+                    return field.flatMap((f: any) => mapAddresses(f));
+                }
+                return [];
+            };
+
+            const from = parsed.from ? mapAddresses(parsed.from)[0] : { address: 'unknown' };
 
             return {
-                uid: msg.uid,
-                date: envelope.date || new Date(),
-                subject: envelope.subject || '(no subject)',
-                from: this.convertAddress(envelope.from?.[0]),
-                to: (envelope.to || []).map((a: any) => this.convertAddress(a)),
-                cc: envelope.cc?.map((a: any) => this.convertAddress(a)),
-                hasAttachments: attachments.length > 0,
-                seen: msg.flags?.has('\\Seen') ?? false,
-                size: msg.size || 0,
-                html,
-                text,
-                attachments,
+                uid: uid,
+                date: parsed.date || new Date(),
+                subject: parsed.subject || '(no subject)',
+                from: from,
+                to: mapAddresses(parsed.to),
+                cc: mapAddresses(parsed.cc),
+                hasAttachments: parsed.attachments && parsed.attachments.length > 0,
+                seen: seen,
+                size: source.length,
+                html: parsed.html || undefined,
+                text: parsed.text || undefined,
+                attachments: (parsed.attachments || []).map(att => ({
+                    filename: att.filename || 'unnamed',
+                    contentType: att.contentType,
+                    size: att.size,
+                    disposition: att.contentDisposition
+                })),
             };
         } finally {
             lock.release();
@@ -188,46 +181,19 @@ export class ImapService {
     }
 
     /**
-     * Deletes a message by UID.
-     * Flags the message as \Deleted and expunges it.
-     * @param folderPath - IMAP folder path
-     * @param uid - Message UID
+     * Deletes a message by adding the \Deleted flag.
      */
     async deleteMessage(folderPath: string, uid: number): Promise<void> {
         this.ensureConnected();
-
         const lock = await this.client!.getMailboxLock(folderPath);
         try {
-            await this.client!.messageDelete(String(uid), { uid: true });
+            await this.client!.messageFlagsAdd(String(uid), ['\\Deleted'], { uid: true });
         } finally {
             lock.release();
         }
     }
 
-    /**
-     * Tests the connection to an IMAP server.
-     * Returns true if successful, throws on failure.
-     */
-    static async testConnection(account: IMailAccount, password: string): Promise<boolean> {
-        const client = new ImapFlow({
-            host: account.host,
-            port: account.port,
-            secure: account.secure,
-            auth: {
-                user: account.username,
-                pass: password,
-            },
-            logger: false,
-        });
 
-        try {
-            await client.connect();
-            await client.logout();
-            return true;
-        } catch (error) {
-            throw error;
-        }
-    }
 
     // ---- Private helpers ----
 
@@ -301,33 +267,5 @@ export class ImapService {
         return false;
     }
 
-    private extractAttachments(bodyStructure: any, attachments: IMailAttachment[]): void {
-        if (!bodyStructure) {
-            return;
-        }
-        if (bodyStructure.disposition === 'attachment') {
-            attachments.push({
-                filename: bodyStructure.dispositionParameters?.filename || 'unnamed',
-                contentType: bodyStructure.type || 'application/octet-stream',
-                size: bodyStructure.size || 0,
-            });
-        }
-        if (bodyStructure.childNodes) {
-            for (const child of bodyStructure.childNodes) {
-                this.extractAttachments(child, attachments);
-            }
-        }
-    }
 
-    private extractHtmlBody(source: string): string | undefined {
-        // Basic HTML extraction from MIME source
-        const htmlMatch = source.match(/Content-Type:\s*text\/html[\s\S]*?\r?\n\r?\n([\s\S]*?)(?:\r?\n--|\r?\n\.\r?\n|$)/i);
-        return htmlMatch?.[1]?.trim();
-    }
-
-    private extractTextBody(source: string): string | undefined {
-        // Basic plain text extraction from MIME source
-        const textMatch = source.match(/Content-Type:\s*text\/plain[\s\S]*?\r?\n\r?\n([\s\S]*?)(?:\r?\n--|\r?\n\.\r?\n|$)/i);
-        return textMatch?.[1]?.trim();
-    }
 }
