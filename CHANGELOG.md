@@ -1,5 +1,11 @@
 # Changelog
 
+## [ upcoming ]
+
+### Added
+- **Sent Folder**: Automatically save sent messages to the specified IMAP folder (default "Sent").
+- Configuration for "Sent Folder" in account settings.
+
 ## [0.1.0] - 2026-02-17
 
 ### Added

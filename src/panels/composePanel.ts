@@ -5,7 +5,9 @@ import * as fs from 'fs';
 import { marked } from 'marked';
 import { AccountManager } from '../services/accountManager';
 import { SmtpService } from '../services/smtpService';
+import { ImapService } from '../services/imapService';
 import { IMailAccount } from '../types/account';
+const MailComposer = require('nodemailer/lib/mail-composer');
 import { IMailMessageDetail } from '../types/message';
 
 /**
@@ -251,7 +253,8 @@ export class ComposePanel {
         const fromAddress = account.smtpUsername || account.username;
         const fromDisplay = account.name ? `${account.name} <${fromAddress}>` : fromAddress;
 
-        await SmtpService.sendMail(account, password, {
+        // 1. Generate Raw Email
+        const mailOptions = {
             from: fromDisplay,
             to,
             cc: cc || undefined,
@@ -259,7 +262,33 @@ export class ComposePanel {
             subject,
             html: bodyHtml,
             text: this.currentMarkdown,
+        };
+        const composer = new MailComposer(mailOptions);
+        const messageBuffer = await composer.compile().build();
+
+        // 2. Send via SMTP
+        await SmtpService.sendMail(account, password, {
+            ...mailOptions,
+            raw: messageBuffer
         });
+
+        // 3. Append to Sent Folder (IMAP)
+        try {
+            const imapService = new ImapService();
+            // We need IMAP password (which might be different from SMTP password provided as 'password' arg)
+            const imapPassword = await this.accountManager.getPassword(account.id);
+            if (imapPassword) {
+                await imapService.connect(account, imapPassword);
+                const sentFolder = account.sentFolder || 'Sent';
+                // Try to append. If folder doesn't exist, this might fail.
+                // We'll catch errors to not block the success message.
+                await imapService.appendMessage(sentFolder, messageBuffer, ['\\Seen']);
+                await imapService.disconnect();
+            }
+        } catch (error) {
+            console.error('Failed to save to Sent folder:', error);
+            // Optionally notify user, but requirement says "if not exists, do nothing" (implies silent fail for that part)
+        }
     }
 
     private escapeHtml(str: string): string {

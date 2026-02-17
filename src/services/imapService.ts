@@ -193,6 +193,42 @@ export class ImapService {
         }
     }
 
+    /**
+     * Appends a message to a folder.
+     * @param folderPath - Target folder path
+     * @param message - Raw message content (Buffer or string)
+     * @param flags - Optional flags to set (e.g. ['\\Seen'])
+     */
+    async appendMessage(folderPath: string, message: Buffer | string, flags: string[] = []): Promise<void> {
+        this.ensureConnected();
+        const lock = await this.client!.getMailboxLock(folderPath);
+        try {
+            await this.client!.append(folderPath, message, flags);
+        } finally {
+            lock.release();
+        }
+    }
+
+    /**
+     * Tests IMAP connection with the given credentials.
+     */
+    static async testConnection(account: IMailAccount, password: string): Promise<void> {
+        const client = new ImapFlow({
+            host: account.host,
+            port: account.port,
+            secure: account.secure,
+            auth: {
+                user: account.username,
+                pass: password,
+            },
+            logger: false,
+            verifyOnly: true, // Optimizes for connection testing
+        });
+
+        await client.connect();
+        await client.logout();
+    }
+
 
 
     // ---- Private helpers ----

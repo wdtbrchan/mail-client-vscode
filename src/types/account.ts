@@ -27,5 +27,8 @@ export interface IMailAccount {
     smtpSecure: boolean;
     /** SMTP username – if empty, uses IMAP username */
     smtpUsername?: string;
+
+    /** Folder to save sent messages to (default: "Sent") */
+    sentFolder?: string;
 }
 

@@ -116,6 +116,7 @@ export class AccountSettingsPanel {
                 smtpPort: parseInt(data.smtpPort, 10),
                 smtpSecure: data.smtpSecure,
                 smtpUsername: data.smtpUsername || undefined,
+                sentFolder: data.sentFolder || 'Sent',
             };
 
             const smtpPassword = data.smtpPassword || undefined;
@@ -400,6 +401,13 @@ export class AccountSettingsPanel {
             <input type="password" id="smtpPassword" placeholder="Leave empty = same as IMAP">
         </div>
 
+        <hr class="section-divider">
+
+        <div class="form-group">
+            <label for="sentFolder">Sent Folder</label>
+            <input type="text" id="sentFolder" placeholder="Default: Sent">
+        </div>
+
         <div class="button-row">
             <button class="btn-test" id="btnTest" type="button">Test Connection</button>
             <button class="btn-secondary" id="btnCancel" type="button">Cancel</button>
@@ -424,6 +432,7 @@ export class AccountSettingsPanel {
             smtpSecure: document.getElementById('smtpSecure'),
             smtpUsername: document.getElementById('smtpUsername'),
             smtpPassword: document.getElementById('smtpPassword'),
+            sentFolder: document.getElementById('sentFolder'),
         };
 
         const statusEl = document.getElementById('statusMessage');
@@ -442,6 +451,7 @@ export class AccountSettingsPanel {
                 smtpSecure: fields.smtpSecure.checked,
                 smtpUsername: fields.smtpUsername.value.trim(),
                 smtpPassword: fields.smtpPassword.value,
+                sentFolder: fields.sentFolder.value.trim(),
             };
         }
 
@@ -496,6 +506,7 @@ export class AccountSettingsPanel {
                     fields.smtpSecure.checked = message.account.smtpSecure !== false;
                     fields.smtpUsername.value = message.account.smtpUsername || '';
                     fields.smtpPassword.value = message.account.smtpPassword || '';
+                    fields.sentFolder.value = message.account.sentFolder || 'Sent';
                     break;
                 case 'testResult':
                     document.getElementById('btnTest').disabled = false;

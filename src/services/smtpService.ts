@@ -20,6 +20,8 @@ export interface ISendMailOptions {
     inReplyTo?: string;
     /** References header (for threading) */
     references?: string;
+    /** Raw message content (Buffer or string) - overrides other options if present */
+    raw?: string | Buffer;
 }
 
 /**
@@ -47,17 +49,29 @@ export class SmtpService {
         });
 
         try {
-            await transport.sendMail({
-                from: options.from,
-                to: options.to,
-                cc: options.cc || undefined,
-                bcc: options.bcc || undefined,
-                subject: options.subject,
-                html: options.html,
-                text: options.text || undefined,
-                inReplyTo: options.inReplyTo || undefined,
-                references: options.references || undefined,
-            });
+            if (options.raw) {
+                await transport.sendMail({
+                    raw: options.raw,
+                    envelope: {
+                        from: options.from,
+                        to: options.to,
+                        cc: options.cc,
+                        bcc: options.bcc,
+                    }
+                });
+            } else {
+                await transport.sendMail({
+                    from: options.from,
+                    to: options.to,
+                    cc: options.cc || undefined,
+                    bcc: options.bcc || undefined,
+                    subject: options.subject,
+                    html: options.html,
+                    text: options.text || undefined,
+                    inReplyTo: options.inReplyTo || undefined,
+                    references: options.references || undefined,
+                });
+            }
         } finally {
             transport.close();
         }
