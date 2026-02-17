@@ -97,6 +97,14 @@ export class MessageDetailPanel {
                     currentResidesIn: this.folderPath
                 },
             });
+
+            // Mark as seen if not already
+            if (!message.seen) {
+                await service.markMessageSeen(this.folderPath, this.uid);
+                // Refresh to update unread counts
+                MessageListPanel.refreshFolder(this.accountId, this.folderPath);
+                this.explorerProvider.refresh();
+            }
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Failed to load message';
             this.panel.webview.postMessage({

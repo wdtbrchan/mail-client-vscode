@@ -245,6 +245,19 @@ export class ImapService {
     }
 
     /**
+     * Marks a message as seen (read).
+     */
+    async markMessageSeen(folderPath: string, uid: number): Promise<void> {
+        this.ensureConnected();
+        const lock = await this.client!.getMailboxLock(folderPath);
+        try {
+            await this.client!.messageFlagsAdd(String(uid), ['\\Seen'], { uid: true });
+        } finally {
+            lock.release();
+        }
+    }
+
+    /**
      * Lists all folder paths as a flat array.
      */
     async listFolderPaths(): Promise<string[]> {
