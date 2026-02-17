@@ -1,0 +1,189 @@
+{
+  "name": "mail-client-vscode",
+  "displayName": "Mail Client",
+  "description": "IMAP email client for VS Code",
+  "version": "0.1.0",
+  "publisher": "janbr",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:mailExplorer"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mailClient",
+          "title": "Mail Client",
+          "icon": "resources/icons/mail.svg"
+        }
+      ]
+    },
+    "views": {
+      "mailClient": [
+        {
+          "id": "mailExplorer",
+          "name": "Mail Explorer",
+          "icon": "resources/icons/mail.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "mailClient.addAccount",
+        "title": "Add Mail Account",
+        "category": "Mail Client",
+        "icon": "$(add)"
+      },
+      {
+        "command": "mailClient.editAccount",
+        "title": "Edit Account Settings",
+        "category": "Mail Client",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "mailClient.removeAccount",
+        "title": "Remove Account",
+        "category": "Mail Client",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "mailClient.refreshAccount",
+        "title": "Refresh Account",
+        "category": "Mail Client",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "mailClient.openFolder",
+        "title": "Open Folder",
+        "category": "Mail Client"
+      },
+      {
+        "command": "mailClient.openFolderInNewTab",
+        "title": "Open Folder in New Tab",
+        "category": "Mail Client",
+        "icon": "$(add)"
+      },
+      {
+        "command": "mailClient.openMessage",
+        "title": "Open Message",
+        "category": "Mail Client"
+      },
+      {
+        "command": "mailClient.reply",
+        "title": "Reply",
+        "category": "Mail Client",
+        "icon": "$(mail-reply)"
+      },
+      {
+        "command": "mailClient.replyAll",
+        "title": "Reply All",
+        "category": "Mail Client",
+        "icon": "$(reply)"
+      },
+      {
+        "command": "mailClient.forward",
+        "title": "Forward",
+        "category": "Mail Client",
+        "icon": "$(mail-forward)"
+      },
+      {
+        "command": "mailClient.openSettings",
+        "title": "Mail Client Settings",
+        "category": "Mail Client",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "mailClient.refreshFolders",
+        "title": "Refresh Folders",
+        "category": "Mail Client",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "mailClient.deleteMessage",
+        "title": "Delete Message",
+        "category": "Mail Client",
+        "icon": "$(trash)"
+      }
+    ],
+    "configuration": {
+      "title": "Mail Client",
+      "properties": {
+        "mailClient.locale": {
+          "type": "string",
+          "default": "",
+          "enum": ["", "en-US", "en-GB", "cs-CZ", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-BR", "ja-JP", "zh-CN", "ko-KR", "ru-RU", "pl-PL", "nl-NL", "sv-SE"],
+          "enumItemLabels": ["System default", "English (US)", "English (UK)", "Čeština", "Deutsch", "Français", "Español", "Italiano", "Português (BR)", "日本語", "中文", "한국어", "Русский", "Polski", "Nederlands", "Svenska"],
+          "description": "Locale used for date and time formatting in message lists."
+        },
+        "mailClient.refreshInterval": {
+          "type": "number",
+          "default": 60,
+          "minimum": 0,
+          "description": "Auto-refresh interval in seconds (0 = disabled)."
+        }
+      }
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "mailClient.refreshFolders",
+          "when": "view == mailExplorer",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mailClient.openSettings",
+          "when": "view == mailExplorer",
+          "group": "navigation@2"
+        },
+        {
+          "command": "mailClient.addAccount",
+          "when": "view == mailExplorer",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "mailClient.editAccount",
+          "when": "view == mailExplorer && viewItem == account",
+          "group": "inline@1"
+        },
+        {
+          "command": "mailClient.refreshAccount",
+          "when": "view == mailExplorer && viewItem == account",
+          "group": "inline@2"
+        },
+        {
+          "command": "mailClient.removeAccount",
+          "when": "view == mailExplorer && viewItem == account",
+          "group": "context@1"
+        },
+        {
+          "command": "mailClient.openFolderInNewTab",
+          "when": "view == mailExplorer && viewItem == folder",
+          "group": "inline@1"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "imapflow": "^1.0.167"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.3.0"
+  }
+}
