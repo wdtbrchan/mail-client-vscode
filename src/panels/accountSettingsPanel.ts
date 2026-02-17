@@ -100,6 +100,9 @@ export class AccountSettingsPanel {
             case 'cancel':
                 this.panel.dispose();
                 break;
+            case 'listFolders':
+                await this.handleListFolders(message.data);
+                break;
         }
     }
 
@@ -117,6 +120,12 @@ export class AccountSettingsPanel {
                 smtpSecure: data.smtpSecure,
                 smtpUsername: data.smtpUsername || undefined,
                 sentFolder: data.sentFolder || 'Sent',
+                draftsFolder: data.draftsFolder || 'Drafts',
+                trashFolder: data.trashFolder || 'Trash',
+                spamFolder: data.spamFolder || 'Spam',
+                archiveFolder: data.archiveFolder || 'Archive',
+                newslettersFolder: data.newslettersFolder || 'Newsletters',
+                customFolders: data.customFolders || [],
             };
 
             const smtpPassword = data.smtpPassword || undefined;
@@ -171,6 +180,41 @@ export class AccountSettingsPanel {
                 type: 'testResult',
                 success: false,
                 message: `Connection failed: ${errorMsg}`,
+            });
+        }
+    }
+
+    private async handleListFolders(data: any): Promise<void> {
+        try {
+            const account: IMailAccount = {
+                id: 'temp',
+                name: data.name,
+                host: data.host,
+                port: parseInt(data.port, 10),
+                secure: data.secure,
+                username: data.username,
+                // SMTP not needed for listing folders
+                smtpHost: '',
+                smtpPort: 0,
+                smtpSecure: false
+            };
+
+            const service = new ImapService();
+            await service.connect(account, data.password);
+            const folders = await service.listFolderPaths();
+            await service.disconnect();
+
+            this.panel.webview.postMessage({
+                type: 'foldersList',
+                success: true,
+                folders: folders.sort()
+            });
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Failed to list folders';
+            this.panel.webview.postMessage({
+                type: 'foldersList',
+                success: false,
+                error: errorMsg
             });
         }
     }
@@ -238,8 +282,19 @@ export class AccountSettingsPanel {
             font-size: inherit;
             outline: none;
         }
-        input:focus {
+    input:focus, select:focus {
             border-color: var(--vscode-focusBorder);
+        }
+        select {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid var(--vscode-input-border);
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
         }
         input[type="checkbox"] {
             width: 18px;
@@ -403,9 +458,47 @@ export class AccountSettingsPanel {
 
         <hr class="section-divider">
 
+        <hr class="section-divider">
+        <h2 class="section-title">Folders</h2>
+        <div style="margin-bottom: 16px; color: var(--vscode-descriptionForeground); font-size: 0.9em;">
+            Map server folders to local functions. Settings take effect after connection.
+            <button class="btn-test" id="btnListFolders" type="button" style="margin-left: 10px; padding: 4px 10px; font-size: 0.9em;">Load Folders</button>
+        </div>
+
         <div class="form-group">
-            <label for="sentFolder">Sent Folder</label>
-            <input type="text" id="sentFolder" placeholder="Default: Sent">
+            <label for="sentFolder">Sent</label>
+            <select id="sentFolder" class="folder-select"><option value="Sent">Sent</option></select>
+        </div>
+        <div class="form-group">
+            <label for="draftsFolder">Drafts</label>
+            <select id="draftsFolder" class="folder-select"><option value="Drafts">Drafts</option></select>
+        </div>
+        <div class="form-group">
+            <label for="trashFolder">Trash</label>
+            <select id="trashFolder" class="folder-select"><option value="Trash">Trash</option></select>
+        </div>
+        <div class="form-group">
+            <label for="spamFolder">Spam</label>
+            <select id="spamFolder" class="folder-select"><option value="Spam">Spam</option></select>
+        </div>
+        <div class="form-group">
+            <label for="archiveFolder">Archive</label>
+            <select id="archiveFolder" class="folder-select"><option value="Archive">Archive</option></select>
+        </div>
+        <div class="form-group">
+            <label for="newslettersFolder">Newsletters</label>
+            <select id="newslettersFolder" class="folder-select"><option value="Newsletters">Newsletters</option></select>
+        </div>
+        
+        <div class="form-group">
+            <label>Custom Folders</label>
+            <div id="customFoldersContainer">
+                <!-- Custom folders will be added here -->
+            </div>
+        </div>
+        <div class="form-group">
+            <label></label>
+            <button class="btn-secondary" id="btnAddCustomFolder" type="button" style="width: auto;">+ Add Custom Folder</button>
         </div>
 
         <div class="button-row">
@@ -433,12 +526,27 @@ export class AccountSettingsPanel {
             smtpUsername: document.getElementById('smtpUsername'),
             smtpPassword: document.getElementById('smtpPassword'),
             sentFolder: document.getElementById('sentFolder'),
+            draftsFolder: document.getElementById('draftsFolder'),
+            trashFolder: document.getElementById('trashFolder'),
+            spamFolder: document.getElementById('spamFolder'),
+            archiveFolder: document.getElementById('archiveFolder'),
+            newslettersFolder: document.getElementById('newslettersFolder'),
         };
 
+        const customFoldersContainer = document.getElementById('customFoldersContainer');
         const statusEl = document.getElementById('statusMessage');
         const titleEl = document.getElementById('formTitle');
 
+        let customFolders = [];
+
         function getFormData() {
+            // update custom folders from DOM
+            const customFolderElements = document.querySelectorAll('.custom-folder-row');
+            customFolders = Array.from(customFolderElements).map(row => ({
+                name: row.querySelector('.custom-name').value.trim(),
+                path: row.querySelector('.custom-path').value
+            })).filter(f => f.name);
+
             return {
                 name: fields.name.value.trim(),
                 host: fields.host.value.trim(),
@@ -451,7 +559,13 @@ export class AccountSettingsPanel {
                 smtpSecure: fields.smtpSecure.checked,
                 smtpUsername: fields.smtpUsername.value.trim(),
                 smtpPassword: fields.smtpPassword.value,
-                sentFolder: fields.sentFolder.value.trim(),
+                sentFolder: fields.sentFolder.value,
+                draftsFolder: fields.draftsFolder.value,
+                trashFolder: fields.trashFolder.value,
+                spamFolder: fields.spamFolder.value,
+                archiveFolder: fields.archiveFolder.value,
+                newslettersFolder: fields.newslettersFolder.value,
+                customFolders: customFolders
             };
         }
 
@@ -486,9 +600,88 @@ export class AccountSettingsPanel {
             vscode.postMessage({ type: 'testConnection', data: getFormData() });
         });
 
-        document.getElementById('btnCancel').addEventListener('click', () => {
-            vscode.postMessage({ type: 'cancel' });
+        document.getElementById('btnListFolders').addEventListener('click', () => {
+            if (!fields.host.value || !fields.username.value || !fields.password.value) {
+                showStatus('Please fill in Host, Username and Password to list folders.', 'error');
+                return;
+            }
+            showStatus('Listing folders...', 'loading');
+            document.getElementById('btnListFolders').disabled = true;
+            vscode.postMessage({ type: 'listFolders', data: getFormData() });
         });
+
+        document.getElementById('btnAddCustomFolder').addEventListener('click', () => {
+            addCustomFolderRow('', '');
+        });
+
+        function addCustomFolderRow(name, path, options = []) {
+            const row = document.createElement('div');
+            row.className = 'form-group custom-folder-row';
+            row.style.marginBottom = '8px';
+            
+            let optionsHtml = '';
+            if (options.length > 0) {
+                 optionsHtml = options.map(f => '<option value="' + f + '" ' + (f === path ? 'selected' : '') + '>' + f + '</option>').join('');
+            } else {
+                 optionsHtml = '<option value="' + path + '">' + (path || 'Select folder...') + '</option>';
+            }
+
+            row.innerHTML = \`
+                <input type="text" class="custom-name" placeholder="Name (e.g. Work)" value="\${name}" style="width: 140px;">
+                <select class="custom-path folder-select" style="flex: 1;">\${optionsHtml}</select>
+                <button type="button" class="btn-secondary" onclick="this.parentElement.remove()" style="padding: 4px 10px;">X</button>
+            \`;
+            // Add some inline style for the row layout if needed, or rely on flex
+            row.style.display = 'flex';
+            row.style.gap = '10px';
+            
+            customFoldersContainer.appendChild(row);
+        }
+
+        function populateFolderSelects(folders) {
+            const selectors = [
+                fields.sentFolder, fields.draftsFolder, fields.trashFolder, 
+                fields.spamFolder, fields.archiveFolder, fields.newslettersFolder
+            ];
+            
+            // Helper to preserve current selection if possible
+            const updateSelect = (select) => {
+                const current = select.value;
+                select.innerHTML = '';
+                // Add default/common options first if desired, or just the list
+                // We'll add a 'None' or empty option maybe? The user wants to map folders.
+                
+                // Add the folders from server
+                folders.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f;
+                    opt.textContent = f;
+                    select.appendChild(opt);
+                });
+                
+                // Restore selection or defaults
+                if (folders.includes(current)) {
+                    select.value = current;
+                } else {
+                    // Try to auto-match common names
+                    const lowerId = select.id.toLowerCase();
+                    const match = folders.find(f => lowerId.includes(f.toLowerCase()) || f.toLowerCase().includes(lowerId.replace('folder', '')));
+                    if (match) select.value = match;
+                }
+            };
+
+            selectors.forEach(updateSelect);
+            
+            // Also update custom folder dropdowns
+            document.querySelectorAll('.custom-path').forEach(select => {
+                const current = select.value;
+                select.innerHTML = folders.map(f => '<option value="' + f + '">' + f + '</option>').join('');
+                if (folders.includes(current)) select.value = current;
+            });
+            
+            // Store folders for new custom rows
+            window.availableFolders = folders;
+        }
 
         window.addEventListener('message', (event) => {
             const message = event.data;
@@ -506,11 +699,41 @@ export class AccountSettingsPanel {
                     fields.smtpSecure.checked = message.account.smtpSecure !== false;
                     fields.smtpUsername.value = message.account.smtpUsername || '';
                     fields.smtpPassword.value = message.account.smtpPassword || '';
-                    fields.sentFolder.value = message.account.sentFolder || 'Sent';
+                    
+                    // Handle folders
+                    // We might not have the folder list yet, so just add the saved value as an option
+                    const setFolder = (field, value) => {
+                        field.innerHTML = '<option value="' + value + '">' + value + '</option>';
+                        field.value = value;
+                    };
+                    
+                    setFolder(fields.sentFolder, message.account.sentFolder || 'Sent');
+                    setFolder(fields.draftsFolder, message.account.draftsFolder || 'Drafts');
+                    setFolder(fields.trashFolder, message.account.trashFolder || 'Trash');
+                    setFolder(fields.spamFolder, message.account.spamFolder || 'Spam');
+                    setFolder(fields.archiveFolder, message.account.archiveFolder || 'Archive');
+                    setFolder(fields.newslettersFolder, message.account.newslettersFolder || 'Newsletters');
+
+                    // Custom folders
+                    customFoldersContainer.innerHTML = '';
+                    if (message.account.customFolders) {
+                        message.account.customFolders.forEach(cf => {
+                            addCustomFolderRow(cf.name, cf.path);
+                        });
+                    }
                     break;
                 case 'testResult':
                     document.getElementById('btnTest').disabled = false;
                     showStatus(message.message, message.success ? 'success' : 'error');
+                    break;
+                case 'foldersList':
+                    document.getElementById('btnListFolders').disabled = false;
+                    if (message.success) {
+                        showStatus('Folders loaded.', 'success');
+                        populateFolderSelects(message.folders);
+                    } else {
+                        showStatus('Failed to list folders: ' + message.error, 'error');
+                    }
                     break;
                 case 'saveResult':
                     if (message.success) {

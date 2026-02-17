@@ -30,5 +30,19 @@ export interface IMailAccount {
 
     /** Folder to save sent messages to (default: "Sent") */
     sentFolder?: string;
+
+    /** Folder for drafts (default: "Drafts") */
+    draftsFolder?: string;
+    /** Folder for trash (default: "Trash") */
+    trashFolder?: string;
+    /** Folder for spam/junk (default: "Spam") */
+    spamFolder?: string;
+    /** Folder for archives (default: "Archive") */
+    archiveFolder?: string;
+    /** Folder for newsletters (default: "Newsletters") */
+    newslettersFolder?: string;
+
+    /** Custom folder mappings */
+    customFolders?: { name: string; path: string }[];
 }
 

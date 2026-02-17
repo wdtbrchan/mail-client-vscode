@@ -92,7 +92,7 @@ export class ImapService {
                 size: true,
             })) {
                 const envelope = msg.envelope;
-                if (!envelope) {
+                if (!envelope || msg.flags?.has('\\Deleted')) {
                     continue;
                 }
                 messages.push({
@@ -230,6 +230,28 @@ export class ImapService {
     }
 
 
+
+    /**
+     * Moves a message to another folder.
+     */
+    async moveMessage(folderPath: string, uid: number, targetFolder: string): Promise<void> {
+        this.ensureConnected();
+        const lock = await this.client!.getMailboxLock(folderPath);
+        try {
+            await this.client!.messageMove(String(uid), targetFolder, { uid: true });
+        } finally {
+            lock.release();
+        }
+    }
+
+    /**
+     * Lists all folder paths as a flat array.
+     */
+    async listFolderPaths(): Promise<string[]> {
+        this.ensureConnected(); // Ensure connection first
+        const flatList = await this.client!.list();
+        return flatList.map(f => f.path);
+    }
 
     // ---- Private helpers ----
 

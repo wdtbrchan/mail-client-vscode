@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { MailExplorerProvider, MailTreeItem } from '../providers/mailExplorerProvider';
 import { IMailMessage } from '../types/message';
+import { MessageDetailPanel } from './messageDetailPanel';
 
 /**
  * Webview panel for displaying a list of messages in a mail folder.

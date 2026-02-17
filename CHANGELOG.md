@@ -3,8 +3,11 @@
 ## [ upcoming ]
 
 ### Added
+- **Folder Management**: Configure special folders (Sent, Drafts, Trash, Spam, Archive, Newsletters) and custom folders in account settings.
+- **Message Actions**: Added Archive, Spam, Trash, and Newsletter buttons to message detail view.
+- **Smart Delete**: Context-aware "Trash" vs "Delete" buttons (permanent delete only available in Trash folder).
+- **Custom Buttons**: Dynamic buttons for moving messages to user-defined custom folders.
 - **Sent Folder**: Automatically save sent messages to the specified IMAP folder (default "Sent").
-- Configuration for "Sent Folder" in account settings.
 
 ## [0.1.0] - 2026-02-17
 

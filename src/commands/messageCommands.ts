@@ -106,6 +106,7 @@ export function registerMessageCommands(
             }
             MessageDetailPanel.show(
                 explorerProvider,
+                accountManager,
                 args.accountId,
                 args.folderPath,
                 args.uid,

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { MailExplorerProvider } from '../providers/mailExplorerProvider';
+import { AccountManager } from '../services/accountManager';
 import { MessageListPanel } from './messageListPanel';
 import { IMailMessageDetail } from '../types/message';
 
@@ -17,6 +18,7 @@ export class MessageDetailPanel {
     private constructor(
         panel: vscode.WebviewPanel,
         private readonly explorerProvider: MailExplorerProvider,
+        private readonly accountManager: AccountManager,
         private readonly accountId: string,
         private readonly folderPath: string,
         private readonly uid: number,
@@ -39,6 +41,7 @@ export class MessageDetailPanel {
      */
     static show(
         explorerProvider: MailExplorerProvider,
+        accountManager: AccountManager,
         accountId: string,
         folderPath: string,
         uid: number,
@@ -61,7 +64,7 @@ export class MessageDetailPanel {
             },
         );
 
-        const instance = new MessageDetailPanel(panel, explorerProvider, accountId, folderPath, uid);
+        const instance = new MessageDetailPanel(panel, explorerProvider, accountManager, accountId, folderPath, uid);
         MessageDetailPanel.panels.set(key, instance);
         return instance;
     }
@@ -90,6 +93,8 @@ export class MessageDetailPanel {
                     ccDisplay: message.cc?.map(c =>
                         c.name ? `${c.name} <${c.address}>` : c.address
                     ).join(', '),
+                    folderSettings: this.getFolderSettings(),
+                    currentResidesIn: this.folderPath
                 },
             });
         } catch (error) {
@@ -115,16 +120,85 @@ export class MessageDetailPanel {
             case 'delete':
                 this.deleteMessage();
                 break;
+            case 'archive':
+            case 'spam':
+            case 'trash':
+            case 'newsletters':
+                this.moveMessage(message.type);
+                break;
+            case 'moveCustom':
+                this.moveMessageCustom(message.target);
+                break;
+        }
+    }
+
+    private getFolderSettings(): any {
+        const account = this.accountManager.getAccount(this.accountId);
+        if (!account) return {};
+        
+        return {
+            trash: account.trashFolder || 'Trash',
+            spam: account.spamFolder || 'Spam',
+            archive: account.archiveFolder || 'Archive',
+            newsletters: account.newslettersFolder || 'Newsletters',
+            sent: account.sentFolder || 'Sent',
+            drafts: account.draftsFolder || 'Drafts'
+        };
+    }
+
+    private async moveMessage(action: 'archive' | 'spam' | 'trash' | 'newsletters'): Promise<void> {
+        const settings = this.getFolderSettings();
+        const targetFolder = settings[action];
+        
+        if (!targetFolder) {
+            vscode.window.showWarningMessage(`No folder configured for ${action}. check account settings.`);
+            return;
+        }
+
+        if (this.folderPath === targetFolder) {
+             vscode.window.showInformationMessage(`Message is already in ${action} folder.`);
+             return;
+        }
+
+        try {
+            const service = this.explorerProvider.getImapService(this.accountId);
+            await service.moveMessage(this.folderPath, this.uid, targetFolder);
+            
+            vscode.window.showInformationMessage(`Message moved to ${targetFolder}`);
+            
+            // Refresh logic similar to delete
+            MessageListPanel.refreshFolder(this.accountId, this.folderPath);
+            this.explorerProvider.refresh();
+            this.panel.dispose();
+        } catch (error) {
+             const errorMsg = error instanceof Error ? error.message : 'Move failed';
+            vscode.window.showErrorMessage(`Failed to move message: ${errorMsg}`);
+        }
+    }
+
+    private async moveMessageCustom(targetPath: string): Promise<void> {
+        try {
+            const service = this.explorerProvider.getImapService(this.accountId);
+            await service.moveMessage(this.folderPath, this.uid, targetPath);
+            
+            vscode.window.showInformationMessage(`Message moved to ${targetPath}`);
+            
+            MessageListPanel.refreshFolder(this.accountId, this.folderPath);
+            this.explorerProvider.refresh();
+            this.panel.dispose();
+        } catch (error) {
+             const errorMsg = error instanceof Error ? error.message : 'Move failed';
+            vscode.window.showErrorMessage(`Failed to move message: ${errorMsg}`);
         }
     }
 
     private async deleteMessage(): Promise<void> {
         const confirm = await vscode.window.showWarningMessage(
-            'Are you sure you want to delete this message?',
+            'Are you sure you want to PERMANENTLY delete this message?',
             { modal: true },
-            'Delete',
+            'Delete Forever',
         );
-        if (confirm !== 'Delete') {
+        if (confirm !== 'Delete Forever') {
             return;
         }
 
@@ -151,6 +225,12 @@ export class MessageDetailPanel {
         const config = vscode.workspace.getConfiguration('mailClient');
         const configLocale = config.get<string>('locale');
         const locale = configLocale || vscode.env.language;
+
+        const account = this.accountManager.getAccount(this.accountId);
+        const customFolders = account?.customFolders || [];
+        const customButtonsHtml = customFolders.map((cf, i) => 
+            `<button class="action-btn" id="btnCustom_${i}" title="Move to ${cf.name}">📂 ${cf.name}</button>`
+        ).join('');
 
         return /* html */ `<!DOCTYPE html>
 <html lang="en">
@@ -381,7 +461,13 @@ export class MessageDetailPanel {
         <button class="action-btn" id="btnReply">↩ Reply</button>
         <button class="action-btn" id="btnReplyAll">↩↩ Reply All</button>
         <button class="action-btn" id="btnForward">↪ Forward</button>
-        <button class="action-btn danger" id="btnDelete">🗑 Delete</button>
+        <div style="flex: 1;"></div>
+        <button class="action-btn" id="btnArchive" title="Archive">📂 Archive</button>
+        <button class="action-btn" id="btnSpam" title="Mark as Spam">⛔ Spam</button>
+        <button class="action-btn" id="btnNewsletters" title="Move to Newsletters">📰 News</button>
+        <button class="action-btn" id="btnTrash" title="Move to Trash">🗑 Trash</button>
+        <button class="action-btn danger hidden" id="btnDelete" title="Delete Permanently">❌ Delete</button>
+        ${customButtonsHtml}
     </div>
 
     <div id="content">
@@ -391,6 +477,7 @@ export class MessageDetailPanel {
     <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         const userLocale = '${locale}';
+        const customFolders = ${JSON.stringify(customFolders)};
         console.log('Using locale:', userLocale);
         const contentEl = document.getElementById('content');
 
@@ -406,8 +493,39 @@ export class MessageDetailPanel {
             vscode.postMessage({ type: 'forward' });
             showReplyEditor('forward');
         });
-        document.getElementById('btnDelete').addEventListener('click', () => {
-            vscode.postMessage({ type: 'delete' });
+        document.getElementById('btnArchive').addEventListener('click', () => vscode.postMessage({ type: 'archive' }));
+        document.getElementById('btnSpam').addEventListener('click', () => vscode.postMessage({ type: 'spam' }));
+        document.getElementById('btnNewsletters').addEventListener('click', () => vscode.postMessage({ type: 'newsletters' }));
+        document.getElementById('btnTrash').addEventListener('click', () => vscode.postMessage({ type: 'trash' }));
+        document.getElementById('btnDelete').addEventListener('click', () => vscode.postMessage({ type: 'delete' }));
+
+        customFolders.forEach((cf, i) => {
+            const btn = document.getElementById('btnCustom_' + i);
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    vscode.postMessage({ type: 'moveCustom', target: cf.path });
+                });
+            }
+        });
+
+        // Show/Hide buttons based on current folder
+        window.addEventListener('message', event => {
+            const msg = event.data;
+            if (msg.type === 'message') {
+                const settings = msg.message.folderSettings || {};
+                const current = msg.message.currentResidesIn;
+                
+                const btnTrash = document.getElementById('btnTrash');
+                const btnDelete = document.getElementById('btnDelete');
+                
+                if (current === settings.trash) {
+                    btnTrash.classList.add('hidden');
+                    btnDelete.classList.remove('hidden');
+                } else {
+                    btnTrash.classList.remove('hidden');
+                    btnDelete.classList.add('hidden');
+                }
+            }
         });
 
         function formatDate(isoStr) {
