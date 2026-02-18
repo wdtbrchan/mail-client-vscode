@@ -6,7 +6,7 @@
 - [x] Implement email sending (SMTP).
 - [x] Implement Folder Management (Sent, Trash, Spam, Archive, Custom).
 - [x] Implement Message Actions (Archive, Spam, Trash, Newsletter).
-- [ ] Support for attachments (uploading and downloading).
+- [x] Support for attachments (uploading and downloading).
 - [ ] Message searching.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).

@@ -37,6 +37,7 @@ export class ComposePanel {
     private readonly tempFile: string;
     private disposables: vscode.Disposable[] = [];
     private currentMarkdown = '';
+    private attachments: string[] = [];
 
     private constructor(
         panel: vscode.WebviewPanel,
@@ -189,7 +190,47 @@ export class ComposePanel {
             case 'discard':
                 this.panel.dispose();
                 break;
+            case 'pickAttachments':
+                this.pickAttachments();
+                break;
+            case 'removeAttachment':
+                this.removeAttachment(message.path);
+                break;
         }
+    }
+
+    private async pickAttachments(): Promise<void> {
+        const uris = await vscode.window.showOpenDialog({
+            canSelectFiles: true,
+            canSelectFolders: false,
+            canSelectMany: true,
+            openLabel: 'Attach',
+            title: 'Attach Files'
+        });
+
+        if (uris && uris.length > 0) {
+            for (const uri of uris) {
+                if (!this.attachments.includes(uri.fsPath)) {
+                    this.attachments.push(uri.fsPath);
+                }
+            }
+            this.updateAttachments();
+        }
+    }
+
+    private removeAttachment(pathToRemove: string): void {
+        this.attachments = this.attachments.filter(p => p !== pathToRemove);
+        this.updateAttachments();
+    }
+
+    private updateAttachments(): void {
+        this.panel.webview.postMessage({
+            type: 'updateAttachments',
+            attachments: this.attachments.map(p => ({
+                path: p,
+                name: path.basename(p)
+            }))
+        });
     }
 
     private async sendEmail(message: any): Promise<void> {
@@ -262,6 +303,10 @@ export class ComposePanel {
             subject,
             html: bodyHtml,
             text: this.currentMarkdown,
+            attachments: this.attachments.map(p => ({
+                path: p,
+                filename: path.basename(p)
+            }))
         };
         const composer = new MailComposer(mailOptions);
         const messageBuffer = await composer.compile().build();
@@ -529,6 +574,44 @@ export class ComposePanel {
         .error-text {
             color: var(--vscode-errorForeground);
         }
+        .btn-small {
+            padding: 4px 8px;
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .btn-small:hover {
+            background: var(--vscode-button-secondaryHoverBackground);
+        }
+        .attachment-list {
+            margin-top: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            background: var(--vscode-textBlockQuote-background);
+            border: 1px solid var(--vscode-widget-border);
+            border-radius: 3px;
+            font-size: 0.85em;
+        }
+        .remove-att {
+            cursor: pointer;
+            color: var(--vscode-errorForeground);
+            font-weight: bold;
+            padding: 0 4px;
+        }
+        .remove-att:hover {
+            background: var(--vscode-toolbar-hoverBackground);
+            border-radius: 2px;
+        }
     </style>
 </head>
 <body>
@@ -554,6 +637,14 @@ export class ComposePanel {
         <div class="form-row">
             <label for="fieldSubject">Subject:</label>
             <input type="text" id="fieldSubject" placeholder="Subject" />
+        </div>
+
+        <div class="form-row" style="align-items:start">
+             <label>Files:</label>
+             <div>
+                <button id="btnAddAttachment" class="btn-small">📎 Attach Files</button>
+                <div id="attachmentList" class="attachment-list"></div>
+             </div>
         </div>
     </div>
 
@@ -581,6 +672,12 @@ export class ComposePanel {
         const previewContent = document.getElementById('previewContent');
         const statusText = document.getElementById('statusText');
         const btnSend = document.getElementById('btnSend');
+        const attachmentList = document.getElementById('attachmentList');
+
+        // Attachments
+        document.getElementById('btnAddAttachment').addEventListener('click', () => {
+            vscode.postMessage({ type: 'pickAttachments' });
+        });
 
         // Toggle Cc/Bcc
         document.getElementById('toggleCc').addEventListener('click', () => {
@@ -640,8 +737,29 @@ export class ComposePanel {
                     statusText.textContent = msg.message;
                     statusText.classList.add('error-text');
                     break;
+                case 'updateAttachments':
+                    renderAttachments(msg.attachments);
+                    break;
             }
         });
+
+        function renderAttachments(list) {
+            attachmentList.innerHTML = '';
+            list.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'attachment-item';
+                div.innerHTML = '<span>' + item.name + '</span>';
+                const removeBtn = document.createElement('span');
+                removeBtn.className = 'remove-att';
+                removeBtn.innerHTML = '×';
+                removeBtn.title = 'Remove';
+                removeBtn.onclick = () => {
+                   vscode.postMessage({ type: 'removeAttachment', path: item.path });
+                };
+                div.appendChild(removeBtn);
+                attachmentList.appendChild(div);
+            });
+        }
     </script>
 </body>
 </html>`;

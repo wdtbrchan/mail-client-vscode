@@ -3,6 +3,7 @@
 ## [ upcoming ]
 
 ### Added
+- **Attachment Support**: Upload attachments when composing and download attachments from received messages.
 - **Folder Management**: Configure special folders (Sent, Drafts, Trash, Spam, Archive, Newsletters) and custom folders in account settings.
 - **Message Actions**: Added Archive, Spam, Trash, and Newsletter buttons to message detail view.
 - **Smart Delete**: Context-aware "Trash" vs "Delete" buttons (permanent delete only available in Trash folder).

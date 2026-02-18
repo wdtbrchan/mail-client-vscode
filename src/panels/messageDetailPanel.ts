@@ -137,6 +137,9 @@ export class MessageDetailPanel {
             case 'moveCustom':
                 this.moveMessageCustom(message.target);
                 break;
+            case 'downloadAttachment':
+                this.downloadAttachment(message.filename);
+                break;
         }
     }
 
@@ -225,6 +228,34 @@ export class MessageDetailPanel {
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Failed to delete message';
             vscode.window.showErrorMessage(`Delete failed: ${errorMsg}`);
+        }
+    }
+
+    async downloadAttachment(filename: string): Promise<void> {
+        try {
+            const uri = await vscode.window.showSaveDialog({
+                defaultUri: vscode.Uri.file(filename),
+                saveLabel: 'Download'
+            });
+
+            if (!uri) {
+                return;
+            }
+
+            vscode.window.showInformationMessage(`Downloading ${filename}...`);
+
+            const service = this.explorerProvider.getImapService(this.accountId);
+            const buffer = await service.getAttachment(this.folderPath, this.uid, filename);
+
+            if (!buffer) {
+                throw new Error('Attachment not found');
+            }
+
+            await vscode.workspace.fs.writeFile(uri, buffer);
+            vscode.window.showInformationMessage(`Saved ${filename}`);
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Download failed';
+            vscode.window.showErrorMessage(`Failed to download attachment: ${errorMsg}`);
         }
     }
 
@@ -333,10 +364,16 @@ export class MessageDetailPanel {
             align-items: center;
             gap: 4px;
             padding: 4px 10px;
-            background: var(--vscode-badge-background);
-            color: var(--vscode-badge-foreground);
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: 1px solid var(--vscode-button-border);
             border-radius: 12px;
             font-size: 0.85em;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .attachment-chip:hover {
+            background: var(--vscode-button-secondaryHoverBackground);
         }
 
         /* Message body */
@@ -344,6 +381,8 @@ export class MessageDetailPanel {
             padding: 16px;
             min-height: 200px;
             line-height: 1.6;
+            background-color: #ffffff;
+            color: #000000;
         }
         .message-body iframe {
             width: 100%;
@@ -564,7 +603,9 @@ export class MessageDetailPanel {
             if (msg.attachments && msg.attachments.length > 0) {
                 html += '<div class="attachments">';
                 for (const att of msg.attachments) {
-                    html += '<span class="attachment-chip">📎 ' + escapeHtml(att.filename) + '</span>';
+                    const safeName = escapeHtml(att.filename);
+                    const encodedName = encodeURIComponent(att.filename);
+                    html += '<button class="attachment-chip" data-filename="' + encodedName + '">📎 ' + safeName + ' ⬇</button>';
                 }
                 html += '</div>';
             }
@@ -651,6 +692,14 @@ export class MessageDetailPanel {
                     document.getElementById('replyEditor').focus();
                 });
             });
+
+            // Attachment buttons
+            document.querySelectorAll('.attachment-chip').forEach(btn => {
+                btn.addEventListener('click', () => {
+                   const filename = decodeURIComponent(btn.dataset.filename);
+                   downloadAttachment(filename);
+                });
+            });
         }
 
         function showReplyEditor(mode) {
@@ -679,6 +728,10 @@ export class MessageDetailPanel {
                     break;
             }
         });
+
+        function downloadAttachment(filename) {
+            vscode.postMessage({ type: 'downloadAttachment', filename: filename });
+        }
     </script>
 </body>
 </html>`;

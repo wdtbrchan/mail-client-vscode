@@ -8,6 +8,7 @@ A simple and efficient IMAP email client directly within your VS Code.
 - **Email Browsing:** Access folders and messages directly from the sidebar.
 - **Basic Operations:** Reply to messages, forward, and delete emails.
 - **Sent Messages:** Automatically saves sent emails to the server.
+- **Attachments:** Support for uploading and downloading email attachments.
 - **Folder Management:** Map special folders and create custom folder buttons.
 - **Organize Messages:** Archive, Spam, and Trash actions with context-aware delete.
 - **Auto-Refresh:** Configurable interval for automatic fetching of new messages.

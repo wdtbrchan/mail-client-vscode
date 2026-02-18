@@ -339,4 +339,43 @@ export class ImapService {
     }
 
 
+
+    /**
+     * Downloads an attachment from a message.
+     * @param folderPath - IMAP folder path
+     * @param uid - Message UID
+     * @param filename - Filename of the attachment to retrieve
+     * @returns Buffer containing the attachment content, or undefined if not found
+     */
+    async getAttachment(folderPath: string, uid: number, filename: string): Promise<Buffer | undefined> {
+        this.ensureConnected(); // Ensure connection first
+
+        const lock = await this.client!.getMailboxLock(folderPath);
+        try {
+            // We download the whole message and parse it to find the attachment.
+            // This is safer than trying to fetch specific body parts by ID without knowing the structure beforehand.
+            const downloadResult = await this.client!.download(String(uid), undefined, { uid: true });
+            
+            if (!downloadResult) {
+                throw new Error(`Failed to download message UID ${uid}`);
+            }
+
+            const chunks: Buffer[] = [];
+            for await (const chunk of downloadResult.content) {
+                chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+            }
+            const source = Buffer.concat(chunks);
+
+            const parsed = await simpleParser(source);
+
+            if (!parsed.attachments || parsed.attachments.length === 0) {
+                return undefined;
+            }
+
+            const attachment = parsed.attachments.find(att => att.filename === filename);
+            return attachment ? attachment.content : undefined;
+        } finally {
+            lock.release();
+        }
+    }
 }
