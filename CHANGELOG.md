@@ -1,5 +1,12 @@
 # Changelog
 
+## [ upcoming ]
+
+### Changed
+- Refined extension logo.
+- Synchronized `package-lock.json` with `package.json` license metadata.
+- Updated `README.md` with information about compatible editors (Cursor, Antigravity).
+
 ## [0.2.1]
 
 ### Added
