@@ -1,5 +1,7 @@
 # Mail Client for VS Code
 
+![Mail Client Logo](docs/logo.png)
+
 A simple and efficient IMAP email client directly within your VS Code.
 
 ## Features

@@ -15,8 +15,12 @@
   "categories": [
     "Other"
   ],
+  "tags": [
+    "mail",
+    "email",
+    "imap"
+  ],
   "activationEvents": [
-    "onView:mailExplorer"
   ],
   "main": "./dist/extension.js",
   "contributes": {

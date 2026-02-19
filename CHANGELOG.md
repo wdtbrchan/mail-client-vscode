@@ -2,6 +2,10 @@
 
 ## [ upcoming ]
 
+### Added
+- Added extension logo.
+- Added extension tags and metadata to `package.json`.
+
 ### Changed
 - Updated extension publisher and license in `package.json`.
 - Added `build_extension.ps1` helper script for VSIX creation.
