@@ -275,7 +275,7 @@ export class MessageDetailPanel {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}'; img-src * data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src * data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Message</title>
     <style nonce="${nonce}">
@@ -378,52 +378,41 @@ export class MessageDetailPanel {
 
         /* Message body */
         .message-body {
-            padding: 16px;
+            /* padding: 16px;  Removed padding here, now inside iframe */
             min-height: 200px;
-            line-height: 1.6;
-            background-color: #ffffff;
-            color: #000000;
+            background-color: #ffffff; /* Ensure white background behind iframe just in case */
         }
-        .message-body iframe {
+        .message-body-iframe {
             width: 100%;
             border: none;
-            min-height: 300px;
-        }
-        .message-body pre {
-            white-space: pre-wrap;
-            word-break: break-word;
-            font-family: var(--vscode-editor-font-family);
+            display: block;
+            background-color: #ffffff;
+            /* Height will be set by JS */
         }
 
-        /* Lists */
-        .message-body ul, .message-body ol {
-            margin-left: 24px;
-            padding-left: 10px;
-        }
-        .message-body li {
-            margin-bottom: 4px;
-        }
 
         /* External Images Warning */
         .images-blocked-warning {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background-color: var(--vscode-editorInfo-background);
-            color: var(--vscode-editorInfo-foreground);
-            padding: 8px 16px;
+            background-color: var(--vscode-editor-inactiveSelectionBackground);
+            color: var(--vscode-editor-foreground);
+            padding: 8px 12px;
             margin-bottom: 16px;
             border-radius: 4px;
             font-size: 0.9em;
+            border-left: 4px solid var(--vscode-notificationsWarningIcon-foreground);
         }
         .images-blocked-warning button {
             background: var(--vscode-button-background);
             color: var(--vscode-button-foreground);
             border: none;
-            padding: 4px 12px;
+            padding: 6px 14px;
             border-radius: 2px;
             cursor: pointer;
             margin-left: 10px;
+            font-family: var(--vscode-font-family);
         }
         .images-blocked-warning button:hover {
             background: var(--vscode-button-hoverBackground);
@@ -527,6 +516,7 @@ export class MessageDetailPanel {
         const customFolders = ${JSON.stringify(customFolders)};
         console.log('Using locale:', userLocale);
         const contentEl = document.getElementById('content');
+        let currentMessage = null;
 
         document.getElementById('btnReply').addEventListener('click', () => {
             vscode.postMessage({ type: 'reply' });
@@ -588,7 +578,7 @@ export class MessageDetailPanel {
             return div.innerHTML;
         }
 
-        function renderMessage(msg) {
+        function renderMessage(msg, showImages = false) {
             let html = '<div class="message-headers">';
             html += '<div class="header-subject">' + escapeHtml(msg.subject) + '</div>';
             html += '<div class="header-row"><span class="header-label">From:</span><span class="header-value">' + escapeHtml(msg.fromDisplay) + '</span></div>';
@@ -610,36 +600,133 @@ export class MessageDetailPanel {
                 html += '</div>';
             }
 
-            // Body
-            html += '<div class="message-body">';
             
+            // Prepare iframe content first to determine if we have blocked images
             let bodyContent = '';
             let hasBlockedImages = false;
+
+            // Define resize script content early
+            const resizeScriptContent = 
+                '    console.log("Iframe script running");' +
+                '    window.onerror = function(msg, url, line) {' +
+                '        console.error("Iframe script error:", msg, url, line);' +
+                '        window.parent.postMessage({ type: "error", message: "Iframe script error: " + msg }, "*");' +
+                '    };' +
+                '    function sendResize() {' +
+                '        const height = Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);' +
+                '        window.parent.postMessage({ type: "resize", height: height + 20 }, "*");' +
+                '    }' +
+                '    const resizeObserver = new ResizeObserver(entries => sendResize());' +
+                '    if(document.body) resizeObserver.observe(document.body);' +
+                '    if(document.documentElement) resizeObserver.observe(document.documentElement);' +
+                '    // Also trigger on load and immediately' +
+                '    window.addEventListener("load", sendResize);' +
+                '    sendResize();';
 
             if (msg.html) {
                 // Parse and process HTML for external images
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(msg.html, 'text/html');
+                
+                // Security: Remove all script tags from the email body
+                doc.querySelectorAll('script').forEach(s => s.remove());
+
                 const images = doc.querySelectorAll('img');
                 
                 images.forEach(img => {
                     const src = img.getAttribute('src');
                     if (src && (src.startsWith('http://') || src.startsWith('https://'))) {
-                        img.setAttribute('data-original-src', src);
-                        img.removeAttribute('src');
-                        // Optional: set a placeholder or style
-                        img.style.border = '1px dashed var(--vscode-descriptionForeground)';
-                        img.style.padding = '10px';
-                        img.setAttribute('alt', '[Image Blocked]');
-                        hasBlockedImages = true;
+                        if (!showImages) {
+                            img.setAttribute('data-original-src', src);
+                            img.removeAttribute('src');
+                            // Optional: set a placeholder or style
+                            img.style.border = '1px dashed #ccc';
+                            img.style.padding = '10px';
+                            img.setAttribute('alt', '[Image Blocked]');
+                            hasBlockedImages = true;
+                        }
                     }
                 });
+
+                // Ensure links open in external browser
+                const links = doc.querySelectorAll('a');
+                links.forEach(link => {
+                    link.setAttribute('target', '_blank');
+                });
                 
-                bodyContent = '<div id="htmlBody">' + doc.body.innerHTML + '</div>';
+                bodyContent = doc.body ? doc.body.innerHTML : '';
+                 // Add base styles to reset VS Code styles
+                 // We want standard white background for email, unless email specifies otherwise
+                 const style = doc.createElement('style');
+                 // style.setAttribute('nonce', '${nonce}'); // Not needed for unsafe-inline
+                 style.textContent = 
+                    'body {' +
+                    '    background-color: #ffffff;' +
+                    '    color: #000000;' +
+                    '    margin: 0;' +
+                    '    padding: 16px;' +
+                    '    font-family: sans-serif;' +
+                    '}' +
+                    '/* Ensure pre tags wrap */' +
+                    'pre { white-space: pre-wrap; word-break: break-word; }';
+
+                 if (doc.head) {
+                     const meta = doc.createElement('meta');
+                     meta.setAttribute('http-equiv', 'Content-Security-Policy');
+                     meta.setAttribute('content', "default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src * data:; font-src * data:;");
+                     doc.head.insertBefore(meta, doc.head.firstChild);
+                     doc.head.appendChild(style);
+                 } else {
+                     bodyContent = "<head><meta http-equiv='Content-Security-Policy' content=\\\"default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src * data:; font-src * data:;\\\"></head>" +
+                                   '<style>' + style.textContent + '</style>' + bodyContent;
+                 }
+                
+                 // Get the Full HTML including head if present
+                 bodyContent = doc.documentElement.innerHTML;
+
+                 // Inject the script into the document directly
+                 // We do this string-based to avoid nonce stripping issues with innerHTML
+                 const scriptTags = '<script nonce="${nonce}">' + resizeScriptContent + '<' + '/script>';
+                 if (bodyContent.includes('</body>')) {
+                     bodyContent = bodyContent.replace('</body>', scriptTags + '</body>');
+                 } else {
+                     bodyContent += scriptTags;
+                 }
             } else if (msg.text) {
-                bodyContent = '<pre>' + escapeHtml(msg.text) + '</pre>';
+                bodyContent = 
+                '<head>' +
+                '    <meta http-equiv="Content-Security-Policy" content="default-src \\\'none\\\'; style-src \\\'unsafe-inline\\\'; script-src \\\'nonce-${nonce}\\\'; img-src * data:; font-src * data:;">' +
+                '    <style>' +
+                '        body {' +
+                '            background-color: #ffffff;' +
+                '            color: #000000;' +
+                '            margin: 0;' +
+                '            padding: 16px;' +
+                '            font-family: monospace;' +
+                '            white-space: pre-wrap;' +
+                '            word-break: break-word;' +
+                '        }' +
+                '    </style>' +
+                '</head>' +
+                '<body>' + escapeHtml(msg.text) + 
+                '<script nonce="${nonce}">' + resizeScriptContent + '<\\/script>' +
+                '</body>';
             } else {
-                bodyContent = '<p style="color: var(--vscode-descriptionForeground)">No content available.</p>';
+                 bodyContent = 
+                '<head>' +
+                '    <meta http-equiv="Content-Security-Policy" content="default-src \\\'none\\\'; style-src \\\'unsafe-inline\\\'; script-src \\\'nonce-${nonce}\\\'; img-src * data:; font-src * data:;">' +
+                '    <style>' +
+                '        body {' +
+                '            background-color: #ffffff;' +
+                '            color: #666;' +
+                '            padding: 16px;' +
+                '            font-family: sans-serif;' +
+                '        }' +
+                '    </style>' +
+                '</head>' +
+                '<body>No content available.' + 
+                '<script nonce="${nonce}">' + resizeScriptContent + '<\\/script>' +
+                '</body>';
             }
 
             if (hasBlockedImages) {
@@ -649,7 +736,22 @@ export class MessageDetailPanel {
                 html += '</div>';
             }
 
-            html += bodyContent;
+            // Body
+            const iframeId = 'message-body-iframe';
+            // Security: limit sandbox permissions.
+            // Re-adding allow-same-origin because webview sandbox seems to block script execution without it.
+            html += '<iframe id="' + iframeId + '" class="message-body-iframe" scrolling="no" sandbox="allow-same-origin allow-scripts allow-popups"></iframe>';
+
+            
+            // Construct full iframe srcdoc
+            // Wrap strictly with HTML tag to ensure structure
+            const fullIframeContent = '<!DOCTYPE html><html>' + bodyContent + '</html>';
+
+
+
+            // Body
+
+            // html += bodyContent; // REMOVED - Using IFrame
             html += '</div>';
 
             // Reply editor (hidden initially)
@@ -668,20 +770,29 @@ export class MessageDetailPanel {
 
             contentEl.innerHTML = html;
 
+            // set iframe content
+            const iframe = document.getElementById(iframeId);
+            if(iframe) {
+                iframe.srcdoc = fullIframeContent;
+            }
+
+            // Listen for resize messages from iframe
+            window.addEventListener('message', (event) => {
+                if (event.data.type === 'resize') {
+                     const iframe = document.getElementById(iframeId);
+                     if (iframe) {
+                         iframe.style.height = event.data.height + 'px';
+                     }
+                }
+            });
+
             if (hasBlockedImages) {
                 document.getElementById('btnShowImages').addEventListener('click', () => {
-                   const images = document.querySelectorAll('img[data-original-src]');
-                   console.log('Found ' + images.length + ' blocked images to restore.');
-                   
-                   images.forEach(img => {
-                       const original = img.getAttribute('data-original-src');
-                       console.log('Restoring image: ' + original);
-                       img.setAttribute('src', original);
-                       img.removeAttribute('data-original-src');
-                       img.style.border = '';
-                       img.style.padding = '';
-                   });
-                   document.getElementById('imagesBlockedWarning').remove();
+                   // Re-render with images enabled
+                   console.log('User requested to show images. Re-rendering...');
+                   if (currentMessage) {
+                       renderMessage(currentMessage, true);
+                   }
                 });
             }
 
@@ -721,7 +832,15 @@ export class MessageDetailPanel {
                     contentEl.innerHTML = '<div class="loading">Loading message...</div>';
                     break;
                 case 'message':
-                    renderMessage(msg.message);
+                    console.log('Received message data', msg);
+                    try {
+                        currentMessage = msg.message;
+                        renderMessage(msg.message, false);
+                        console.log('Message rendered successfully');
+                    } catch (e) {
+                        console.error('Render error', e);
+                        contentEl.innerHTML = '<div class="error-msg">Render Error: ' + (e instanceof Error ? e.message : String(e)) + '</div>';
+                    }
                     break;
                 case 'error':
                     contentEl.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(msg.message) + '</div>';

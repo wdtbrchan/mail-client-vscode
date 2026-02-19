@@ -10,9 +10,7 @@
 - **Custom Buttons**: Dynamic buttons for moving messages to user-defined custom folders.
 - **Sent Folder**: Automatically save sent messages to the specified IMAP folder (default "Sent").
 - **Mark as Read**: Automatically mark messages as read when opened in detail view.
-
-### Fixed
-- **Debug Configuration**: Fixed issue where debugger launch would hang on `npm run watch` task by adding proper background task signaling.
+- **Show Images**: Fixed "Show Images" functionality and improved UI/UX for blocked content.
 
 ## [0.1.0] - 2026-02-17
 
