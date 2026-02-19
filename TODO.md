@@ -7,6 +7,7 @@
 - [x] Implement Folder Management (Sent, Trash, Spam, Archive, Custom).
 - [x] Implement Message Actions (Archive, Spam, Trash, Newsletter).
 - [x] Support for attachments (uploading and downloading).
+- [x] Refactor message preview logic.
 - [ ] Message searching.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).

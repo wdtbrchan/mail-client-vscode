@@ -9,6 +9,7 @@ import { ImapService } from '../services/imapService';
 import { IMailAccount } from '../types/account';
 const MailComposer = require('nodemailer/lib/mail-composer');
 import { IMailMessageDetail } from '../types/message';
+import { getSharedStyles, getSharedScripts } from './utils/webviewContent';
 
 /**
  * Compose mode: new message, reply, reply-all, or forward.
@@ -172,6 +173,27 @@ export class ComposePanel {
             cc,
             subject,
         });
+
+        // Also send original message payload for display
+        if (this.options.originalMessage) {
+             const om = this.options.originalMessage;
+             this.panel.webview.postMessage({
+                type: 'originalMessage',
+                message: {
+                    ...om,
+                    date: om.date.toISOString(),
+                    fromDisplay: om.from.name
+                        ? `${om.from.name} <${om.from.address}>`
+                        : om.from.address,
+                    toDisplay: om.to.map(t =>
+                        t.name ? `${t.name} <${t.address}>` : t.address
+                    ).join(', '),
+                    ccDisplay: om.cc?.map(c =>
+                        c.name ? `${c.name} <${c.address}>` : c.address
+                    ).join(', '),
+                }
+            });
+        }
     }
 
     private async updatePreview(): Promise<void> {
@@ -346,36 +368,18 @@ export class ComposePanel {
 
     private getHtmlContent(): string {
         const nonce = getNonce();
+        const config = vscode.workspace.getConfiguration('mailClient');
+        const configLocale = config.get<string>('locale');
+        const locale = configLocale || vscode.env.language;
 
-        // Build quoted message HTML for reply/forward
-        let quotedHtml = '';
-        if (this.options.mode !== 'compose' && this.options.originalMessage) {
-            const orig = this.options.originalMessage;
-            const fromStr = orig.from.name
-                ? `${this.escapeHtml(orig.from.name)} &lt;${this.escapeHtml(orig.from.address)}&gt;`
-                : this.escapeHtml(orig.from.address);
-            const dateStr = orig.date.toLocaleDateString() + ' ' + orig.date.toLocaleTimeString();
-
-            quotedHtml = `
-                <div class="quoted-message">
-                    <div class="quoted-header">
-                        <strong>${this.options.mode === 'forward' ? 'Forwarded message' : 'Original message'}</strong>
-                        <span>From: ${fromStr}</span>
-                        <span>Date: ${this.escapeHtml(dateStr)}</span>
-                        <span>Subject: ${this.escapeHtml(orig.subject || '(no subject)')}</span>
-                    </div>
-                    <div class="quoted-body">
-                        ${orig.html || `<pre>${this.escapeHtml(orig.text || '')}</pre>`}
-                    </div>
-                </div>
-            `;
-        }
+        const sharedStyles = getSharedStyles(nonce);
+        const sharedScripts = getSharedScripts(nonce, locale);
 
         return /* html */ `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src * data:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compose</title>
     <style nonce="${nonce}">
@@ -389,6 +393,8 @@ export class ComposePanel {
             flex-direction: column;
             height: 100vh;
         }
+
+        ${sharedStyles}
 
         /* Form fields */
         .compose-form {
@@ -430,6 +436,7 @@ export class ComposePanel {
             background: none;
             border: none;
             font-family: inherit;
+            font-size: inherit;
         }
         .toggle-cc:hover {
             text-decoration: underline;
@@ -500,28 +507,6 @@ export class ComposePanel {
         .preview-empty {
             color: var(--vscode-descriptionForeground);
             font-style: italic;
-        }
-
-        /* Quoted original message */
-        .quoted-message {
-            margin-top: 20px;
-            border-top: 1px solid var(--vscode-widget-border);
-            padding-top: 12px;
-        }
-        .quoted-header {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            font-size: 0.9em;
-            color: var(--vscode-descriptionForeground);
-            margin-bottom: 10px;
-            padding-left: 12px;
-            border-left: 3px solid var(--vscode-editorWidget-border);
-        }
-        .quoted-body {
-            padding-left: 12px;
-            border-left: 3px solid var(--vscode-editorWidget-border);
-            color: var(--vscode-descriptionForeground);
         }
 
         /* Action bar */
@@ -653,7 +638,11 @@ export class ComposePanel {
         <div class="preview-content" id="previewContent">
             <p class="preview-empty">Start typing in the editor to see a preview…</p>
         </div>
-        ${quotedHtml}
+        
+        <div id="original-message-container" class="quoted-message-container hidden">
+            <div class="quoted-message-title">Original Message</div>
+            <div id="original-message-content"></div>
+        </div>
     </div>
 
     <div class="action-bar">
@@ -664,6 +653,7 @@ export class ComposePanel {
 
     <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
+        ${sharedScripts}
 
         const fieldTo = document.getElementById('fieldTo');
         const fieldCc = document.getElementById('fieldCc');
@@ -673,6 +663,8 @@ export class ComposePanel {
         const statusText = document.getElementById('statusText');
         const btnSend = document.getElementById('btnSend');
         const attachmentList = document.getElementById('attachmentList');
+        const originalMessageContainer = document.getElementById('original-message-container');
+        const originalMessageContent = document.getElementById('original-message-content');
 
         // Attachments
         document.getElementById('btnAddAttachment').addEventListener('click', () => {
@@ -726,6 +718,20 @@ export class ComposePanel {
                         document.getElementById('toggleCc').textContent = 'Hide Cc/Bcc';
                     }
                     if (msg.subject) fieldSubject.value = msg.subject;
+                    break;
+                case 'originalMessage':
+                    if (msg.message) {
+                        originalMessageContainer.classList.remove('hidden');
+                        // Use the shared renderMessage function
+                        // We render into #original-message-content
+                        // Pass a unique suffix for potential ID collisions if we had multiple
+                        renderMessage(originalMessageContent, msg.message, false, '_orig');
+                        
+                        originalMessageContent.addEventListener('requestShowImages', (e) => {
+                            const message = e.detail.message;
+                            renderMessage(originalMessageContent, message, true, '_orig');
+                        });
+                    }
                     break;
                 case 'sending':
                     btnSend.disabled = true;

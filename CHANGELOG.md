@@ -11,6 +11,7 @@
 - **Sent Folder**: Automatically save sent messages to the specified IMAP folder (default "Sent").
 - **Mark as Read**: Automatically mark messages as read when opened in detail view.
 - **Show Images**: Fixed "Show Images" functionality and improved UI/UX for blocked content.
+- **UI Consistency**: Reply/Forward view now uses the same rendering engine as Message Detail.
 
 ## [0.1.0] - 2026-02-17
 
