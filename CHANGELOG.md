@@ -12,6 +12,10 @@
 - **Mark as Read**: Automatically mark messages as read when opened in detail view.
 - **Show Images**: Fixed "Show Images" functionality and improved UI/UX for blocked content.
 - **UI Consistency**: Reply/Forward view now uses the same rendering engine as Message Detail.
+- **WYSIWYG Editor**: Added a new rich text editor mode for composing emails, enabled by default with support for basic formatting (bold, italic, underline, lists).
+- **Compose Mode**: New setting `mailClient.composeMode` to toggle between WYSIWYG and Markdown file-based editing.
+- **Improved Body Styling**: Added margins and better default padding for email content in webview to ensure better readability.
+- **UI Tweaks**: Refined editor colors (white background/black text) to match standard email experience.
 - **Message List Redesign**: Modern flexbox layout with unread indicators, attachment icons, hover action buttons (SVG arrows), and improved date formatting.
 
 ## [0.1.0] - 2026-02-17

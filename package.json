@@ -161,6 +161,13 @@
           ],
           "description": "Locale used for date and time formatting in message lists."
         },
+        "mailClient.composeMode": {
+          "type": "string",
+          "default": "wysiwyg",
+          "enum": ["wysiwyg", "markdown"],
+          "enumItemLabels": ["WYSIWYG Editor", "Markdown File"],
+          "description": "Editor mode for composing emails. WYSIWYG shows a rich text editor inside the compose panel. Markdown opens a separate .md file for editing."
+        },
         "mailClient.refreshInterval": {
           "type": "number",
           "default": 60,

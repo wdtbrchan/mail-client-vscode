@@ -61,7 +61,8 @@ export function getSharedStyles(nonce: string): string {
 
         /* Message body iframe */
         .message-body-iframe {
-            width: 100%;
+            width: calc(100% - 32px);
+            margin: 16px;
             border: none;
             display: block;
             background-color: #ffffff;

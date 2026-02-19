@@ -8,6 +8,7 @@
 - [x] Implement Message Actions (Archive, Spam, Trash, Newsletter).
 - [x] Support for attachments (uploading and downloading).
 - [x] Refactor message preview logic.
+- [x] Implement WYSIWYG editor for composing emails.
 - [ ] Message searching.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).

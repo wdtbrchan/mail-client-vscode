@@ -36,18 +36,22 @@ export class ComposePanel {
 
     private readonly panel: vscode.WebviewPanel;
     private readonly tempFile: string;
+    private readonly isWysiwyg: boolean;
     private disposables: vscode.Disposable[] = [];
     private currentMarkdown = '';
+    private wysiwygHtml = '';
     private attachments: string[] = [];
 
     private constructor(
         panel: vscode.WebviewPanel,
         tempFile: string,
+        isWysiwyg: boolean,
         private readonly accountManager: AccountManager,
         private readonly options: ComposeOptions,
     ) {
         this.panel = panel;
         this.tempFile = tempFile;
+        this.isWysiwyg = isWysiwyg;
 
         this.panel.webview.onDidReceiveMessage(
             message => this.handleMessage(message),
@@ -57,28 +61,34 @@ export class ComposePanel {
 
         this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
 
-        // Listen for changes in the markdown editor
-        this.disposables.push(
-            vscode.workspace.onDidChangeTextDocument(e => {
-                if (e.document.uri.fsPath.toLowerCase() === this.tempFile.toLowerCase()) {
-                    this.currentMarkdown = e.document.getText();
-                    this.updatePreview();
-                }
-            }),
-        );
+        // Listen for changes in the markdown editor (only in MD mode)
+        if (!isWysiwyg && tempFile) {
+            this.disposables.push(
+                vscode.workspace.onDidChangeTextDocument(e => {
+                    if (e.document.uri.fsPath.toLowerCase() === this.tempFile.toLowerCase()) {
+                        this.currentMarkdown = e.document.getText();
+                        this.updatePreview();
+                    }
+                }),
+            );
+        }
 
-        // Initialize content
-        try {
-            this.currentMarkdown = fs.readFileSync(this.tempFile, 'utf8');
-        } catch {
-            this.currentMarkdown = '';
+        // Initialize content (MD mode only)
+        if (!isWysiwyg && tempFile) {
+            try {
+                this.currentMarkdown = fs.readFileSync(this.tempFile, 'utf8');
+            } catch {
+                this.currentMarkdown = '';
+            }
         }
 
         // Set initial content
         this.panel.webview.html = this.getHtmlContent();
 
-        // Update preview initially (after short delay to ensure scripts loaded)
-        setTimeout(() => this.updatePreview(), 500);
+        // Update preview initially (after short delay to ensure scripts loaded) - MD mode only
+        if (!isWysiwyg) {
+            setTimeout(() => this.updatePreview(), 500);
+        }
 
         // Pre-fill fields for reply/forward
         if (options.mode !== 'compose' && options.originalMessage) {
@@ -87,7 +97,7 @@ export class ComposePanel {
     }
 
     /**
-     * Opens the compose panel alongside a temp markdown editor.
+     * Opens the compose panel in WYSIWYG or Markdown mode based on settings.
      */
     static async open(
         accountManager: AccountManager,
@@ -98,37 +108,43 @@ export class ComposePanel {
             ComposePanel.instance.panel.dispose();
         }
 
-        // Create temp directory and file
-        const tmpDir = path.join(os.tmpdir(), 'mail-client-compose');
-        if (!fs.existsSync(tmpDir)) {
-            fs.mkdirSync(tmpDir, { recursive: true });
+        const config = vscode.workspace.getConfiguration('mailClient');
+        const composeMode = config.get<string>('composeMode', 'wysiwyg');
+        const isWysiwyg = composeMode === 'wysiwyg';
+
+        let tempFile = '';
+
+        if (!isWysiwyg) {
+            // Markdown mode: create temp file and open in editor
+            const tmpDir = path.join(os.tmpdir(), 'mail-client-compose');
+            if (!fs.existsSync(tmpDir)) {
+                fs.mkdirSync(tmpDir, { recursive: true });
+            }
+            tempFile = path.join(tmpDir, `compose-${Date.now()}.md`);
+
+            let initialContent = '';
+            if (options.mode === 'forward' && options.originalMessage) {
+                initialContent = '\n\n';
+            }
+            fs.writeFileSync(tempFile, initialContent, 'utf8');
+
+            const doc = await vscode.workspace.openTextDocument(tempFile);
+            await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         }
-        const tempFile = path.join(tmpDir, `compose-${Date.now()}.md`);
 
-        // Write initial content
-        let initialContent = '';
-        if (options.mode === 'forward' && options.originalMessage) {
-            initialContent = '\n\n';
-        }
-        fs.writeFileSync(tempFile, initialContent, 'utf8');
-
-        // Open the markdown file in the editor (left column)
-        const doc = await vscode.workspace.openTextDocument(tempFile);
-        await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-
-        // Create the preview webview panel (right column)
+        // Create the compose webview panel
         const title = ComposePanel.getPanelTitle(options);
         const panel = vscode.window.createWebviewPanel(
             ComposePanel.viewType,
             title,
-            vscode.ViewColumn.Two,
+            isWysiwyg ? vscode.ViewColumn.One : vscode.ViewColumn.Two,
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
             },
         );
 
-        const instance = new ComposePanel(panel, tempFile, accountManager, options);
+        const instance = new ComposePanel(panel, tempFile, isWysiwyg, accountManager, options);
         ComposePanel.instance = instance;
         return instance;
     }
@@ -207,6 +223,9 @@ export class ComposePanel {
     private async handleMessage(message: any): Promise<void> {
         switch (message.type) {
             case 'send':
+                if (this.isWysiwyg) {
+                    this.wysiwygHtml = message.wysiwygHtml || '';
+                }
                 await this.sendEmail(message);
                 break;
             case 'discard':
@@ -217,6 +236,9 @@ export class ComposePanel {
                 break;
             case 'removeAttachment':
                 this.removeAttachment(message.path);
+                break;
+            case 'switchToMarkdown':
+                await this.switchToMarkdownMode();
                 break;
         }
     }
@@ -292,6 +314,20 @@ export class ComposePanel {
         }
     }
 
+    /**
+     * Switches from WYSIWYG to Markdown mode.
+     * Updates the setting and reopens the compose panel.
+     */
+    private async switchToMarkdownMode(): Promise<void> {
+        const config = vscode.workspace.getConfiguration('mailClient');
+        await config.update('composeMode', 'markdown', vscode.ConfigurationTarget.Global);
+        
+        // Reopen with same options in markdown mode
+        const options = this.options;
+        this.panel.dispose();
+        await ComposePanel.open(this.accountManager, options);
+    }
+
     private async doSend(
         account: IMailAccount,
         password: string,
@@ -300,8 +336,13 @@ export class ComposePanel {
         bcc: string,
         subject: string,
     ): Promise<void> {
-        // Convert markdown body to HTML
-        let bodyHtml = await marked.parse(this.currentMarkdown);
+        // Get body HTML based on mode
+        let bodyHtml: string;
+        if (this.isWysiwyg) {
+            bodyHtml = this.wysiwygHtml;
+        } else {
+            bodyHtml = await marked.parse(this.currentMarkdown);
+        }
 
         // For reply/forward, append quoted original message
         if (this.options.mode !== 'compose' && this.options.originalMessage) {
@@ -597,6 +638,64 @@ export class ComposePanel {
             background: var(--vscode-toolbar-hoverBackground);
             border-radius: 2px;
         }
+
+        /* WYSIWYG editor */
+        .wysiwyg-toolbar {
+            display: flex;
+            gap: 4px;
+            padding: 6px 8px;
+            border: 1px solid var(--vscode-input-border);
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            background: var(--vscode-editorWidget-background);
+        }
+        .format-btn {
+            background: none;
+            border: none;
+            color: var(--vscode-foreground);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .format-btn:hover {
+            background: var(--vscode-toolbar-hoverBackground);
+        }
+        .wysiwyg-editor {
+            min-height: 200px;
+            padding: 10px;
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 0 0 4px 4px;
+            background: #ffffff;
+            color: #000000;
+            outline: none;
+            line-height: 1.5;
+            overflow-y: auto;
+        }
+        .wysiwyg-editor ul, .wysiwyg-editor ol {
+            padding-left: 24px;
+            margin: 6px 0;
+        }
+        .wysiwyg-editor:focus {
+            border-color: var(--vscode-focusBorder);
+        }
+        .switch-mode-link {
+            display: block;
+            margin-top: 6px;
+            font-size: 0.8em;
+            color: var(--vscode-descriptionForeground);
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: inherit;
+            padding: 0;
+            text-align: left;
+        }
+        .switch-mode-link:hover {
+            color: var(--vscode-textLink-foreground);
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -633,6 +732,24 @@ export class ComposePanel {
         </div>
     </div>
 
+    ${this.isWysiwyg ? `
+    <div class="preview-area">
+        <div class="wysiwyg-toolbar">
+            <button class="format-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+            <button class="format-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+            <button class="format-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+            <button class="format-btn" data-cmd="insertUnorderedList" title="Bullet List">• List</button>
+            <button class="format-btn" data-cmd="insertOrderedList" title="Numbered List">1. List</button>
+        </div>
+        <div class="wysiwyg-editor" contenteditable="true" id="wysiwygEditor"></div>
+        <button class="switch-mode-link" id="switchToMd">Switch to Markdown editor mode</button>
+
+        <div id="original-message-container" class="quoted-message-container hidden">
+            <div class="quoted-message-title">Original Message</div>
+            <div id="original-message-content"></div>
+        </div>
+    </div>
+    ` : `
     <div class="preview-area">
         <div class="preview-label">Preview</div>
         <div class="preview-content" id="previewContent">
@@ -644,6 +761,7 @@ export class ComposePanel {
             <div id="original-message-content"></div>
         </div>
     </div>
+    `}
 
     <div class="action-bar">
         <button class="btn-send" id="btnSend">✉ Send</button>
@@ -659,7 +777,9 @@ export class ComposePanel {
         const fieldCc = document.getElementById('fieldCc');
         const fieldBcc = document.getElementById('fieldBcc');
         const fieldSubject = document.getElementById('fieldSubject');
-        const previewContent = document.getElementById('previewContent');
+        const isWysiwyg = ${this.isWysiwyg};
+        const wysiwygEditor = isWysiwyg ? document.getElementById('wysiwygEditor') : null;
+        const previewContent = !isWysiwyg ? document.getElementById('previewContent') : null;
         const statusText = document.getElementById('statusText');
         const btnSend = document.getElementById('btnSend');
         const attachmentList = document.getElementById('attachmentList');
@@ -682,15 +802,34 @@ export class ComposePanel {
             btn.textContent = isHidden ? 'Hide Cc/Bcc' : 'Show Cc/Bcc';
         });
 
+        // WYSIWYG toolbar format buttons
+        if (isWysiwyg) {
+            document.querySelectorAll('.format-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.execCommand(btn.dataset.cmd, false, null);
+                    wysiwygEditor.focus();
+                });
+            });
+
+            // Switch to Markdown mode
+            document.getElementById('switchToMd').addEventListener('click', () => {
+                vscode.postMessage({ type: 'switchToMarkdown' });
+            });
+        }
+
         // Send
         document.getElementById('btnSend').addEventListener('click', () => {
-            vscode.postMessage({
+            const sendMsg = {
                 type: 'send',
                 to: fieldTo.value,
                 cc: fieldCc.value,
                 bcc: fieldBcc.value,
                 subject: fieldSubject.value,
-            });
+            };
+            if (isWysiwyg) {
+                sendMsg.wysiwygHtml = wysiwygEditor.innerHTML;
+            }
+            vscode.postMessage(sendMsg);
         });
 
         // Discard
@@ -703,10 +842,12 @@ export class ComposePanel {
             const msg = event.data;
             switch (msg.type) {
                 case 'preview':
-                    if (msg.html && msg.html.trim()) {
-                        previewContent.innerHTML = msg.html;
-                    } else {
-                        previewContent.innerHTML = '<p class="preview-empty">Start typing in the editor to see a preview…</p>';
+                    if (previewContent) {
+                        if (msg.html && msg.html.trim()) {
+                            previewContent.innerHTML = msg.html;
+                        } else {
+                            previewContent.innerHTML = '<p class="preview-empty">Start typing in the editor to see a preview…</p>';
+                        }
                     }
                     break;
                 case 'prefill':
@@ -774,22 +915,24 @@ export class ComposePanel {
     private dispose(): void {
         ComposePanel.instance = undefined;
 
-        // Clean up temp file
-        try {
-            if (fs.existsSync(this.tempFile)) {
-                // Close the editor tab showing this file
-                for (const tabGroup of vscode.window.tabGroups.all) {
-                    for (const tab of tabGroup.tabs) {
-                        if (tab.input instanceof vscode.TabInputText &&
-                            tab.input.uri.fsPath === this.tempFile) {
-                            vscode.window.tabGroups.close(tab);
+        // Clean up temp file (MD mode only)
+        if (this.tempFile) {
+            try {
+                if (fs.existsSync(this.tempFile)) {
+                    // Close the editor tab showing this file
+                    for (const tabGroup of vscode.window.tabGroups.all) {
+                        for (const tab of tabGroup.tabs) {
+                            if (tab.input instanceof vscode.TabInputText &&
+                                tab.input.uri.fsPath === this.tempFile) {
+                                vscode.window.tabGroups.close(tab);
+                            }
                         }
                     }
+                    fs.unlinkSync(this.tempFile);
                 }
-                fs.unlinkSync(this.tempFile);
+            } catch {
+                // Ignore cleanup errors
             }
-        } catch {
-            // Ignore cleanup errors
         }
 
         for (const d of this.disposables) {
