@@ -4,6 +4,10 @@
   "description": "IMAP email client for VS Code",
   "version": "0.2.0",
   "publisher": "janbr",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wdtbrchan/mail-client-vscode.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
