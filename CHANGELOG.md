@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.2.1]
 
 ### Added
 - Added extension logo.
