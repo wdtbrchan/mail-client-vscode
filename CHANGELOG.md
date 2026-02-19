@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.2.0]
 
 ### Added
 - **Attachment Support**: Upload attachments when composing and download attachments from received messages.
