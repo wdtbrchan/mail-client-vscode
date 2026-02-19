@@ -201,7 +201,10 @@ export class MessageListPanel {
             font-size: var(--vscode-font-size);
             color: var(--vscode-foreground);
             background: var(--vscode-editor-background);
+            overflow-x: hidden; /* Prevent horizontal scroll */
         }
+        
+        /* Toolbar */
         .toolbar {
             display: flex;
             align-items: center;
@@ -211,85 +214,189 @@ export class MessageListPanel {
             position: sticky;
             top: 0;
             z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .toolbar-title {
             font-weight: 600;
             flex: 1;
+            font-size: 1.1em;
+            letter-spacing: 0.5px;
         }
         .toolbar button {
-            background: none;
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
             border: none;
-            color: var(--vscode-foreground);
             cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 1em;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin-left: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: opacity 0.2s;
         }
         .toolbar button:hover {
-            background: var(--vscode-toolbar-hoverBackground);
+            opacity: 0.9;
+            background: var(--vscode-button-secondaryHoverBackground);
         }
-        .message-table {
+
+        /* Message List */
+        .message-list {
+            display: flex;
+            flex-direction: column;
             width: 100%;
-            border-collapse: collapse;
         }
-        .message-table th {
-            text-align: left;
-            padding: 8px 12px;
-            border-bottom: 2px solid var(--vscode-widget-border);
-            font-weight: 600;
-            font-size: 0.85em;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--vscode-descriptionForeground);
-            position: sticky;
-            top: 40px;
-            background: var(--vscode-editor-background);
-        }
-        .message-table td {
-            padding: 8px 12px;
+        
+        .message-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
             border-bottom: 1px solid var(--vscode-widget-border);
-            vertical-align: middle;
-        }
-        .message-row {
             cursor: pointer;
-            transition: background-color 0.1s;
+            transition: background-color 0.1s ease;
+            position: relative;
         }
-        .message-row:hover {
+        
+        .message-item:hover {
             background: var(--vscode-list-hoverBackground);
         }
-        .message-row.unread {
+        
+        /* Unread Indicator & Styling */
+        .message-item.unread {
+            background-color: var(--vscode-list-hoverBackground); /* Highlighting unread slightly */
+        }
+        .message-item.unread::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: var(--vscode-progressBar-background);
+        }
+        
+        /* Message Content Structure */
+        .message-content {
+            flex: 1;
+            min-width: 0; /* Important for text-overflow to work in flex child */
+            margin-right: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+        
+        .message-from {
             font-weight: 600;
-        }
-        .message-row.unread td:first-child::before {
-            content: "●";
-            color: var(--vscode-notificationsInfoIcon-foreground);
-            margin-right: 6px;
-            font-size: 0.7em;
-        }
-        .col-date { width: 140px; white-space: nowrap; }
-        .col-from { width: 200px; }
-        .col-subject { min-width: 200px; }
-        .col-attachment { width: 30px; text-align: center; }
-        .col-actions { width: 120px; white-space: nowrap; }
-        .attachment-icon { opacity: 0.7; }
-        .action-btn {
-            background: none;
-            border: none;
+            font-size: 1.05em;
             color: var(--vscode-foreground);
-            cursor: pointer;
-            padding: 4px 6px;
-            border-radius: 3px;
-            opacity: 0.6;
-            font-size: 0.85em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 10px;
         }
-        .action-btn:hover {
-            background: var(--vscode-toolbar-hoverBackground);
+        
+        .message-date {
+            font-size: 0.85em;
+            color: var(--vscode-descriptionForeground);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .message-row-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .message-subject {
+            color: var(--vscode-descriptionForeground);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.95em;
+            flex: 1;
+        }
+        
+        .message-item.unread .message-subject {
+            color: var(--vscode-foreground);
+            font-weight: 500;
+        }
+
+        /* Badges */
+        .badges {
+            display: flex;
+            gap: 6px;
+            margin-left: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .icon-attachment {
+            display: flex;
+            align-items: center;
+            opacity: 0.7;
+        }
+        
+        .icon-attachment svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+        
+        /* Actions */
+        .message-actions {
+            display: flex;
+            gap: 6px;
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.2s;
+            margin-left: 8px;
+        }
+        
+        /* Show actions on hover */
+        .message-item:hover .message-actions {
             opacity: 1;
         }
+        
+        .action-btn {
+            background: var(--vscode-button-secondaryBackground);
+            border: 1px solid transparent;
+            color: var(--vscode-foreground);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+        }
+        
+        .action-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        
+        .action-btn:hover {
+            background-color: var(--vscode-button-hoverBackground);
+            color: var(--vscode-button-foreground);
+            transform: scale(1.05);
+        }
+        
         .loading, .error-msg, .empty-msg {
             text-align: center;
-            padding: 40px;
+            padding: 60px 20px;
             color: var(--vscode-descriptionForeground);
+            font-size: 1.1em;
         }
         .error-msg { color: var(--vscode-errorForeground); }
     </style>
@@ -324,19 +431,40 @@ export class MessageListPanel {
             const d = new Date(isoStr);
             const today = new Date();
             const loc = currentLocale || [];
-            const isToday = d.toDateString() === today.toDateString();
-            if (isToday) {
+            
+            // If today, show time only
+            if (d.toDateString() === today.toDateString()) {
                 return d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
             }
-            return d.toLocaleDateString(loc, { day: '2-digit', month: '2-digit', year: 'numeric' })
-                + ' ' + d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
+            
+            // If this year, show Date Month (e.g., 24 Oct)
+            if (d.getFullYear() === today.getFullYear()) {
+                return d.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
+            }
+            
+            // Otherwise show full date
+            return d.toLocaleDateString(loc, { day: 'numeric', month: 'numeric', year: 'numeric' });
         }
 
         function escapeHtml(str) {
+            if (!str) return '';
             const div = document.createElement('div');
             div.textContent = str;
             return div.innerHTML;
         }
+
+        // SVG Icons
+        // Simple small paperclip
+        const ICON_ATTACHMENT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>';
+        
+        // Thick Arrow Left (<) for Reply (5px stroke)
+        const ICON_REPLY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6L9 12L15 18"></path></svg>';
+        
+        // Thick Double Arrow Left (<<) for Reply All (5px stroke)
+        const ICON_REPLY_ALL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6L11 12L17 18"></path><path d="M10 6L4 12L10 18"></path></svg>';
+        
+        // Thick Arrow Right (>) for Forward (5px stroke)
+        const ICON_FORWARD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"></path></svg>';
 
         function renderMessages(messages) {
             if (messages.length === 0) {
@@ -344,34 +472,52 @@ export class MessageListPanel {
                 return;
             }
 
-            let html = '<table class="message-table"><thead><tr>'
-                + '<th class="col-date">Date</th>'
-                + '<th class="col-from">From</th>'
-                + '<th class="col-subject">Subject</th>'
-                + '<th class="col-attachment">📎</th>'
-                + '<th class="col-actions">Actions</th>'
-                + '</tr></thead><tbody>';
+            let html = '<div class="message-list">';
 
             for (const msg of messages) {
-                const unread = !msg.seen ? ' unread' : '';
-                html += '<tr class="message-row' + unread + '" data-uid="' + msg.uid + '">'
-                    + '<td class="col-date">' + formatDate(msg.date) + '</td>'
-                    + '<td class="col-from">' + escapeHtml(msg.fromDisplay) + '</td>'
-                    + '<td class="col-subject">' + escapeHtml(msg.subject) + '</td>'
-                    + '<td class="col-attachment">' + (msg.hasAttachments ? '<span class="attachment-icon">📎</span>' : '') + '</td>'
-                    + '<td class="col-actions">'
-                    + '<button class="action-btn" data-action="reply" data-uid="' + msg.uid + '" title="Reply">↩</button>'
-                    + '<button class="action-btn" data-action="replyAll" data-uid="' + msg.uid + '" title="Reply All">↩↩</button>'
-                    + '<button class="action-btn" data-action="forward" data-uid="' + msg.uid + '" title="Forward">↪</button>'
-                    + '</td></tr>';
+                const unreadClass = !msg.seen ? ' unread' : '';
+                
+                html += '<div class="message-item' + unreadClass + '" data-uid="' + msg.uid + '">';
+                
+                // Content Left/Center
+                html += '  <div class="message-content">';
+                
+                // Top Row: From + Date
+                html += '    <div class="message-header">';
+                html += '      <span class="message-from">' + escapeHtml(msg.fromDisplay) + '</span>';
+                html += '      <span class="message-date">' + formatDate(msg.date) + '</span>';
+                html += '    </div>';
+                
+                // Bottom Row: Subject + Badges
+                html += '    <div class="message-row-bottom">';
+                html += '      <span class="message-subject">' + escapeHtml(msg.subject) + '</span>';
+                
+                if (msg.hasAttachments) {
+                    html += '      <div class="badges">';
+                    html += '        <span class="icon-attachment" title="Has Attachments">' + ICON_ATTACHMENT + '</span>';
+                    html += '      </div>';
+                }
+                
+                html += '    </div>'; // End Bottom Row
+                html += '  </div>'; // End Content
+                
+                // Actions Right
+                html += '  <div class="message-actions">';
+                html += '    <button class="action-btn" data-action="reply" data-uid="' + msg.uid + '" title="Reply">' + ICON_REPLY + '</button>';
+                html += '    <button class="action-btn" data-action="replyAll" data-uid="' + msg.uid + '" title="Reply All">' + ICON_REPLY_ALL + '</button>';
+                html += '    <button class="action-btn" data-action="forward" data-uid="' + msg.uid + '" title="Forward">' + ICON_FORWARD + '</button>';
+                html += '  </div>';
+
+                html += '</div>'; // End Item
             }
 
-            html += '</tbody></table>';
+            html += '</div>'; // End List
             contentEl.innerHTML = html;
 
             // Add click handlers
-            contentEl.querySelectorAll('.message-row').forEach(row => {
+            contentEl.querySelectorAll('.message-item').forEach(row => {
                 row.addEventListener('click', (e) => {
+                    // Ignore clicks on action buttons
                     if (e.target.closest('.action-btn')) return;
                     vscode.postMessage({ type: 'openMessage', uid: parseInt(row.dataset.uid) });
                 });

@@ -12,6 +12,7 @@
 - **Mark as Read**: Automatically mark messages as read when opened in detail view.
 - **Show Images**: Fixed "Show Images" functionality and improved UI/UX for blocked content.
 - **UI Consistency**: Reply/Forward view now uses the same rendering engine as Message Detail.
+- **Message List Redesign**: Modern flexbox layout with unread indicators, attachment icons, hover action buttons (SVG arrows), and improved date formatting.
 
 ## [0.1.0] - 2026-02-17
 
