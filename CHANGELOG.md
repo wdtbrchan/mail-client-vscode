@@ -1,5 +1,11 @@
 # Changelog
 
+## [ upcoming ]
+
+### Changed
+- Updated extension publisher and license in `package.json`.
+- Added `build_extension.ps1` helper script for VSIX creation.
+
 ## [0.2.0]
 
 ### Added

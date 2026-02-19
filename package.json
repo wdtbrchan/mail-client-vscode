@@ -3,7 +3,8 @@
   "displayName": "Mail Client",
   "description": "IMAP email client for VS Code",
   "version": "0.2.0",
-  "publisher": "janbr",
+  "publisher": "wdtbrchan",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/wdtbrchan/mail-client-vscode.git"
