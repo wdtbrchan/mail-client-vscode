@@ -568,9 +568,10 @@ export class ComposePanel {
             display: flex;
             gap: 8px;
             padding: 10px 16px;
-            border-top: 1px solid var(--vscode-widget-border);
+            border-bottom: 1px solid var(--vscode-widget-border);
             background: var(--vscode-editorWidget-background);
             flex-shrink: 0;
+            justify-content: flex-end;
         }
         .btn-send {
             padding: 8px 24px;
@@ -745,6 +746,12 @@ export class ComposePanel {
         </div>
     </div>
 
+    <div class="action-bar">
+        <span class="status-text" id="statusText"></span>
+        <button class="btn-send" id="btnSend">✉ Send</button>
+        <button class="btn-discard" id="btnDiscard">✕ Discard</button>
+    </div>
+
     ${this.isWysiwyg ? `
     <div class="preview-area">
         <div class="wysiwyg-toolbar">
@@ -775,12 +782,6 @@ export class ComposePanel {
         </div>
     </div>
     `}
-
-    <div class="action-bar">
-        <button class="btn-send" id="btnSend">✉ Send</button>
-        <button class="btn-discard" id="btnDiscard">✕ Discard</button>
-        <span class="status-text" id="statusText"></span>
-    </div>
 
     <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();

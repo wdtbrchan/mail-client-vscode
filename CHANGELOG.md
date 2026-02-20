@@ -5,6 +5,8 @@
 ### Changed
 - **Improved Reply/Forward Headers**: Replaced simple "wrote:" line with a structured header (Separator, From, To, Date, Subject).
 - **Message Quoting**: Original message content is now properly indented in both sent emails and the compose preview.
+- **Compose UI Refinement**: Moved Send and Discard buttons to the top-right of the compose panel for better visibility.
+- **Cleanup**: Removed legacy inline reply textarea from Message Detail view, ensuring all replies are handled through the dedicated Compose panel.
 
 ## [0.2.2]
 

@@ -328,71 +328,6 @@ export class MessageDetailPanel {
             opacity: 0.85;
         }
 
-        /* Reply section */
-        .reply-section {
-            border-top: 2px solid var(--vscode-focusBorder);
-            margin: 16px;
-            padding-top: 16px;
-        }
-        .reply-header {
-            font-weight: 600;
-            margin-bottom: 10px;
-            font-size: 0.95em;
-        }
-        .reply-toolbar {
-            display: flex;
-            gap: 4px;
-            padding: 6px 8px;
-            border: 1px solid var(--vscode-input-border);
-            border-bottom: none;
-            border-radius: 4px 4px 0 0;
-            background: var(--vscode-editorWidget-background);
-        }
-        .format-btn {
-            background: none;
-            border: none;
-            color: var(--vscode-foreground);
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            font-weight: 600;
-        }
-        .format-btn:hover {
-            background: var(--vscode-toolbar-hoverBackground);
-        }
-        .reply-editor {
-            min-height: 150px;
-            padding: 10px;
-            border: 1px solid var(--vscode-input-border);
-            border-radius: 0 0 4px 4px;
-            background: var(--vscode-input-background);
-            color: var(--vscode-input-foreground);
-            outline: none;
-            line-height: 1.5;
-        }
-        .reply-editor:focus {
-            border-color: var(--vscode-focusBorder);
-        }
-        .reply-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-            justify-content: flex-end;
-        }
-        .btn-send {
-            padding: 8px 20px;
-            background: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .btn-send:hover {
-            background: var(--vscode-button-hoverBackground);
-        }
-
         .loading, .error-msg {
             text-align: center;
             padding: 40px;
@@ -431,15 +366,12 @@ export class MessageDetailPanel {
 
         document.getElementById('btnReply').addEventListener('click', () => {
             vscode.postMessage({ type: 'reply' });
-            showReplyEditor('reply');
         });
         document.getElementById('btnReplyAll').addEventListener('click', () => {
             vscode.postMessage({ type: 'replyAll' });
-            showReplyEditor('replyAll');
         });
         document.getElementById('btnForward').addEventListener('click', () => {
             vscode.postMessage({ type: 'forward' });
-            showReplyEditor('forward');
         });
         document.getElementById('btnArchive').addEventListener('click', () => vscode.postMessage({ type: 'archive' }));
         document.getElementById('btnSpam').addEventListener('click', () => vscode.postMessage({ type: 'spam' }));
@@ -482,53 +414,12 @@ export class MessageDetailPanel {
              currentMessage = msg;
              renderMessage(contentEl, msg, showImages, '_main');
              
-             // Append Reply Editor (which is not part of shared renderMessage)
-             // We need to recreate it since innerHTML wipe
              
-             let replyHtml = '';
-             // Reply editor (hidden initially)
-            replyHtml += '<div class="reply-section hidden" id="replySection">';
-            replyHtml += '<div class="reply-header" id="replyTitle">Reply</div>';
-            replyHtml += '<div class="reply-toolbar">';
-            replyHtml += '<button class="format-btn" data-cmd="bold" title="Bold"><b>B</b></button>';
-            replyHtml += '<button class="format-btn" data-cmd="italic" title="Italic"><i>I</i></button>';
-            replyHtml += '<button class="format-btn" data-cmd="underline" title="Underline"><u>U</u></button>';
-            replyHtml += '<button class="format-btn" data-cmd="insertUnorderedList" title="Bullet List">• List</button>';
-            replyHtml += '<button class="format-btn" data-cmd="insertOrderedList" title="Numbered List">1. List</button>';
-            replyHtml += '</div>';
-            replyHtml += '<div class="reply-editor" contenteditable="true" id="replyEditor"></div>';
-            replyHtml += '<div class="reply-actions"><button class="btn-send" id="btnSendReply">Send</button></div>';
-            replyHtml += '</div>';
-            
-            contentEl.insertAdjacentHTML('beforeend', replyHtml);
-            
             // Re-bind listener for show images
-             contentEl.addEventListener('requestShowImages', (e) => {
+              contentEl.addEventListener('requestShowImages', (e) => {
                 const message = e.detail.message;
                 renderMessageView(message, true);
-             });
-
-            // Re-bind toolbar listeners if they were lost? 
-            // Since we replaced innerHTML of contentEl, we only lost things inside it.
-            // The main toolbar is outside contentEl.
-            // But logic for showReplyEditor accesses #replySection which was just recreated.
-            
-             document.getElementById('btnSendReply').addEventListener('click', async () => {
-                const editor = document.getElementById('replyEditor');
-                const html = editor.innerHTML;
-                const text = editor.innerText;
-                
-                // TODO: Handle reply send logic (same as before but we are rewriting renderMessage)
-                // Wait, original file had logic for this. I should check if I missed copying it.
-             });
-             
-             // Format buttons
-             document.querySelectorAll('.format-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.execCommand(btn.dataset.cmd, false, null);
-                    document.getElementById('replyEditor').focus();
-                });
-            });
+              });
 
             // Attachment buttons
             document.querySelectorAll('.attachment-chip').forEach(btn => {
@@ -539,17 +430,6 @@ export class MessageDetailPanel {
             });
         }
 
-        function showReplyEditor(mode) {
-            const section = document.getElementById('replySection');
-            const title = document.getElementById('replyTitle');
-            if (section) {
-                section.classList.remove('hidden');
-                const labels = { reply: 'Reply', replyAll: 'Reply All', forward: 'Forward' };
-                title.textContent = labels[mode] || 'Reply';
-                document.getElementById('replyEditor').focus();
-                section.scrollIntoView({ behavior: 'smooth' });
-            }
-        }
 
         window.addEventListener('message', (event) => {
             const msg = event.data;
