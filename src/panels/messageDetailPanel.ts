@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as os from 'os';
+import * as path from 'path';
 import { MailExplorerProvider } from '../providers/mailExplorerProvider';
 import { AccountManager } from '../services/accountManager';
 import { MessageListPanel } from './messageListPanel';
@@ -141,6 +143,33 @@ export class MessageDetailPanel {
             case 'downloadAttachment':
                 this.downloadAttachment(message.filename);
                 break;
+            case 'print':
+                this.printHtml(message.html);
+                break;
+        }
+    }
+
+    private async printHtml(html: string): Promise<void> {
+        try {
+            const tmpFile = path.join(os.tmpdir(), `mail-print-${Date.now()}.html`);
+            
+            let printHtml = html;
+            if (!printHtml.includes('window.print()')) {
+                const autoPrintScript = '<script>window.onload = () => { setTimeout(() => window.print(), 500); }</script>';
+                if (printHtml.includes('</body>')) {
+                    printHtml = printHtml.replace('</body>', autoPrintScript + '</body>');
+                } else {
+                    printHtml += autoPrintScript;
+                }
+            }
+            
+            const uri = vscode.Uri.file(tmpFile);
+            await vscode.workspace.fs.writeFile(uri, Buffer.from(printHtml, 'utf8'));
+            
+            await vscode.env.openExternal(uri);
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Print open failed';
+            vscode.window.showErrorMessage(`Failed to open print dialog: ${errorMsg}`);
         }
     }
 
@@ -352,7 +381,67 @@ export class MessageDetailPanel {
             color: var(--vscode-descriptionForeground);
         }
         .error-msg { color: var(--vscode-errorForeground); }
-         .hidden { display: none; }
+         .hidden { display: none !important; }
+
+        /* Print Overlay */
+        #printOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--vscode-editor-background);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+        }
+        .print-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background: var(--vscode-editorWidget-background);
+            border-bottom: 1px solid var(--vscode-widget-border);
+        }
+        .print-toolbar button {
+            padding: 6px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid var(--vscode-button-border, transparent);
+            border-radius: 2px;
+            font-family: inherit;
+        }
+        #btnClosePrint {
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+        }
+        #btnClosePrint:hover {
+            background: var(--vscode-button-secondaryHoverBackground);
+        }
+        #btnConfirmPrint {
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #btnConfirmPrint svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: currentColor;
+        }
+        #btnConfirmPrint:hover {
+            background: var(--vscode-button-hoverBackground);
+        }
+        #printIframe {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
     </style>
 </head>
 <body>
@@ -366,6 +455,7 @@ export class MessageDetailPanel {
         <button class="action-btn danger hidden" id="btnDelete" title="Delete Permanently">❌ Delete</button>
         ${customButtonsHtml}
         <div style="flex: 1;"></div>
+        <button class="action-btn icon-only" id="btnPrint" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
         <button class="action-btn icon-only" id="btnForward" title="Forward"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"></path></svg></button>
         <button class="action-btn icon-only" id="btnReply" title="Reply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6L9 12L15 18"></path></svg></button>
         <button class="action-btn icon-only" id="btnReplyAll" title="Reply All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6L11 12L17 18"></path><path d="M10 6L4 12L10 18"></path></svg></button>
@@ -374,6 +464,17 @@ export class MessageDetailPanel {
     <div id="messageBody"></div>
 
     <div id="loadingIndicator" class="loading">Loading message...</div>
+
+    <div id="printOverlay" class="hidden">
+        <div class="print-toolbar">
+            <span style="color: var(--vscode-descriptionForeground); font-size: 13px; margin-right: auto; padding-left: 8px;">
+                The preview will open in your default web browser for printing.
+            </span>
+            <button id="btnClosePrint" style="margin-right: 8px;">Close</button>
+            <button id="btnConfirmPrint"><svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> PRINT</button>
+        </div>
+        <iframe id="printIframe" sandbox="allow-same-origin allow-scripts allow-popups allow-modals"></iframe>
+    </div>
 
     <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
@@ -386,6 +487,55 @@ export class MessageDetailPanel {
         const actionBar = document.getElementById('actionBar');
         const loadingEl = document.getElementById('loadingIndicator');
         let currentMessage = null;
+        let currentShowImages = false;
+
+        document.getElementById('btnPrint').addEventListener('click', showPrintPreview);
+        document.getElementById('btnClosePrint').addEventListener('click', () => {
+            document.getElementById('printOverlay').classList.add('hidden');
+        });
+        document.getElementById('btnConfirmPrint').addEventListener('click', () => {
+            const iframe = document.getElementById('printIframe');
+            if (iframe && iframe.srcdoc) {
+                vscode.postMessage({ type: 'print', html: iframe.srcdoc });
+            }
+        });
+
+        function showPrintPreview() {
+            if (!currentMessage) return;
+            const overlay = document.getElementById('printOverlay');
+            overlay.classList.remove('hidden');
+            
+            const iframe = document.getElementById('printIframe');
+            
+            let headersHtml = '<div style="font-family: sans-serif; padding: 16px 0 0 0; color: #000; font-size: 14px;">';
+            headersHtml += '<div style="margin-bottom: 4px;"><strong>From:</strong> ' + escapeHtml(currentMessage.fromDisplay) + '</div>';
+            headersHtml += '<div style="margin-bottom: 4px;"><strong>Date:</strong> ' + formatDate(currentMessage.date) + '</div>';
+            headersHtml += '<div style="margin-bottom: 4px;"><strong>To:</strong> ' + escapeHtml(currentMessage.toDisplay) + '</div>';
+            if (currentMessage.ccDisplay) {
+                headersHtml += '<div style="margin-bottom: 4px;"><strong>Cc:</strong> ' + escapeHtml(currentMessage.ccDisplay) + '</div>';
+            }
+            headersHtml += '<div style="margin-bottom: 4px;"><strong>Subject:</strong> ' + escapeHtml(currentMessage.subject || '(no subject)') + '</div>';
+            headersHtml += '<hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">';
+            headersHtml += '</div>';
+
+            const result = renderMessageContent(currentMessage, currentShowImages);
+            let rawBodyHtml = result.html;
+            
+            if (rawBodyHtml.match(/<body[^>]*>/i)) {
+                rawBodyHtml = rawBodyHtml.replace(/(<body[^>]*>)/i, '$1' + headersHtml);
+            } else {
+                rawBodyHtml = headersHtml + rawBodyHtml;
+            }
+            
+            const printStyle = '<style>@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }</style>';
+            if (rawBodyHtml.includes('</head>')) {
+                rawBodyHtml = rawBodyHtml.replace('</head>', printStyle + '</head>');
+            } else {
+                rawBodyHtml = printStyle + rawBodyHtml;
+            }
+            
+            iframe.srcdoc = rawBodyHtml;
+        }
 
         document.getElementById('btnReply').addEventListener('click', () => {
             vscode.postMessage({ type: 'reply' });
@@ -435,6 +585,7 @@ export class MessageDetailPanel {
 
         function renderMessageView(msg, showImages = false) {
              currentMessage = msg;
+             currentShowImages = showImages;
              loadingEl.classList.add('hidden');
              
              // Render everything into bodyEl (which is in the DOM, so getElementById works)

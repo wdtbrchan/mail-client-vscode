@@ -2,18 +2,20 @@
 
 ## [ upcoming ]
 
+### Added
+- **Print Functionality**: Added a print button to the message detail toolbar, allowing users to print emails. The print preview opens in the default system browser to bypass VS Code webview sandbox restrictions.
+
 ### Changed
 - **Message Detail UI**: Repositioned action bar under message headers for better flow.
 - **Improved Layout**: Folder actions (Archive, Spam, etc.) moved to the left, while Reply/Forward actions moved to the right in the detail view.
 - **Button Icons**: Replaced text labels with consistent SVG icons for Reply, Reply All, and Forward buttons in both message list and detail views.
 - **Message List**: Standardized button order (Forward, Reply, Reply All) to match the detail view and improved hover animations.
 - **Compose View**: Swapped Send and Discard buttons (Send is now on the right) for better ergonomics.
-- **Bug Fix**: Fixed "Show images" functionality to ensure the action bar remains visible after re-rendering.
 - **Improved Reply/Forward Headers**: Replaced simple "wrote:" line with a structured header (Separator, From, To, Date, Subject).
 - **Message Quoting**: Original message content is now properly indented in both sent emails and the compose preview.
 - **Compose UI Refinement**: Moved Send and Discard buttons to the top-right of the compose panel for better visibility.
 - **Modernized UI (Tiled Toolbars)**: Redesigned all action bars and toolbars (message list, detail view, compose panel) to use a "tiled" layout with seamless borders and a fixed 36px height.
-- **Visual Feedback**: Implemented a consistent, high-visibility orange hover effect (`#ff9800`) for all toolbar and action buttons.
+- **Visual Feedback**: Implemented a consistent, high-visibility orange hover effect for all toolbar and action buttons.
 - **Show Images Tweak**: The "Show images" warning bar now follows the tiled design pattern.
 - **Action Buttons**: Message list action buttons (Reply, Forward) are now part of a tiled container with the new orange highlight style.
 

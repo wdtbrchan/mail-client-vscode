@@ -9,6 +9,7 @@
 - [x] Support for attachments (uploading and downloading).
 - [x] Refactor message preview logic.
 - [x] Implement WYSIWYG editor for composing emails.
+- [x] Implement Print functionality.
 - [ ] Message searching.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
