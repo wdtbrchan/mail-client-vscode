@@ -3,6 +3,7 @@
 ## [ upcoming ]
 
 ### Changed
+- Updated roadmap in `TODO.md`.
 - Updated `README.md` with logo centering, refined logo and description, and updated feature list.
 - Synchronized `package-lock.json` with `package.json` license metadata.
 

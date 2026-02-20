@@ -15,7 +15,7 @@
 
 ## UI/UX
 - [ ] Add a draft indicator for messages.
-- [x] Improve message list appearance (avatars, flags).
+- [ ] Improve message list appearance.
 - [ ] Drag & Drop support (e.g., moving messages to folders).
 - [ ] Dark/Light mode fully integrated with VS Code themes.
 
