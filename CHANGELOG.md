@@ -3,9 +3,8 @@
 ## [ upcoming ]
 
 ### Changed
-- Refined extension logo.
+- Updated `README.md` with logo centering, refined logo and description, and updated feature list.
 - Synchronized `package-lock.json` with `package.json` license metadata.
-- Updated `README.md` with information about compatible editors (Cursor, Antigravity).
 
 ## [0.2.1]
 

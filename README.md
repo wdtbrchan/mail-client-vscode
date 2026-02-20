@@ -1,7 +1,8 @@
+<p align="center">
+  <img src="docs/logo.png" alt="Mail Client Logo" width="200" />
+</p>
+
 # Mail Client
-
-![Mail Client Logo](docs/logo.png)
-
 A simple and efficient IMAP email client directly within your VS Code (or any other compatible editor like Cursor or Antigravity).
 
 ## Features
