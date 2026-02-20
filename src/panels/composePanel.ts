@@ -566,43 +566,49 @@ export class ComposePanel {
         /* Action bar */
         .action-bar {
             display: flex;
-            gap: 8px;
-            padding: 10px 16px;
+            padding: 0;
             border-bottom: 1px solid var(--vscode-widget-border);
             background: var(--vscode-editorWidget-background);
             flex-shrink: 0;
             justify-content: flex-end;
+            height: 36px;
         }
         .btn-send {
-            padding: 8px 24px;
-            background: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
+            padding: 0 24px;
+            background: transparent;
+            color: var(--vscode-foreground);
             border: none;
-            border-radius: 4px;
+            border-left: 1px solid var(--vscode-widget-border);
+            border-radius: 0;
             cursor: pointer;
             font-weight: 600;
             font-family: inherit;
             font-size: inherit;
+            height: 100%;
         }
         .btn-send:hover {
-            background: var(--vscode-button-hoverBackground);
+            background: #ff9800 !important;
+            color: #ffffff !important;
         }
         .btn-send:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
         .btn-discard {
-            padding: 8px 16px;
-            background: var(--vscode-button-secondaryBackground);
-            color: var(--vscode-button-secondaryForeground);
+            padding: 0 16px;
+            background: transparent;
+            color: var(--vscode-foreground);
             border: none;
-            border-radius: 4px;
+            border-right: 1px solid var(--vscode-widget-border);
+            border-radius: 0;
             cursor: pointer;
             font-family: inherit;
             font-size: inherit;
+            height: 100%;
         }
         .btn-discard:hover {
-            background: var(--vscode-button-secondaryHoverBackground);
+            background: #e53935 !important;
+            color: #ffffff !important;
         }
         .status-text {
             flex: 1;

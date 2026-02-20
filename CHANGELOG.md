@@ -12,7 +12,10 @@
 - **Improved Reply/Forward Headers**: Replaced simple "wrote:" line with a structured header (Separator, From, To, Date, Subject).
 - **Message Quoting**: Original message content is now properly indented in both sent emails and the compose preview.
 - **Compose UI Refinement**: Moved Send and Discard buttons to the top-right of the compose panel for better visibility.
-- **Cleanup**: Removed legacy inline reply textarea from Message Detail view, ensuring all replies are handled through the dedicated Compose panel.
+- **Modernized UI (Tiled Toolbars)**: Redesigned all action bars and toolbars (message list, detail view, compose panel) to use a "tiled" layout with seamless borders and a fixed 36px height.
+- **Visual Feedback**: Implemented a consistent, high-visibility orange hover effect (`#ff9800`) for all toolbar and action buttons.
+- **Show Images Tweak**: The "Show images" warning bar now follows the tiled design pattern.
+- **Action Buttons**: Message list action buttons (Reply, Forward) are now part of a tiled container with the new orange highlight style.
 
 ## [0.2.2]
 

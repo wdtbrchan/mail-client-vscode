@@ -76,25 +76,30 @@ export function getSharedStyles(nonce: string): string {
             justify-content: space-between;
             background-color: var(--vscode-editor-inactiveSelectionBackground);
             color: var(--vscode-editor-foreground);
-            padding: 8px 12px;
+            padding: 0;
+            padding-left: 12px;
             margin-bottom: 16px;
             border-radius: 4px;
             font-size: 0.9em;
             border-left: 4px solid var(--vscode-notificationsWarningIcon-foreground);
             margin: 16px; 
+            overflow: hidden;
+            height: 36px;
         }
         .images-blocked-warning button {
-            background: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
+            background: transparent;
+            color: var(--vscode-foreground);
             border: none;
-            padding: 6px 14px;
-            border-radius: 2px;
+            border-left: 1px solid var(--vscode-widget-border);
+            padding: 0 14px;
+            border-radius: 0;
             cursor: pointer;
-            margin-left: 10px;
+            height: 100%;
             font-family: var(--vscode-font-family);
         }
         .images-blocked-warning button:hover {
-            background: var(--vscode-button-hoverBackground);
+            background: #ff9800 !important;
+            color: #ffffff !important;
         }
 
         /* For Compose Context - Quoted Header style overrides or additions if needed */

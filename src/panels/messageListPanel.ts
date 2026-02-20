@@ -208,37 +208,40 @@ export class MessageListPanel {
         .toolbar {
             display: flex;
             align-items: center;
-            padding: 8px 16px;
+            padding: 0;
             border-bottom: 1px solid var(--vscode-widget-border);
             background: var(--vscode-editorWidget-background);
             position: sticky;
             top: 0;
             z-index: 10;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            height: 36px;
         }
         .toolbar-title {
             font-weight: 600;
             flex: 1;
             font-size: 1.1em;
             letter-spacing: 0.5px;
+            padding: 0 16px;
         }
         .toolbar button {
-            background: var(--vscode-button-secondaryBackground);
-            color: var(--vscode-button-secondaryForeground);
+            background: transparent;
+            color: var(--vscode-foreground);
             border: none;
+            border-left: 1px solid var(--vscode-widget-border);
             cursor: pointer;
-            padding: 4px 10px;
-            border-radius: 4px;
+            padding: 0 12px;
+            border-radius: 0;
             font-size: 0.9em;
-            margin-left: 8px;
             display: flex;
             align-items: center;
             gap: 4px;
-            transition: opacity 0.2s;
+            height: 100%;
+            transition: none;
         }
         .toolbar button:hover {
-            opacity: 0.9;
-            background: var(--vscode-button-secondaryHoverBackground);
+            background: #ff9800 !important;
+            color: #ffffff !important;
         }
 
         /* Message List */
@@ -354,10 +357,15 @@ export class MessageListPanel {
         /* Actions */
         .message-actions {
             display: flex;
-            gap: 6px;
+            gap: 0;
             opacity: 0; /* Hidden by default */
             transition: opacity 0.2s;
             margin-left: 8px;
+            height: 36px;
+            border: 1px solid var(--vscode-widget-border);
+            border-radius: 4px;
+            overflow: hidden;
+            background: var(--vscode-editorWidget-background);
         }
         
         /* Show actions on hover */
@@ -366,18 +374,22 @@ export class MessageListPanel {
         }
         
         .action-btn {
-            background: var(--vscode-button-secondaryBackground);
-            border: 1px solid transparent;
+            background: transparent;
+            border: none;
+            border-right: 1px solid var(--vscode-widget-border);
             color: var(--vscode-foreground);
             cursor: pointer;
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
+            width: 36px;
+            height: 100%;
+            border-radius: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: none;
             padding: 0;
+        }
+        .action-btn:last-child {
+            border-right: none;
         }
         
         .action-btn svg {
@@ -387,9 +399,9 @@ export class MessageListPanel {
         }
         
         .action-btn:hover {
-            background-color: var(--vscode-button-hoverBackground);
-            color: var(--vscode-button-foreground);
-            transform: scale(1.05);
+            background-color: #ff9800 !important;
+            color: #ffffff !important;
+            transform: none;
         }
         
         .loading, .error-msg, .empty-msg {

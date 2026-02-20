@@ -296,23 +296,25 @@ export class MessageDetailPanel {
         /* Action toolbar */
         .action-bar {
             display: flex;
-            gap: 8px;
-            padding: 10px 16px;
+            padding: 0;
             border-bottom: 1px solid var(--vscode-widget-border);
             background: var(--vscode-editorWidget-background);
+            height: 36px;
         }
         .action-btn {
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 6px 14px;
+            padding: 0 16px;
             border: none;
-            border-radius: 4px;
-            background: var(--vscode-button-secondaryBackground);
-            color: var(--vscode-button-secondaryForeground);
+            border-right: 1px solid var(--vscode-widget-border);
+            border-radius: 0;
+            background: transparent;
+            color: var(--vscode-foreground);
             cursor: pointer;
             font-family: inherit;
             font-size: 0.9em;
+            height: 100%;
         }
         .action-btn svg {
             width: 18px;
@@ -320,25 +322,28 @@ export class MessageDetailPanel {
             fill: currentColor;
         }
         .action-btn.icon-only {
-            padding: 6px;
-            width: 32px;
-            height: 32px;
+            padding: 0;
+            width: 42px;
             justify-content: center;
+            border-left: 1px solid var(--vscode-widget-border);
+            border-right: none;
+        }
+        .action-bar > .action-btn:last-child {
+            border-right: none;
         }
         .action-btn:hover {
-            background: var(--vscode-button-secondaryHoverBackground);
+            background: #ff9800 !important;
+            color: #ffffff !important;
         }
         .action-btn.icon-only:hover {
-            background-color: var(--vscode-button-hoverBackground);
-            color: var(--vscode-button-foreground);
-            transform: scale(1.05);
+            transform: none;
         }
         .action-btn.danger {
-            background: var(--vscode-inputValidation-errorBackground);
             color: var(--vscode-errorForeground);
         }
         .action-btn.danger:hover {
-            opacity: 0.85;
+            background: #e53935 !important;
+            color: #ffffff !important;
         }
 
         .loading, .error-msg {
