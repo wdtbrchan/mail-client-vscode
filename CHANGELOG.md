@@ -3,6 +3,12 @@
 ## [ upcoming ]
 
 ### Changed
+- **Message Detail UI**: Repositioned action bar under message headers for better flow.
+- **Improved Layout**: Folder actions (Archive, Spam, etc.) moved to the left, while Reply/Forward actions moved to the right in the detail view.
+- **Button Icons**: Replaced text labels with consistent SVG icons for Reply, Reply All, and Forward buttons in both message list and detail views.
+- **Message List**: Standardized button order (Forward, Reply, Reply All) to match the detail view and improved hover animations.
+- **Compose View**: Swapped Send and Discard buttons (Send is now on the right) for better ergonomics.
+- **Bug Fix**: Fixed "Show images" functionality to ensure the action bar remains visible after re-rendering.
 - **Improved Reply/Forward Headers**: Replaced simple "wrote:" line with a structured header (Separator, From, To, Date, Subject).
 - **Message Quoting**: Original message content is now properly indented in both sent emails and the compose preview.
 - **Compose UI Refinement**: Moved Send and Discard buttons to the top-right of the compose panel for better visibility.

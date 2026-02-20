@@ -503,9 +503,9 @@ export class MessageListPanel {
                 
                 // Actions Right
                 html += '  <div class="message-actions">';
+                html += '    <button class="action-btn" data-action="forward" data-uid="' + msg.uid + '" title="Forward">' + ICON_FORWARD + '</button>';
                 html += '    <button class="action-btn" data-action="reply" data-uid="' + msg.uid + '" title="Reply">' + ICON_REPLY + '</button>';
                 html += '    <button class="action-btn" data-action="replyAll" data-uid="' + msg.uid + '" title="Reply All">' + ICON_REPLY_ALL + '</button>';
-                html += '    <button class="action-btn" data-action="forward" data-uid="' + msg.uid + '" title="Forward">' + ICON_FORWARD + '</button>';
                 html += '  </div>';
 
                 html += '</div>'; // End Item

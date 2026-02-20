@@ -747,9 +747,9 @@ export class ComposePanel {
     </div>
 
     <div class="action-bar">
+        <button class="btn-discard" id="btnDiscard">✕ Discard</button>
         <span class="status-text" id="statusText"></span>
         <button class="btn-send" id="btnSend">✉ Send</button>
-        <button class="btn-discard" id="btnDiscard">✕ Discard</button>
     </div>
 
     ${this.isWysiwyg ? `

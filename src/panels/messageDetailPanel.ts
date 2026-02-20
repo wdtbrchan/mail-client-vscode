@@ -300,9 +300,6 @@ export class MessageDetailPanel {
             padding: 10px 16px;
             border-bottom: 1px solid var(--vscode-widget-border);
             background: var(--vscode-editorWidget-background);
-            position: sticky;
-            top: 0;
-            z-index: 10;
         }
         .action-btn {
             display: flex;
@@ -317,8 +314,24 @@ export class MessageDetailPanel {
             font-family: inherit;
             font-size: 0.9em;
         }
+        .action-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        .action-btn.icon-only {
+            padding: 6px;
+            width: 32px;
+            height: 32px;
+            justify-content: center;
+        }
         .action-btn:hover {
             background: var(--vscode-button-secondaryHoverBackground);
+        }
+        .action-btn.icon-only:hover {
+            background-color: var(--vscode-button-hoverBackground);
+            color: var(--vscode-button-foreground);
+            transform: scale(1.05);
         }
         .action-btn.danger {
             background: var(--vscode-inputValidation-errorBackground);
@@ -334,26 +347,28 @@ export class MessageDetailPanel {
             color: var(--vscode-descriptionForeground);
         }
         .error-msg { color: var(--vscode-errorForeground); }
-        .hidden { display: none; }
+         .hidden { display: none; }
     </style>
 </head>
 <body>
-    <div class="action-bar">
-        <button class="action-btn" id="btnReply">↩ Reply</button>
-        <button class="action-btn" id="btnReplyAll">↩↩ Reply All</button>
-        <button class="action-btn" id="btnForward">↪ Forward</button>
-        <div style="flex: 1;"></div>
+    <div id="messageHeaders"></div>
+
+    <div class="action-bar hidden" id="actionBar">
         <button class="action-btn" id="btnArchive" title="Archive">📂 Archive</button>
         <button class="action-btn" id="btnSpam" title="Mark as Spam">⛔ Spam</button>
         <button class="action-btn" id="btnNewsletters" title="Move to Newsletters">📰 News</button>
         <button class="action-btn" id="btnTrash" title="Move to Trash">🗑 Trash</button>
         <button class="action-btn danger hidden" id="btnDelete" title="Delete Permanently">❌ Delete</button>
         ${customButtonsHtml}
+        <div style="flex: 1;"></div>
+        <button class="action-btn icon-only" id="btnForward" title="Forward"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"></path></svg></button>
+        <button class="action-btn icon-only" id="btnReply" title="Reply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6L9 12L15 18"></path></svg></button>
+        <button class="action-btn icon-only" id="btnReplyAll" title="Reply All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6L11 12L17 18"></path><path d="M10 6L4 12L10 18"></path></svg></button>
     </div>
 
-    <div id="content">
-        <div class="loading">Loading message...</div>
-    </div>
+    <div id="messageBody"></div>
+
+    <div id="loadingIndicator" class="loading">Loading message...</div>
 
     <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
@@ -361,7 +376,10 @@ export class MessageDetailPanel {
         
         const customFolders = ${JSON.stringify(customFolders)};
         console.log('Using locale:', userLocale);
-        const contentEl = document.getElementById('content');
+        const headersEl = document.getElementById('messageHeaders');
+        const bodyEl = document.getElementById('messageBody');
+        const actionBar = document.getElementById('actionBar');
+        const loadingEl = document.getElementById('loadingIndicator');
         let currentMessage = null;
 
         document.getElementById('btnReply').addEventListener('click', () => {
@@ -412,11 +430,23 @@ export class MessageDetailPanel {
 
         function renderMessageView(msg, showImages = false) {
              currentMessage = msg;
-             renderMessage(contentEl, msg, showImages, '_main');
+             loadingEl.classList.add('hidden');
              
+             // Render everything into bodyEl (which is in the DOM, so getElementById works)
+             renderMessage(bodyEl, msg, showImages, '_main');
+             
+             // Extract headers + attachments from bodyEl and move to headersEl
+             headersEl.innerHTML = '';
+             const headers = bodyEl.querySelector('.message-headers');
+             const attachments = bodyEl.querySelector('.attachments');
+             if (headers) headersEl.appendChild(headers);
+             if (attachments) headersEl.appendChild(attachments);
+             
+             // Show action bar
+             actionBar.classList.remove('hidden');
              
             // Re-bind listener for show images
-              contentEl.addEventListener('requestShowImages', (e) => {
+              bodyEl.addEventListener('requestShowImages', (e) => {
                 const message = e.detail.message;
                 renderMessageView(message, true);
               });
@@ -435,21 +465,26 @@ export class MessageDetailPanel {
             const msg = event.data;
             switch (msg.type) {
                 case 'loading':
-                    contentEl.innerHTML = '<div class="loading">Loading message...</div>';
+                    headersEl.innerHTML = '';
+                    bodyEl.innerHTML = '';
+                    actionBar.classList.add('hidden');
+                    loadingEl.classList.remove('hidden');
+                    loadingEl.textContent = 'Loading message...';
                     break;
                 case 'message':
                     console.log('Received message data', msg);
                     try {
                         currentMessage = msg.message;
-                        renderMessage(msg.message, false);
+                        renderMessageView(msg.message, false);
                         console.log('Message rendered successfully');
                     } catch (e) {
                         console.error('Render error', e);
-                        contentEl.innerHTML = '<div class="error-msg">Render Error: ' + (e instanceof Error ? e.message : String(e)) + '</div>';
+                        bodyEl.innerHTML = '<div class="error-msg">Render Error: ' + (e instanceof Error ? e.message : String(e)) + '</div>';
                     }
                     break;
                 case 'error':
-                    contentEl.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(msg.message) + '</div>';
+                    loadingEl.classList.add('hidden');
+                    bodyEl.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(msg.message) + '</div>';
                     break;
             }
         });
