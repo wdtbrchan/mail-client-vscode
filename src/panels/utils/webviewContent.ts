@@ -262,8 +262,10 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
          * @param {string} iframeNameUniqueSuffix A suffix for the iframe name/id to avoid collisions if multiple are present.
          * @returns {HTMLIFrameElement} The created iframe element.
          */
-        function renderMessage(container, msg, showImages = false, iframeNameUniqueSuffix = '') {
-            let html = '<div class="message-headers">';
+        function renderMessage(container, msg, showImages = false, iframeNameUniqueSuffix = '', skipHeaders = false) {
+            let html = '';
+            if (!skipHeaders) {
+            html += '<div class="message-headers">';
             html += '<div class="header-subject">' + escapeHtml(msg.subject) + '</div>';
             html += '<div class="header-row"><span class="header-label">From:</span><span class="header-value">' + escapeHtml(msg.fromDisplay) + '</span></div>';
             html += '<div class="header-row"><span class="header-label">To:</span><span class="header-value">' + escapeHtml(msg.toDisplay) + '</span></div>';
@@ -272,9 +274,10 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
             }
             html += '<div class="header-date">' + formatDate(msg.date) + '</div>';
             html += '</div>';
+            }
 
             // Attachments
-            if (msg.attachments && msg.attachments.length > 0) {
+            if (!skipHeaders && msg.attachments && msg.attachments.length > 0) {
                 html += '<div class="attachments">';
                 for (const att of msg.attachments) {
                     const safeName = escapeHtml(att.filename);

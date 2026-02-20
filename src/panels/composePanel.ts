@@ -347,11 +347,24 @@ export class ComposePanel {
         // For reply/forward, append quoted original message
         if (this.options.mode !== 'compose' && this.options.originalMessage) {
             const orig = this.options.originalMessage;
-            const quotedHeader = `<p style="color:#666;border-left:3px solid #ccc;padding-left:12px;margin-top:20px;">` +
-                `On ${orig.date.toLocaleDateString()} ${orig.date.toLocaleTimeString()}, ` +
-                `${orig.from.name || orig.from.address} wrote:</p>`;
+            const isForward = this.options.mode === 'forward';
+            const separatorLabel = isForward ? 'Přeposlaný e‑mail' : 'Původní e‑mail';
+            const fromDisplay = orig.from.name
+                ? `${orig.from.name} &lt;${orig.from.address}&gt;`
+                : orig.from.address;
+            const toDisplay = orig.to.map(t =>
+                t.name ? `${t.name} &lt;${t.address}&gt;` : t.address
+            ).join(', ');
+            const dateStr = orig.date.toLocaleDateString() + ' ' + orig.date.toLocaleTimeString();
+            const subjectStr = this.escapeHtml(orig.subject || '');
+
+            const separator = `<p style="margin-top:20px;">---------- ${separatorLabel} ----------<br>` +
+                `Od: ${fromDisplay}<br>` +
+                `Komu: ${toDisplay}<br>` +
+                `Datum: ${dateStr}<br>` +
+                `Předmět: ${subjectStr}</p>`;
             const quotedBody = orig.html || `<pre>${this.escapeHtml(orig.text || '')}</pre>`;
-            bodyHtml += `\n<blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#555;">\n${quotedHeader}\n${quotedBody}\n</blockquote>`;
+            bodyHtml += `\n${separator}\n<blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#555;">\n${quotedBody}\n</blockquote>`;
         }
 
         const fromAddress = account.smtpUsername || account.username;
@@ -745,8 +758,8 @@ export class ComposePanel {
         <button class="switch-mode-link" id="switchToMd">Switch to Markdown editor mode</button>
 
         <div id="original-message-container" class="quoted-message-container hidden">
-            <div class="quoted-message-title">Original Message</div>
-            <div id="original-message-content"></div>
+            <div id="original-message-header" class="quoted-message-title"></div>
+            <div id="original-message-content" style="border-left:3px solid var(--vscode-editorWidget-border);padding-left:12px;"></div>
         </div>
     </div>
     ` : `
@@ -757,8 +770,8 @@ export class ComposePanel {
         </div>
         
         <div id="original-message-container" class="quoted-message-container hidden">
-            <div class="quoted-message-title">Original Message</div>
-            <div id="original-message-content"></div>
+            <div id="original-message-header" class="quoted-message-title"></div>
+            <div id="original-message-content" style="border-left:3px solid var(--vscode-editorWidget-border);padding-left:12px;"></div>
         </div>
     </div>
     `}
@@ -863,14 +876,24 @@ export class ComposePanel {
                 case 'originalMessage':
                     if (msg.message) {
                         originalMessageContainer.classList.remove('hidden');
-                        // Use the shared renderMessage function
-                        // We render into #original-message-content
-                        // Pass a unique suffix for potential ID collisions if we had multiple
-                        renderMessage(originalMessageContent, msg.message, false, '_orig');
+                        // Build the header
+                        const om = msg.message;
+                        const mode = '${this.options.mode}';
+                        const sepLabel = mode === 'forward' ? 'Přeposlaný e\u2011mail' : 'Původní e\u2011mail';
+                        const dateObj = new Date(om.date);
+                        const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString();
+                        const headerEl = document.getElementById('original-message-header');
+                        headerEl.innerHTML = '---------- ' + sepLabel + ' ----------<br>' +
+                            'Od: ' + (om.fromDisplay || '') + '<br>' +
+                            'Komu: ' + (om.toDisplay || '') + '<br>' +
+                            'Datum: ' + dateStr + '<br>' +
+                            'Předmět: ' + (om.subject || '');
+                        // Render original message content indented (skipHeaders=true to avoid duplicate header)
+                        renderMessage(originalMessageContent, msg.message, false, '_orig', true);
                         
                         originalMessageContent.addEventListener('requestShowImages', (e) => {
                             const message = e.detail.message;
-                            renderMessage(originalMessageContent, message, true, '_orig');
+                            renderMessage(originalMessageContent, message, true, '_orig', true);
                         });
                     }
                     break;

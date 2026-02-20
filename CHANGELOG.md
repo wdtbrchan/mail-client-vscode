@@ -1,5 +1,11 @@
 # Changelog
 
+## [ upcoming ]
+
+### Changed
+- **Improved Reply/Forward Headers**: Replaced simple "wrote:" line with a structured header (Separator, From, To, Date, Subject).
+- **Message Quoting**: Original message content is now properly indented in both sent emails and the compose preview.
+
 ## [0.2.2]
 
 ### Changed
