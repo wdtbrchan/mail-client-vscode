@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.2.2]
 
 ### Changed
 - Updated roadmap in `TODO.md`.
