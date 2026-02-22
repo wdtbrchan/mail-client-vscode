@@ -4,6 +4,7 @@
 
 ### Added
 - **Auto-focus**: The message body now automatically receives focus when opening the compose panel for a new message, reply, or forward. This works in both WYSIWYG and Markdown modes.
+- **Markdown Preview Label**: Styled the "Preview" heading in Markdown mode as a subtle grey corner badge to distinguish it from message content.
 
 ## [0.3.0]
 

@@ -542,13 +542,18 @@ export class ComposePanel {
             padding: 16px;
             background: #ffffff;
             color: #000000;
+            position: relative;
         }
         .preview-label {
-            font-size: 0.85em;
-            color: #666666;
-            margin-bottom: 8px;
-            text-transform: uppercase;
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #888888;
+            color: #ffffff;
+            padding: 4px 8px;
+            font-size: 0.75em;
             letter-spacing: 0.5px;
+            border-bottom-left-radius: 4px;
         }
         .preview-content {
             line-height: 1.6;

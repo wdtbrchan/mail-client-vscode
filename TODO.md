@@ -17,6 +17,7 @@
 ## UI/UX
 - [ ] Add a draft indicator for messages.
 - [x] Improve message list appearance (implemented tiled list actions and orange hover).
+- [x] Style Markdown preview label as a corner badge.
 - [ ] Drag & Drop support (e.g., moving messages to folders).
 - [ ] Dark/Light mode fully integrated with VS Code themes.
 
