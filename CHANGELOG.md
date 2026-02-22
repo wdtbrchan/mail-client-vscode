@@ -13,11 +13,8 @@
 - **WYSIWYG Toolbar Redesign**: Moved formatting buttons from the editor body to the top action bar for a cleaner, shared interface with Send/Discard actions.
 - **Improved UI Elements**: Buttons in the compose panel now use consistent icons with tooltips.
 - **Compose Button Visibility**: The "Send" button is now larger and more prominent for better usability.
-- **Indent Styling Fix**: Modified CSS to ensure indenting text doesn't inadvertently change the background color or apply quote styling.
+- **WYSIWYG Rendering Fix**: The original message is now displayed in an isolated iframe below the WYSIWYG editor instead of being part of the editable content. This ensures the original email's dark/light mode styling is preserved and prevents background color conflicts while composing.
 - **Signature Styling**: Removed the automatically added horizontal line (`---`) before the signature in Markdown mode.
-
-
-### Changed
 - **Message Detail UI**: Repositioned action bar under message headers for better flow.
 - **Improved Layout**: Folder actions (Archive, Spam, etc.) moved to the left, while Reply/Forward actions moved to the right in the detail view.
 - **Button Icons**: Replaced text labels with consistent SVG icons for Reply, Reply All, and Forward buttons in both message list and detail views.

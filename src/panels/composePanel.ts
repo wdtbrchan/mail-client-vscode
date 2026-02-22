@@ -366,8 +366,8 @@ export class ComposePanel {
             bodyHtml = await marked.parse(this.currentMarkdown);
         }
 
-        // For reply/forward, append quoted original message (only in Markdown mode, since WYSIWYG has it inline)
-        if (!this.isWysiwyg && this.options.mode !== 'compose' && this.options.originalMessage) {
+        // For reply/forward, append quoted original message in both Markdown and WYSIWYG modes
+        if (this.options.mode !== 'compose' && this.options.originalMessage) {
             const orig = this.options.originalMessage;
             const isForward = this.options.mode === 'forward';
             const separatorLabel = isForward ? 'Přeposlaný e‑mail' : 'Původní e‑mail';
@@ -453,28 +453,6 @@ export class ComposePanel {
 
         const sig = this.options.account.signature || '';
         let initialWysiwygHtml = sig ? `<br><br><div class="signature">${sig}</div>` : '<br><br>';
-
-        if (this.options.mode !== 'compose' && this.options.originalMessage) {
-            const orig = this.options.originalMessage;
-            const isForward = this.options.mode === 'forward';
-            const separatorLabel = isForward ? 'Přeposlaný e‑mail' : 'Původní e‑mail';
-            const fromDisplay = orig.from.name
-                ? `${this.escapeHtml(orig.from.name)} &lt;${this.escapeHtml(orig.from.address)}&gt;`
-                : this.escapeHtml(orig.from.address);
-            const toDisplay = orig.to.map(t =>
-                t.name ? `${this.escapeHtml(t.name)} &lt;${this.escapeHtml(t.address)}&gt;` : this.escapeHtml(t.address)
-            ).join(', ');
-            const dateStr = orig.date.toLocaleDateString() + ' ' + orig.date.toLocaleTimeString();
-            const subjectStr = this.escapeHtml(orig.subject || '');
-
-            const separator = `<p style="margin-top:20px;">---------- ${separatorLabel} ----------<br>` +
-                `Od: ${fromDisplay}<br>` +
-                `Komu: ${toDisplay}<br>` +
-                `Datum: ${dateStr}<br>` +
-                `Předmět: ${subjectStr}</p>`;
-            const quotedBody = orig.html || `<pre>${this.escapeHtml(orig.text || '')}</pre>`;
-            initialWysiwygHtml += `\n${separator}\n<div>\n${quotedBody}\n</div>`;
-        }
 
         return /* html */ `<!DOCTYPE html>
 <html lang="en">
@@ -864,23 +842,21 @@ export class ComposePanel {
         </div>
     </div>
 
-    ${this.isWysiwyg ? `
-    <div class="preview-area is-wysiwyg">
+    <div class="preview-area ${this.isWysiwyg ? 'is-wysiwyg' : ''}">
+        ${this.isWysiwyg ? `
         <div class="wysiwyg-editor" contenteditable="true" id="wysiwygEditor">${initialWysiwygHtml}</div>
-    </div>
-    ` : `
-    <div class="preview-area">
+        ` : `
         <div class="preview-label">Preview</div>
         <div class="preview-content" id="previewContent">
             <p class="preview-empty">Start typing in the editor to see a preview…</p>
         </div>
+        `}
         
         <div id="original-message-container" class="quoted-message-container hidden">
             <div id="original-message-header" class="quoted-message-title"></div>
             <div id="original-message-content"></div>
         </div>
     </div>
-    `}
 
     <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
