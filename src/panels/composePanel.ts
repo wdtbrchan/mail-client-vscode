@@ -134,7 +134,12 @@ export class ComposePanel {
             fs.writeFileSync(tempFile, initialContent, 'utf8');
 
             const doc = await vscode.workspace.openTextDocument(tempFile);
-            await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+            const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+            
+            // Focus at the top of the message
+            const pos = new vscode.Position(0, 0);
+            editor.selection = new vscode.Selection(pos, pos);
+            editor.revealRange(new vscode.Range(pos, pos));
         }
 
         // Create the compose webview panel
@@ -142,7 +147,7 @@ export class ComposePanel {
         const panel = vscode.window.createWebviewPanel(
             ComposePanel.viewType,
             title,
-            isWysiwyg ? vscode.ViewColumn.One : vscode.ViewColumn.Two,
+            isWysiwyg ? vscode.ViewColumn.One : { viewColumn: vscode.ViewColumn.Two, preserveFocus: true },
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
@@ -874,6 +879,20 @@ export class ComposePanel {
         const attachmentList = document.getElementById('attachmentList');
         const originalMessageContainer = document.getElementById('original-message-container');
         const originalMessageContent = document.getElementById('original-message-content');
+
+        // Initial focus on message body
+        if (isWysiwyg && wysiwygEditor) {
+            wysiwygEditor.focus();
+            // Move cursor to start
+            const range = document.createRange();
+            const sel = window.getSelection();
+            if (sel) {
+                range.setStart(wysiwygEditor, 0);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+        }
 
         // Attachments
         document.getElementById('btnAddAttachment').addEventListener('click', () => {

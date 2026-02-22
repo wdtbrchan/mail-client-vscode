@@ -1,5 +1,10 @@
 # Changelog
 
+## [ upcoming ]
+
+### Added
+- **Auto-focus**: The message body now automatically receives focus when opening the compose panel for a new message, reply, or forward. This works in both WYSIWYG and Markdown modes.
+
 ## [0.3.0]
 
 ### Added
