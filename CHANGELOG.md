@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.3.0]
 
 ### Added
 - **Print Functionality**: Added a print button to the message detail toolbar, allowing users to print emails. The print preview opens in the default system browser to bypass VS Code webview sandbox restrictions.
