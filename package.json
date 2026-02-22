@@ -3,7 +3,7 @@
   "displayName": "Mail Client",
   "description": "IMAP email client for VS Code",
   "icon": "docs/logo.png",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "publisher": "wdtbrchan",
   "license": "Apache-2.0",
   "repository": {
