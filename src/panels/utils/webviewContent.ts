@@ -108,10 +108,9 @@ export function getSharedStyles(nonce: string): string {
              border-top: 2px solid var(--vscode-widget-border);
         }
         .quoted-message-title {
-            padding: 10px 16px;
-            font-weight: bold;
-            color: var(--vscode-descriptionForeground);
-            background: var(--vscode-editorWidget-background);
+            padding: 16px 0 10px 0;
+            color: #000000;
+            background: transparent;
         }
     `;
 }

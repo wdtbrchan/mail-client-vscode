@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext): void {
     // Open extension settings command
     context.subscriptions.push(
         vscode.commands.registerCommand('mailClient.openSettings', () => {
-            vscode.commands.executeCommand('workbench.action.openSettings', '@ext:janbr.mail-client-vscode');
+            vscode.commands.executeCommand('workbench.action.openSettings', '@ext:wdtbrchan.mail-client-vscode');
         }),
     );
 

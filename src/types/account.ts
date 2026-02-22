@@ -44,5 +44,11 @@ export interface IMailAccount {
 
     /** Custom folder mappings */
     customFolders?: { name: string; path: string }[];
+
+    /** Email signature (HTML or plain text) */
+    signature?: string;
+
+    /** Email signature (Markdown) */
+    markdownSignature?: string;
 }
 

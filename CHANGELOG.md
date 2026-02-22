@@ -4,6 +4,16 @@
 
 ### Added
 - **Print Functionality**: Added a print button to the message detail toolbar, allowing users to print emails. The print preview opens in the default system browser to bypass VS Code webview sandbox restrictions.
+- **Enhanced WYSIWYG Formatting**: Added more formatting options to the WYSIWYG editor, including strikethrough, indent/outdent, blockquote, monospace font, and a "clear formatting" tool.
+- **WYSIWYG Monospace Toggle**: The monospace button now toggles the font between monospace and the default UI font.
+- **Cross-mode Switching**: Added a "Switch to WYSIWYG mode" link to the Markdown editor for easier transitions between editing modes.
+- **Email Signatures**: Added support for both HTML/Rich Text and Markdown signatures in account settings.
+
+### Changed
+- **WYSIWYG Toolbar Redesign**: Moved formatting buttons from the editor body to the top action bar for a cleaner, shared interface with Send/Discard actions.
+- **Improved UI Elements**: Buttons in the compose panel now use consistent icons with tooltips.
+- **Compose Button Visibility**: The "Send" button is now larger and more prominent for better usability.
+- **Indent Styling Fix**: Modified CSS to ensure indenting text doesn't inadvertently change the background color or apply quote styling.
 
 ### Changed
 - **Message Detail UI**: Repositioned action bar under message headers for better flow.

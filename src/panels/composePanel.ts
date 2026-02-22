@@ -123,8 +123,13 @@ export class ComposePanel {
             tempFile = path.join(tmpDir, `compose-${Date.now()}.md`);
 
             let initialContent = '';
+            if (!isWysiwyg && options.account.markdownSignature) {
+                initialContent = '\n\n---\n' + options.account.markdownSignature;
+            } else if (options.account.signature) {
+                initialContent = '\n\n---\n' + options.account.signature;
+            }
             if (options.mode === 'forward' && options.originalMessage) {
-                initialContent = '\n\n';
+                initialContent = '\n\n' + initialContent;
             }
             fs.writeFileSync(tempFile, initialContent, 'utf8');
 
@@ -240,6 +245,9 @@ export class ComposePanel {
             case 'switchToMarkdown':
                 await this.switchToMarkdownMode();
                 break;
+            case 'switchToWysiwyg':
+                await this.switchToWysiwygMode();
+                break;
         }
     }
 
@@ -328,6 +336,20 @@ export class ComposePanel {
         await ComposePanel.open(this.accountManager, options);
     }
 
+    /**
+     * Switches from Markdown to WYSIWYG mode.
+     * Updates the setting and reopens the compose panel.
+     */
+    private async switchToWysiwygMode(): Promise<void> {
+        const config = vscode.workspace.getConfiguration('mailClient');
+        await config.update('composeMode', 'wysiwyg', vscode.ConfigurationTarget.Global);
+        
+        // Reopen with same options in WYSIWYG mode
+        const options = this.options;
+        this.panel.dispose();
+        await ComposePanel.open(this.accountManager, options);
+    }
+
     private async doSend(
         account: IMailAccount,
         password: string,
@@ -344,8 +366,8 @@ export class ComposePanel {
             bodyHtml = await marked.parse(this.currentMarkdown);
         }
 
-        // For reply/forward, append quoted original message
-        if (this.options.mode !== 'compose' && this.options.originalMessage) {
+        // For reply/forward, append quoted original message (only in Markdown mode, since WYSIWYG has it inline)
+        if (!this.isWysiwyg && this.options.mode !== 'compose' && this.options.originalMessage) {
             const orig = this.options.originalMessage;
             const isForward = this.options.mode === 'forward';
             const separatorLabel = isForward ? 'Přeposlaný e‑mail' : 'Původní e‑mail';
@@ -364,7 +386,7 @@ export class ComposePanel {
                 `Datum: ${dateStr}<br>` +
                 `Předmět: ${subjectStr}</p>`;
             const quotedBody = orig.html || `<pre>${this.escapeHtml(orig.text || '')}</pre>`;
-            bodyHtml += `\n${separator}\n<blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#555;">\n${quotedBody}\n</blockquote>`;
+            bodyHtml += `\n${separator}\n<div>\n${quotedBody}\n</div>`;
         }
 
         const fromAddress = account.smtpUsername || account.username;
@@ -428,6 +450,31 @@ export class ComposePanel {
 
         const sharedStyles = getSharedStyles(nonce);
         const sharedScripts = getSharedScripts(nonce, locale);
+
+        const sig = this.options.account.signature || '';
+        let initialWysiwygHtml = sig ? `<br><br><div class="signature">${sig}</div>` : '<br><br>';
+
+        if (this.options.mode !== 'compose' && this.options.originalMessage) {
+            const orig = this.options.originalMessage;
+            const isForward = this.options.mode === 'forward';
+            const separatorLabel = isForward ? 'Přeposlaný e‑mail' : 'Původní e‑mail';
+            const fromDisplay = orig.from.name
+                ? `${this.escapeHtml(orig.from.name)} &lt;${this.escapeHtml(orig.from.address)}&gt;`
+                : this.escapeHtml(orig.from.address);
+            const toDisplay = orig.to.map(t =>
+                t.name ? `${this.escapeHtml(t.name)} &lt;${this.escapeHtml(t.address)}&gt;` : this.escapeHtml(t.address)
+            ).join(', ');
+            const dateStr = orig.date.toLocaleDateString() + ' ' + orig.date.toLocaleTimeString();
+            const subjectStr = this.escapeHtml(orig.subject || '');
+
+            const separator = `<p style="margin-top:20px;">---------- ${separatorLabel} ----------<br>` +
+                `Od: ${fromDisplay}<br>` +
+                `Komu: ${toDisplay}<br>` +
+                `Datum: ${dateStr}<br>` +
+                `Předmět: ${subjectStr}</p>`;
+            const quotedBody = orig.html || `<pre>${this.escapeHtml(orig.text || '')}</pre>`;
+            initialWysiwygHtml += `\n${separator}\n<div>\n${quotedBody}\n</div>`;
+        }
 
         return /* html */ `<!DOCTYPE html>
 <html lang="en">
@@ -506,15 +553,16 @@ export class ComposePanel {
             flex-shrink: 0;
         }
 
-        /* Preview area */
         .preview-area {
             flex: 1;
             overflow-y: auto;
             padding: 16px;
+            background: #ffffff;
+            color: #000000;
         }
         .preview-label {
             font-size: 0.85em;
-            color: var(--vscode-descriptionForeground);
+            color: #666666;
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -529,14 +577,14 @@ export class ComposePanel {
         .preview-content p { margin: 6px 0; }
         .preview-content ul, .preview-content ol { margin: 6px 0; padding-left: 24px; }
         .preview-content code {
-            background: var(--vscode-textCodeBlock-background);
+            background: #f0f0f0;
             padding: 2px 5px;
             border-radius: 3px;
             font-family: var(--vscode-editor-font-family);
             font-size: 0.9em;
         }
         .preview-content pre {
-            background: var(--vscode-textCodeBlock-background);
+            background: #f0f0f0;
             padding: 10px;
             border-radius: 4px;
             overflow-x: auto;
@@ -547,19 +595,19 @@ export class ComposePanel {
             padding: 0;
         }
         .preview-content blockquote {
-            border-left: 3px solid var(--vscode-editorWidget-border);
+            border-left: 3px solid #cccccc;
             padding-left: 12px;
-            color: var(--vscode-descriptionForeground);
+            color: #555555;
             margin: 8px 0;
         }
         .preview-content a {
-            color: var(--vscode-textLink-foreground);
+            color: #005fb8;
         }
         .preview-content img {
             max-width: 100%;
         }
         .preview-empty {
-            color: var(--vscode-descriptionForeground);
+            color: #888888;
             font-style: italic;
         }
 
@@ -570,21 +618,35 @@ export class ComposePanel {
             border-bottom: 1px solid var(--vscode-widget-border);
             background: var(--vscode-editorWidget-background);
             flex-shrink: 0;
-            justify-content: flex-end;
-            height: 36px;
+            align-items: center;
+            height: 48px;
+        }
+        .action-bar-left {
+            display: flex;
+            height: 100%;
+            align-items: center;
+        }
+        .action-bar-right {
+            display: flex;
+            height: 100%;
+            margin-left: auto;
+            align-items: center;
         }
         .btn-send {
-            padding: 0 24px;
-            background: transparent;
-            color: var(--vscode-foreground);
+            padding: 0 40px;
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
             border: none;
             border-left: 1px solid var(--vscode-widget-border);
             border-radius: 0;
             cursor: pointer;
-            font-weight: 600;
+            font-weight: bold;
             font-family: inherit;
-            font-size: inherit;
+            font-size: 1.1em;
             height: 100%;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: background 0.2s;
         }
         .btn-send:hover {
             background: #ff9800 !important;
@@ -595,7 +657,7 @@ export class ComposePanel {
             cursor: not-allowed;
         }
         .btn-discard {
-            padding: 0 16px;
+            padding: 0 20px;
             background: transparent;
             color: var(--vscode-foreground);
             border: none;
@@ -603,17 +665,16 @@ export class ComposePanel {
             border-radius: 0;
             cursor: pointer;
             font-family: inherit;
-            font-size: inherit;
+            font-size: 1em;
             height: 100%;
+            transition: background 0.2s;
         }
         .btn-discard:hover {
             background: #e53935 !important;
             color: #ffffff !important;
         }
         .status-text {
-            flex: 1;
-            display: flex;
-            align-items: center;
+            padding: 0 16px;
             font-size: 0.9em;
             color: var(--vscode-descriptionForeground);
         }
@@ -662,36 +723,54 @@ export class ComposePanel {
         /* WYSIWYG editor */
         .wysiwyg-toolbar {
             display: flex;
+            align-items: center;
+            padding: 0 16px;
+            height: 100%;
+        }
+        .format-group {
+            display: flex;
             gap: 4px;
-            padding: 6px 8px;
-            border: 1px solid var(--vscode-input-border);
-            border-bottom: none;
-            border-radius: 4px 4px 0 0;
-            background: var(--vscode-editorWidget-background);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .format-divider {
+            width: 1px;
+            height: 16px;
+            background: var(--vscode-widget-border);
+            margin: 0 4px;
         }
         .format-btn {
-            background: none;
+            background: transparent;
             border: none;
-            color: var(--vscode-foreground);
+            color: var(--vscode-icon-foreground);
             cursor: pointer;
             padding: 4px 8px;
             border-radius: 3px;
-            font-size: 0.9em;
+            font-size: 1.1em;
             font-weight: 600;
         }
         .format-btn:hover {
             background: var(--vscode-toolbar-hoverBackground);
+            color: var(--vscode-icon-foreground);
         }
         .wysiwyg-editor {
             min-height: 200px;
-            padding: 10px;
-            border: 1px solid var(--vscode-input-border);
-            border-radius: 0 0 4px 4px;
-            background: #ffffff;
-            color: #000000;
+            padding: 6px;
+            background: transparent;
+            color: inherit;
             outline: none;
             line-height: 1.5;
-            overflow-y: auto;
+        }
+        .wysiwyg-editor blockquote {
+            background: transparent !important;
+            color: inherit !important;
+            border-left: 3px solid #cccccc;
+            padding-left: 12px;
+            margin: 8px 0;
+        }
+        .wysiwyg-editor blockquote[style*="margin"] {
+            border-left: none !important;
+            padding-left: 0 !important;
         }
         .wysiwyg-editor ul, .wysiwyg-editor ol {
             padding-left: 24px;
@@ -701,20 +780,17 @@ export class ComposePanel {
             border-color: var(--vscode-focusBorder);
         }
         .switch-mode-link {
-            display: block;
-            margin-top: 6px;
-            font-size: 0.8em;
+            font-size: 0.85em;
             color: var(--vscode-descriptionForeground);
             cursor: pointer;
             background: none;
             border: none;
             font-family: inherit;
-            padding: 0;
-            text-align: left;
+            padding: 0 8px;
         }
         .switch-mode-link:hover {
-            color: var(--vscode-textLink-foreground);
             text-decoration: underline;
+            color: var(--vscode-foreground);
         }
     </style>
 </head>
@@ -753,27 +829,44 @@ export class ComposePanel {
     </div>
 
     <div class="action-bar">
-        <button class="btn-discard" id="btnDiscard">✕ Discard</button>
-        <span class="status-text" id="statusText"></span>
-        <button class="btn-send" id="btnSend">✉ Send</button>
+        <div class="action-bar-left">
+            <button class="btn-discard" id="btnDiscard">✕ Discard</button>
+            ${this.isWysiwyg ? `
+                <div class="wysiwyg-toolbar">
+                    <div class="format-group">
+                        <button class="format-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                        <button class="format-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                        <button class="format-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                        <button class="format-btn" data-cmd="strikethrough" title="Strikethrough"><s>S</s></button>
+                        <div class="format-divider"></div>
+                        <button class="format-btn" data-cmd="insertUnorderedList" title="Bullet List">•</button>
+                        <button class="format-btn" data-cmd="insertOrderedList" title="Numbered List">1.</button>
+                        <div class="format-divider"></div>
+                        <button class="format-btn" data-cmd="outdent" title="Decrease Indent">⇤</button>
+                        <button class="format-btn" data-cmd="indent" title="Increase Indent">⇥</button>
+                        <div class="format-divider"></div>
+                        <button class="format-btn" data-cmd="formatBlock" data-val="BLOCKQUOTE" title="Quote">❞</button>
+                        <div class="format-divider"></div>
+                        <button class="format-btn" data-cmd="fontName" data-val="monospace" title="Monospace Font" style="font-family: monospace;">&lt;/&gt;</button>
+                        <button class="format-btn" data-cmd="removeFormat" title="Clear Formatting">⌫</button>
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+        <div class="action-bar-right">
+            ${this.isWysiwyg ? `
+                <button class="switch-mode-link" id="switchToMd" style="margin-right: 16px;">Switch to Markdown mode</button>
+            ` : `
+                <button class="switch-mode-link" id="switchToWysiwyg" style="margin-right: 16px;">Switch to WYSIWYG mode</button>
+            `}
+            <span class="status-text" id="statusText"></span>
+            <button class="btn-send" id="btnSend">✉ Send</button>
+        </div>
     </div>
 
     ${this.isWysiwyg ? `
-    <div class="preview-area">
-        <div class="wysiwyg-toolbar">
-            <button class="format-btn" data-cmd="bold" title="Bold"><b>B</b></button>
-            <button class="format-btn" data-cmd="italic" title="Italic"><i>I</i></button>
-            <button class="format-btn" data-cmd="underline" title="Underline"><u>U</u></button>
-            <button class="format-btn" data-cmd="insertUnorderedList" title="Bullet List">• List</button>
-            <button class="format-btn" data-cmd="insertOrderedList" title="Numbered List">1. List</button>
-        </div>
-        <div class="wysiwyg-editor" contenteditable="true" id="wysiwygEditor"></div>
-        <button class="switch-mode-link" id="switchToMd">Switch to Markdown editor mode</button>
-
-        <div id="original-message-container" class="quoted-message-container hidden">
-            <div id="original-message-header" class="quoted-message-title"></div>
-            <div id="original-message-content" style="border-left:3px solid var(--vscode-editorWidget-border);padding-left:12px;"></div>
-        </div>
+    <div class="preview-area is-wysiwyg">
+        <div class="wysiwyg-editor" contenteditable="true" id="wysiwygEditor">${initialWysiwygHtml}</div>
     </div>
     ` : `
     <div class="preview-area">
@@ -784,7 +877,7 @@ export class ComposePanel {
         
         <div id="original-message-container" class="quoted-message-container hidden">
             <div id="original-message-header" class="quoted-message-title"></div>
-            <div id="original-message-content" style="border-left:3px solid var(--vscode-editorWidget-border);padding-left:12px;"></div>
+            <div id="original-message-content"></div>
         </div>
     </div>
     `}
@@ -826,7 +919,18 @@ export class ComposePanel {
         if (isWysiwyg) {
             document.querySelectorAll('.format-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    document.execCommand(btn.dataset.cmd, false, null);
+                    let cmd = btn.dataset.cmd;
+                    let val = btn.dataset.val || null;
+                    
+                    if (cmd === 'fontName' && val === 'monospace') {
+                        const currentFont = document.queryCommandValue('fontName');
+                        if (currentFont && currentFont.toLowerCase().includes('monospace')) {
+                            // Toggle off monospace by setting to inherit fallback
+                            val = 'inherit';
+                        }
+                    }
+                    
+                    document.execCommand(cmd, false, val);
                     wysiwygEditor.focus();
                 });
             });
@@ -834,6 +938,11 @@ export class ComposePanel {
             // Switch to Markdown mode
             document.getElementById('switchToMd').addEventListener('click', () => {
                 vscode.postMessage({ type: 'switchToMarkdown' });
+            });
+        } else {
+            // Switch to WYSIWYG mode
+            document.getElementById('switchToWysiwyg').addEventListener('click', () => {
+                vscode.postMessage({ type: 'switchToWysiwyg' });
             });
         }
 

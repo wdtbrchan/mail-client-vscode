@@ -126,6 +126,8 @@ export class AccountSettingsPanel {
                 archiveFolder: data.archiveFolder || 'Archive',
                 newslettersFolder: data.newslettersFolder || 'Newsletters',
                 customFolders: data.customFolders || [],
+                signature: data.signature || undefined,
+                markdownSignature: data.markdownSignature || undefined,
             };
 
             const smtpPassword = data.smtpPassword || undefined;
@@ -386,6 +388,64 @@ export class AccountSettingsPanel {
             color: var(--vscode-foreground);
             opacity: 0.85;
         }
+        .wysiwyg-toolbar {
+            display: flex;
+            gap: 4px;
+            padding: 6px 8px;
+            border: 1px solid var(--vscode-input-border);
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            background: var(--vscode-editorWidget-background);
+        }
+        .format-btn {
+            background: none;
+            border: none;
+            color: var(--vscode-foreground);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .format-btn:hover {
+            background: var(--vscode-toolbar-hoverBackground);
+        }
+        .wysiwyg-editor {
+            min-height: 120px;
+            padding: 10px;
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 0 0 4px 4px;
+            background: #ffffff;
+            color: #000000;
+            outline: none;
+            line-height: 1.5;
+            overflow-y: auto;
+        }
+        .markdown-editor {
+            width: 100%;
+            min-height: 200px;
+            font-family: var(--vscode-editor-font-family);
+            font-size: var(--vscode-editor-font-size);
+            padding: 10px;
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 3px;
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            outline: none;
+            resize: vertical;
+            box-sizing: border-box;
+            line-height: 1.5;
+        }
+        .markdown-editor:focus {
+            border-color: var(--vscode-focusBorder);
+        }
+        .wysiwyg-editor ul, .wysiwyg-editor ol {
+            padding-left: 24px;
+            margin: 6px 0;
+        }
+        .wysiwyg-editor:focus {
+            border-color: var(--vscode-focusBorder);
+        }
     </style>
 </head>
 <body>
@@ -501,6 +561,24 @@ export class AccountSettingsPanel {
             <button class="btn-secondary" id="btnAddCustomFolder" type="button" style="width: auto;">+ Add Custom Folder</button>
         </div>
 
+        <hr class="section-divider">
+        <h2 class="section-title">Signatures</h2>
+        <div style="margin-bottom: 16px;">
+            <label style="display: block; text-align: left; font-weight: 500; margin-bottom: 8px; color: var(--vscode-foreground);">HTML Signature (WYSIWYG)</label>
+            <div class="wysiwyg-toolbar">
+                <button type="button" class="format-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                <button type="button" class="format-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                <button type="button" class="format-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                <button type="button" class="format-btn" data-cmd="insertUnorderedList" title="Bullet List">• List</button>
+                <button type="button" class="format-btn" data-cmd="insertOrderedList" title="Numbered List">1. List</button>
+            </div>
+            <div class="wysiwyg-editor" contenteditable="true" id="signature"></div>
+        </div>
+        <div style="margin-bottom: 24px;">
+            <label style="display: block; text-align: left; font-weight: 500; margin-bottom: 8px; color: var(--vscode-foreground);">Markdown Signature</label>
+            <textarea id="markdownSignature" class="markdown-editor" placeholder="Type markdown signature here..."></textarea>
+        </div>
+
         <div class="button-row">
             <button class="btn-test" id="btnTest" type="button">Test Connection</button>
             <button class="btn-secondary" id="btnCancel" type="button">Cancel</button>
@@ -531,6 +609,8 @@ export class AccountSettingsPanel {
             spamFolder: document.getElementById('spamFolder'),
             archiveFolder: document.getElementById('archiveFolder'),
             newslettersFolder: document.getElementById('newslettersFolder'),
+            signature: document.getElementById('signature'),
+            markdownSignature: document.getElementById('markdownSignature'),
         };
 
         const customFoldersContainer = document.getElementById('customFoldersContainer');
@@ -565,7 +645,9 @@ export class AccountSettingsPanel {
                 spamFolder: fields.spamFolder.value,
                 archiveFolder: fields.archiveFolder.value,
                 newslettersFolder: fields.newslettersFolder.value,
-                customFolders: customFolders
+                customFolders: customFolders,
+                signature: fields.signature.innerHTML,
+                markdownSignature: fields.markdownSignature.value
             };
         }
 
@@ -637,6 +719,16 @@ export class AccountSettingsPanel {
             
             customFoldersContainer.appendChild(row);
         }
+
+        // Setup WYSIWYG formatting buttons for signature
+        document.querySelectorAll('.format-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const cmd = btn.getAttribute('data-cmd');
+                document.execCommand(cmd, false, null);
+                fields.signature.focus();
+            });
+        });
 
         function populateFolderSelects(folders) {
             const selectors = [
@@ -713,6 +805,8 @@ export class AccountSettingsPanel {
                     setFolder(fields.spamFolder, message.account.spamFolder || 'Spam');
                     setFolder(fields.archiveFolder, message.account.archiveFolder || 'Archive');
                     setFolder(fields.newslettersFolder, message.account.newslettersFolder || 'Newsletters');
+                    fields.signature.innerHTML = message.account.signature || '';
+                    fields.markdownSignature.value = message.account.markdownSignature || '';
 
                     // Custom folders
                     customFoldersContainer.innerHTML = '';
