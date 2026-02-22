@@ -14,6 +14,8 @@
 - **Improved UI Elements**: Buttons in the compose panel now use consistent icons with tooltips.
 - **Compose Button Visibility**: The "Send" button is now larger and more prominent for better usability.
 - **Indent Styling Fix**: Modified CSS to ensure indenting text doesn't inadvertently change the background color or apply quote styling.
+- **Signature Styling**: Removed the automatically added horizontal line (`---`) before the signature in Markdown mode.
+
 
 ### Changed
 - **Message Detail UI**: Repositioned action bar under message headers for better flow.

@@ -124,9 +124,9 @@ export class ComposePanel {
 
             let initialContent = '';
             if (!isWysiwyg && options.account.markdownSignature) {
-                initialContent = '\n\n---\n' + options.account.markdownSignature;
+                initialContent = '\n\n' + options.account.markdownSignature;
             } else if (options.account.signature) {
-                initialContent = '\n\n---\n' + options.account.signature;
+                initialContent = '\n\n' + options.account.signature;
             }
             if (options.mode === 'forward' && options.originalMessage) {
                 initialContent = '\n\n' + initialContent;
