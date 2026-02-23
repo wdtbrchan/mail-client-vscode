@@ -234,6 +234,7 @@ export class MessageDetailPanel {
             case 'spam':
             case 'trash':
             case 'newsletters':
+            case 'inbox':
                 this.moveMessage(message.type);
                 break;
             case 'moveCustom':
@@ -283,6 +284,7 @@ export class MessageDetailPanel {
         if (!account) return {};
         
         return {
+            inbox: 'INBOX',
             trash: account.trashFolder || 'Trash',
             spam: account.spamFolder || 'Spam',
             archive: account.archiveFolder || 'Archive',
@@ -292,7 +294,7 @@ export class MessageDetailPanel {
         };
     }
 
-    private async moveMessage(action: 'archive' | 'spam' | 'trash' | 'newsletters'): Promise<void> {
+    private async moveMessage(action: 'archive' | 'spam' | 'trash' | 'newsletters' | 'inbox'): Promise<void> {
         const settings = this.getFolderSettings();
         const targetFolder = settings[action];
         
@@ -561,6 +563,7 @@ export class MessageDetailPanel {
     <div class="action-bar ${this.isEmbedded ? '' : 'hidden'}" id="actionBar">
         ${this.isEmbedded ? '<button class="action-btn" id="btnBack" title="Back to List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>' : ''}
         <div id="messageButtons" class="hidden" style="display: contents;">
+            <button class="action-btn" id="btnInbox" title="Move to Inbox">📥 Inbox</button>
             <button class="action-btn" id="btnArchive" title="Archive">📂 Archive</button>
             <button class="action-btn" id="btnSpam" title="Mark as Spam">⛔ Spam</button>
             <button class="action-btn" id="btnNewsletters" title="Move to Newsletters">📰 News</button>
@@ -662,6 +665,7 @@ export class MessageDetailPanel {
         document.getElementById('btnForward').addEventListener('click', () => {
             vscode.postMessage({ type: 'forward' });
         });
+        document.getElementById('btnInbox').addEventListener('click', () => vscode.postMessage({ type: 'inbox' }));
         document.getElementById('btnArchive').addEventListener('click', () => vscode.postMessage({ type: 'archive' }));
         document.getElementById('btnSpam').addEventListener('click', () => vscode.postMessage({ type: 'spam' }));
         document.getElementById('btnNewsletters').addEventListener('click', () => vscode.postMessage({ type: 'newsletters' }));
@@ -686,16 +690,65 @@ export class MessageDetailPanel {
                 const settings = msg.message.folderSettings || {};
                 const current = msg.message.currentResidesIn;
                 
+                const btnInbox = document.getElementById('btnInbox');
+                const btnArchive = document.getElementById('btnArchive');
+                const btnSpam = document.getElementById('btnSpam');
+                const btnNewsletters = document.getElementById('btnNewsletters');
                 const btnTrash = document.getElementById('btnTrash');
                 const btnDelete = document.getElementById('btnDelete');
                 
-                if (current === settings.trash) {
-                    btnTrash.classList.add('hidden');
-                    btnDelete.classList.remove('hidden');
-                } else {
-                    btnTrash.classList.remove('hidden');
-                    btnDelete.classList.add('hidden');
+                if (btnInbox) {
+                    if (current.toUpperCase() === 'INBOX' || current === settings.inbox) {
+                        btnInbox.classList.add('hidden');
+                    } else {
+                        btnInbox.classList.remove('hidden');
+                    }
                 }
+                
+                if (btnArchive) {
+                    if (current === settings.archive) {
+                        btnArchive.classList.add('hidden');
+                    } else {
+                        btnArchive.classList.remove('hidden');
+                    }
+                }
+
+                if (btnSpam) {
+                    if (current === settings.spam) {
+                        btnSpam.classList.add('hidden');
+                    } else {
+                        btnSpam.classList.remove('hidden');
+                    }
+                }
+
+                if (btnNewsletters) {
+                    if (current === settings.newsletters) {
+                        btnNewsletters.classList.add('hidden');
+                    } else {
+                        btnNewsletters.classList.remove('hidden');
+                    }
+                }
+                
+                if (btnTrash && btnDelete) {
+                    if (current === settings.trash) {
+                        btnTrash.classList.add('hidden');
+                        btnDelete.classList.remove('hidden');
+                    } else {
+                        btnTrash.classList.remove('hidden');
+                        btnDelete.classList.add('hidden');
+                    }
+                }
+
+                customFolders.forEach((cf, i) => {
+                    const btn = document.getElementById('btnCustom_' + i);
+                    if (btn) {
+                        if (current === cf.path) {
+                            btn.classList.add('hidden');
+                        } else {
+                            btn.classList.remove('hidden');
+                        }
+                    }
+                });
             }
         });
 

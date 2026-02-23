@@ -4,6 +4,8 @@
 
 ### Added
 - **Message Search**: Added the ability to search for messages within a folder using IMAP search features. A search input is now available in the message list toolbar.
+- **Message Actions**: Added an "Inbox" button to the message detail view to quickly move messages back to the inbox.
+- **Smart Action Buttons**: Action buttons (Inbox, Archive, Spam, Newsletters, Trash, and Custom Folders) are now automatically hidden when the message is already residing in the respective folder.
 
 ## [0.4.2]
 
