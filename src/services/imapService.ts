@@ -81,7 +81,7 @@ export class ImapService {
      * @param limit - Maximum number of messages to fetch
      * @param offset - Number of messages to skip (for pagination)
      */
-    async getMessages(folderPath: string, limit = 50, offset = 0): Promise<IMailMessage[]> {
+    async getMessages(folderPath: string, limit = 50, offset = 0, searchQuery?: string): Promise<IMailMessage[]> {
         await this.ensureConnected();
 
         const lock = await this.client!.getMailboxLock(folderPath);
@@ -93,12 +93,37 @@ export class ImapService {
                 return [];
             }
 
-            // Calculate sequence range (newest first)
-            const start = Math.max(1, total - offset - limit + 1);
-            const end = Math.max(1, total - offset);
-            const range = `${start}:${end}`;
+            let range: string | number[] = '';
+            let isUid = false;
+
+            if (searchQuery && searchQuery.trim().length > 0) {
+                // Perform search
+                const searchResult = await this.client!.search({ text: searchQuery }, { uid: true });
+                if (!searchResult || searchResult.length === 0) {
+                    return [];
+                }
+                
+                // Pagination on search results
+                // searchResult is typically ordered by UID (which correlates with time). Newest are at the end.
+                const startIdx = Math.max(0, searchResult.length - offset - limit);
+                const endIdx = searchResult.length - offset;
+                const pagedUids = searchResult.slice(startIdx, endIdx);
+                
+                if (pagedUids.length === 0) {
+                    return [];
+                }
+                range = pagedUids;
+                isUid = true;
+            } else {
+                // Calculate sequence range (newest first)
+                const start = Math.max(1, total - offset - limit + 1);
+                const end = Math.max(1, total - offset);
+                range = `${start}:${end}`;
+            }
 
             const messages: IMailMessage[] = [];
+
+            const fetchOptions = isUid ? { uid: true } : undefined;
 
             for await (const msg of this.client!.fetch(range, {
                 uid: true,
@@ -107,7 +132,7 @@ export class ImapService {
                 bodyStructure: true,
                 size: true,
                 internalDate: true,
-            })) {
+            }, fetchOptions)) {
                 const envelope = msg.envelope;
                 if (!envelope || msg.flags?.has('\\Deleted')) {
                     continue;

@@ -11,7 +11,7 @@
 - [x] Implement WYSIWYG editor for composing emails.
 - [x] Implement Print functionality.
 - [x] Improve IMAP connection reliability and automatic reconnection.
-- [ ] Message searching.
+- [x] Message searching.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
 

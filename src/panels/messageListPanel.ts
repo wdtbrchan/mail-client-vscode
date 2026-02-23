@@ -16,6 +16,7 @@ export class MessageListPanel {
 
     private readonly panel: vscode.WebviewPanel;
     private disposables: vscode.Disposable[] = [];
+    private currentSearchQuery: string = '';
 
     private constructor(
         panel: vscode.WebviewPanel,
@@ -59,6 +60,7 @@ export class MessageListPanel {
             active.accountId = accountId;
             active.folderPath = folderPath;
             active.folderName = folderName;
+            active.currentSearchQuery = ''; // Reset search on folder switch
             
             // Revert any embedded view to list view
             active.clearEmbeddedDetail();
@@ -127,7 +129,7 @@ export class MessageListPanel {
             this.panel.webview.postMessage({ type: 'loading' });
 
             const service = this.explorerProvider.getImapService(this.accountId);
-            const messages = await service.getMessages(this.folderPath);
+            const messages = await service.getMessages(this.folderPath, 50, 0, this.currentSearchQuery);
 
             const config = vscode.workspace.getConfiguration('mailClient');
             const locale = config.get<string>('locale') || undefined;
@@ -239,6 +241,10 @@ export class MessageListPanel {
             case 'refresh':
                 this.loadMessages();
                 break;
+            case 'search':
+                this.currentSearchQuery = message.query || '';
+                this.loadMessages();
+                break;
             case 'compose':
                 vscode.commands.executeCommand('mailClient.compose', {
                     accountId: this.accountId,
@@ -314,6 +320,45 @@ export class MessageListPanel {
             border-left: none;
             padding: 0 16px;
             font-weight: 600;
+        }
+
+        /* Search Box */
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: var(--vscode-input-background);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 2px;
+            margin-right: 12px;
+            height: 24px;
+        }
+        .search-container input {
+            background: transparent;
+            border: none;
+            color: var(--vscode-input-foreground);
+            padding: 0 6px;
+            width: 180px;
+            font-family: inherit;
+            font-size: 0.9em;
+            outline: none;
+        }
+        .search-container input::placeholder {
+            color: var(--vscode-input-placeholderForeground);
+        }
+        .search-container button {
+            border: none;
+            background: transparent;
+            padding: 0 6px;
+            cursor: pointer;
+            color: var(--vscode-input-foreground);
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+        .search-container button:hover {
+            color: var(--vscode-errorForeground) !important;
+            background: transparent !important;
         }
 
         /* Message List */
@@ -512,6 +557,10 @@ export class MessageListPanel {
 <body>
     <div class="toolbar">
         <span class="toolbar-title" id="folderTitle">Messages</span>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search in folder..." title="Type query and press Enter to search using IMAP" value="${this.currentSearchQuery ? this.currentSearchQuery.replace(/"/g, '&quot;') : ''}" />
+            <button id="btnClearSearch" title="Clear Search" style="display: ${this.currentSearchQuery ? 'block' : 'none'};">✕</button>
+        </div>
         <button id="btnCompose" title="New Message">✉ New Message</button>
         <button id="btnRefresh" title="Refresh">↻ Refresh</button>
     </div>
@@ -524,6 +573,8 @@ export class MessageListPanel {
         const vscode = acquireVsCodeApi();
         const contentEl = document.getElementById('content');
         const titleEl = document.getElementById('folderTitle');
+        const searchInput = document.getElementById('searchInput');
+        const btnClearSearch = document.getElementById('btnClearSearch');
 
         document.getElementById('btnRefresh').addEventListener('click', () => {
             vscode.postMessage({ type: 'refresh' });
@@ -531,6 +582,24 @@ export class MessageListPanel {
 
         document.getElementById('btnCompose').addEventListener('click', () => {
             vscode.postMessage({ type: 'compose' });
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const query = searchInput.value.trim();
+                if (query) {
+                    btnClearSearch.style.display = 'block';
+                } else {
+                    btnClearSearch.style.display = 'none';
+                }
+                vscode.postMessage({ type: 'search', query: query });
+            }
+        });
+
+        btnClearSearch.addEventListener('click', () => {
+            searchInput.value = '';
+            btnClearSearch.style.display = 'none';
+            vscode.postMessage({ type: 'search', query: '' });
         });
 
         let currentLocale = undefined;
@@ -646,7 +715,11 @@ export class MessageListPanel {
                     contentEl.innerHTML = '<div class="loading"><span class="loader"></span>Loading messages...</div>';
                     break;
                 case 'messages':
-                    titleEl.textContent = msg.folderPath;
+                    let titleText = msg.folderPath;
+                    if (searchInput.value.trim()) {
+                        titleText += ' (Search results)';
+                    }
+                    titleEl.textContent = titleText;
                     if (msg.locale) { currentLocale = msg.locale; }
                     if (msg.displayMode) { document.body.className = 'mode-' + msg.displayMode; }
                     renderMessages(msg.messages);
