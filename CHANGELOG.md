@@ -1,13 +1,11 @@
 # Changelog
 
-## [ upcoming ]
-
-### Changed
-- **Sent Folder Detection**: The extension now intelligently detects the correct "Sent" folder across different IMAP servers by checking for the `\Sent` special-use attribute or matching common names (e.g., 'sent', 'odeslané', 'outbox').
-- **Message Date Parsing**: Improved message sorting by utilizing the IMAP `internalDate` as a fallback when the `Date` header is missing or improperly formatted by the server.
+## [0.4.1]
 
 ### Fixed
 - **External Links**: Resolved an issue where external links in the email body were blocked by the webview sandbox. Intercepted link clicks in the email content iframe and routed them through VS Code's native `openExternal` handler to ensure they open in the default web browser. This fix applies to message detail view, print preview, and quoted messages in the compose panel.
+- **Message Date Parsing**: Improved message sorting by utilizing the IMAP `internalDate` as a fallback when the `Date` header is missing or improperly formatted by the server.
+- **Sent Folder Detection**: The extension now intelligently detects the correct "Sent" folder across different IMAP servers by checking for the `\Sent` special-use attribute or matching common names (e.g., 'sent', 'outbox').
 - **Save to Sent Folder**: Discarding silent IMAP append failures and now properly informing the user via a UI warning when an email fails to save to the Sent folder after being successfully sent.
 
 ## [0.4.0]
