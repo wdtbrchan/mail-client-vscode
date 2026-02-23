@@ -1,11 +1,11 @@
 # Changelog
 
-## [ upcoming ]
+## [0.4.2]
 
 ### Added
-- **Loading Indicators**: Integrated visual loading spinners to improve user feedback.
 - **Connection Reliability**: Implemented automatic IMAP reconnection and robust connection state monitoring to prevent "Connection not available" errors.
 - **Forced Refresh**: The refresh button in Mail Explorer now forces a complete reconnection to resolve any stuck connections.
+- **Loading Indicators**: Integrated visual loading spinners to improve user feedback.
 
 ## [0.4.1]
 
