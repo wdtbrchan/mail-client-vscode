@@ -1032,11 +1032,13 @@ export class ComposePanel {
                     break;
                 case 'sending':
                     btnSend.disabled = true;
-                    statusText.textContent = 'Sending…';
+                    btnSend.innerHTML = '<span class="loader" style="margin: 0;"></span>';
+                    statusText.textContent = '';
                     statusText.classList.remove('error-text');
                     break;
                 case 'error':
                     btnSend.disabled = false;
+                    btnSend.innerHTML = '✉ Send';
                     statusText.textContent = msg.message;
                     statusText.classList.add('error-text');
                     break;

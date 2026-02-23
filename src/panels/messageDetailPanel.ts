@@ -577,7 +577,7 @@ export class MessageDetailPanel {
 
     <div id="messageBody"></div>
 
-    <div id="loadingIndicator" class="loading">Loading message...</div>
+    <div id="loadingIndicator" class="loading"><span class="loader"></span>Loading message...</div>
 
     <div id="printOverlay" class="hidden">
         <div class="print-toolbar">
@@ -759,7 +759,7 @@ export class MessageDetailPanel {
                     if (mb) mb.classList.add('hidden');
                     
                     loadingEl.classList.remove('hidden');
-                    loadingEl.textContent = 'Loading message...';
+                    loadingEl.innerHTML = '<span class="loader"></span>Loading message...';
                     break;
                 case 'message':
                     console.log('Received message data', msg);

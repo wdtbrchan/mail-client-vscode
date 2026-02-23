@@ -483,6 +483,25 @@ export class MessageListPanel {
             font-size: 1.1em;
         }
         .error-msg { color: var(--vscode-errorForeground); }
+
+        /* Loading Spinner */
+        .loader {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--vscode-descriptionForeground);
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
         
         /* Hide actions if display mode is 'split' */
         body.mode-split .message-actions {
@@ -498,7 +517,7 @@ export class MessageListPanel {
     </div>
 
     <div id="content">
-        <div class="loading">Loading messages...</div>
+        <div class="loading"><span class="loader"></span>Loading messages...</div>
     </div>
 
     <script nonce="${nonce}">
@@ -624,7 +643,7 @@ export class MessageListPanel {
             const msg = event.data;
             switch (msg.type) {
                 case 'loading':
-                    contentEl.innerHTML = '<div class="loading">Loading messages...</div>';
+                    contentEl.innerHTML = '<div class="loading"><span class="loader"></span>Loading messages...</div>';
                     break;
                 case 'messages':
                     titleEl.textContent = msg.folderPath;

@@ -1,5 +1,10 @@
 # Changelog
 
+## [ upcoming ]
+
+### Added
+- **Loading Indicators**: Integrated visual loading spinners to improve user feedback.
+
 ## [0.4.1]
 
 ### Fixed
