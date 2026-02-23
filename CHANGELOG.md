@@ -3,8 +3,20 @@
 ## [ upcoming ]
 
 ### Added
+- **Message Display Mode**: Added `mailClient.messageDisplayMode` setting with three modes: Within List (Preview), New Window, and Split View (Beside). "Split View" is now the default mode.
+- **Embedded Detail View**: Implemented a reusable embedded message detail view with a dedicated "Back" button for the "Within List" display mode.
+- **Optimized Split View**: Enhanced the Split View mode to preserve manually set panel widths and implemented state restoration to remember the panel layout after editor restarts.
 - **Auto-focus**: The message body now automatically receives focus when opening the compose panel for a new message, reply, or forward. This works in both WYSIWYG and Markdown modes.
 - **Markdown Preview Label**: Styled the "Preview" heading in Markdown mode as a subtle grey corner badge to distinguish it from message content.
+
+### Changed
+- **Account Settings UI**: Redesigned the account settings panel with a cleaner, more organized layout using collapsible sections for Folders and Signatures.
+- **Connection Testing**: Improved IMAP connection testing by resolving logic errors and displaying results (both IMAP and SMTP) directly next to buttons for immediate feedback.
+- **Layout Refinements**: Optimized the "Load Folders" button placement and improved vertical spacing between HTML and Markdown signature editors.
+- **CSP Compliance**: Refactored the settings panel to use CSS classes instead of inline styles, resolving Content Security Policy violations and improving security.
+- **Message List Actions**: Hidden reply, reply-all, and forward action buttons in the message list when Split View mode is active to reduce UI clutter.
+- **Bug Fixes**: Resolved issue with missing `accountManager` in some navigation paths and fixed visibility of the "Back" button when errors occur.
+
 
 ## [0.3.0]
 

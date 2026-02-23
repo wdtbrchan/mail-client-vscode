@@ -14,6 +14,7 @@ import { getSharedStyles, getSharedScripts } from './utils/webviewContent';
 export class MessageDetailPanel {
     public static readonly viewType = 'mailClient.messageDetail';
     private static panels = new Map<string, MessageDetailPanel>();
+    private static splitPanel: MessageDetailPanel | undefined;
 
     private readonly panel: vscode.WebviewPanel;
     private disposables: vscode.Disposable[] = [];
@@ -22,9 +23,11 @@ export class MessageDetailPanel {
         panel: vscode.WebviewPanel,
         private readonly explorerProvider: MailExplorerProvider,
         private readonly accountManager: AccountManager,
-        private readonly accountId: string,
-        private readonly folderPath: string,
-        private readonly uid: number,
+        private accountId: string,
+        private folderPath: string,
+        private uid: number,
+        public readonly isEmbedded: boolean = false,
+        private readonly onBack?: () => void,
     ) {
         this.panel = panel;
 
@@ -48,19 +51,20 @@ export class MessageDetailPanel {
         accountId: string,
         folderPath: string,
         uid: number,
+        viewColumn: vscode.ViewColumn = vscode.ViewColumn.One
     ): MessageDetailPanel {
         const key = `${accountId}:${folderPath}:${uid}`;
 
         const existing = MessageDetailPanel.panels.get(key);
         if (existing) {
-            existing.panel.reveal();
+            existing.panel.reveal(viewColumn);
             return existing;
         }
 
         const panel = vscode.window.createWebviewPanel(
             MessageDetailPanel.viewType,
             'Loading...',
-            vscode.ViewColumn.One,
+            viewColumn,
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
@@ -70,6 +74,101 @@ export class MessageDetailPanel {
         const instance = new MessageDetailPanel(panel, explorerProvider, accountManager, accountId, folderPath, uid);
         MessageDetailPanel.panels.set(key, instance);
         return instance;
+    }
+
+    /**
+     * Opens or reveals a message detail panel in a reusable split view.
+     */
+    static showInSplit(
+        explorerProvider: MailExplorerProvider,
+        accountManager: AccountManager,
+        accountId: string,
+        folderPath: string,
+        uid: number,
+    ): MessageDetailPanel {
+        const key = `${accountId}:${folderPath}:${uid}`;
+        const existing = MessageDetailPanel.panels.get(key);
+
+        if (MessageDetailPanel.splitPanel) {
+            const active = MessageDetailPanel.splitPanel;
+            // If the same message is already in split panel, just reveal
+            if (active.uid === uid && active.folderPath === folderPath && active.accountId === accountId) {
+                 active.panel.reveal(active.panel.viewColumn || vscode.ViewColumn.Beside, true);
+                 return active;
+            }
+
+            // Remove old key from panels map
+            const oldKey = `${active.accountId}:${active.folderPath}:${active.uid}`;
+            MessageDetailPanel.panels.delete(oldKey);
+
+            // Update to new message
+            active.accountId = accountId;
+            active.folderPath = folderPath;
+            active.uid = uid;
+            
+            // Register under new key
+            MessageDetailPanel.panels.set(key, active);
+            
+            active.panel.reveal(active.panel.viewColumn || vscode.ViewColumn.Beside, true);
+            active.loadMessage();
+            return active;
+        }
+
+        if (existing) {
+             existing.panel.reveal(vscode.ViewColumn.Beside, true);
+             MessageDetailPanel.splitPanel = existing;
+             return existing;
+        }
+
+        const panel = vscode.window.createWebviewPanel(
+            MessageDetailPanel.viewType,
+            'Loading...',
+            vscode.ViewColumn.Beside,
+            {
+                enableScripts: true,
+                retainContextWhenHidden: true,
+            },
+        );
+
+        const instance = new MessageDetailPanel(panel, explorerProvider, accountManager, accountId, folderPath, uid);
+        MessageDetailPanel.panels.set(key, instance);
+        MessageDetailPanel.splitPanel = instance;
+        return instance;
+    }
+
+    /**
+     * Restores a detail panel (for example after a VS Code restart).
+     */
+    static restore(
+        panel: vscode.WebviewPanel,
+        accountId: string,
+        folderPath: string,
+        uid: number,
+        explorerProvider: MailExplorerProvider,
+        accountManager: AccountManager
+    ): MessageDetailPanel {
+        const key = `${accountId}:${folderPath}:${uid}`;
+        const instance = new MessageDetailPanel(panel, explorerProvider, accountManager, accountId, folderPath, uid);
+        MessageDetailPanel.panels.set(key, instance);
+        if (panel.viewColumn === vscode.ViewColumn.Beside || panel.viewColumn !== vscode.ViewColumn.One) {
+            MessageDetailPanel.splitPanel = instance;
+        }
+        return instance;
+    }
+
+    /**
+     * Creates an embedded message detail panel reusing an existing WebviewPanel.
+     */
+    static createEmbedded(
+        panel: vscode.WebviewPanel,
+        explorerProvider: MailExplorerProvider,
+        accountManager: AccountManager,
+        accountId: string,
+        folderPath: string,
+        uid: number,
+        onBack: () => void,
+    ): MessageDetailPanel {
+        return new MessageDetailPanel(panel, explorerProvider, accountManager, accountId, folderPath, uid, true, onBack);
     }
 
     private async loadMessage(): Promise<void> {
@@ -145,6 +244,9 @@ export class MessageDetailPanel {
                 break;
             case 'print':
                 this.printHtml(message.html);
+                break;
+            case 'back':
+                this.dispose();
                 break;
         }
     }
@@ -304,6 +406,12 @@ export class MessageDetailPanel {
         const sharedStyles = getSharedStyles(nonce);
         const sharedScripts = getSharedScripts(nonce, locale);
 
+        const statePayload = JSON.stringify({
+            accountId: this.accountId,
+            folderPath: this.folderPath,
+            uid: this.uid
+        });
+
         return /* html */ `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -447,18 +555,21 @@ export class MessageDetailPanel {
 <body>
     <div id="messageHeaders"></div>
 
-    <div class="action-bar hidden" id="actionBar">
-        <button class="action-btn" id="btnArchive" title="Archive">📂 Archive</button>
-        <button class="action-btn" id="btnSpam" title="Mark as Spam">⛔ Spam</button>
-        <button class="action-btn" id="btnNewsletters" title="Move to Newsletters">📰 News</button>
-        <button class="action-btn" id="btnTrash" title="Move to Trash">🗑 Trash</button>
-        <button class="action-btn danger hidden" id="btnDelete" title="Delete Permanently">❌ Delete</button>
-        ${customButtonsHtml}
-        <div style="flex: 1;"></div>
-        <button class="action-btn icon-only" id="btnPrint" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
-        <button class="action-btn icon-only" id="btnForward" title="Forward"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"></path></svg></button>
-        <button class="action-btn icon-only" id="btnReply" title="Reply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6L9 12L15 18"></path></svg></button>
-        <button class="action-btn icon-only" id="btnReplyAll" title="Reply All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6L11 12L17 18"></path><path d="M10 6L4 12L10 18"></path></svg></button>
+    <div class="action-bar ${this.isEmbedded ? '' : 'hidden'}" id="actionBar">
+        ${this.isEmbedded ? '<button class="action-btn" id="btnBack" title="Back to List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>' : ''}
+        <div id="messageButtons" class="hidden" style="display: contents;">
+            <button class="action-btn" id="btnArchive" title="Archive">📂 Archive</button>
+            <button class="action-btn" id="btnSpam" title="Mark as Spam">⛔ Spam</button>
+            <button class="action-btn" id="btnNewsletters" title="Move to Newsletters">📰 News</button>
+            <button class="action-btn" id="btnTrash" title="Move to Trash">🗑 Trash</button>
+            <button class="action-btn danger hidden" id="btnDelete" title="Delete Permanently">❌ Delete</button>
+            ${customButtonsHtml}
+            <div style="flex: 1;"></div>
+            <button class="action-btn icon-only" id="btnPrint" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
+            <button class="action-btn icon-only" id="btnForward" title="Forward"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"></path></svg></button>
+            <button class="action-btn icon-only" id="btnReply" title="Reply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6L9 12L15 18"></path></svg></button>
+            <button class="action-btn icon-only" id="btnReplyAll" title="Reply All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6L11 12L17 18"></path><path d="M10 6L4 12L10 18"></path></svg></button>
+        </div>
     </div>
 
     <div id="messageBody"></div>
@@ -478,6 +589,8 @@ export class MessageDetailPanel {
 
     <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
+        vscode.setState(${statePayload});
+        
         ${sharedScripts}
         
         const customFolders = ${JSON.stringify(customFolders)};
@@ -583,6 +696,13 @@ export class MessageDetailPanel {
             }
         });
 
+        const btnBack = document.getElementById('btnBack');
+        if (btnBack) {
+            btnBack.addEventListener('click', () => {
+                vscode.postMessage({ type: 'back' });
+            });
+        }
+
         function renderMessageView(msg, showImages = false) {
              currentMessage = msg;
              currentShowImages = showImages;
@@ -600,6 +720,10 @@ export class MessageDetailPanel {
              
              // Show action bar
              actionBar.classList.remove('hidden');
+             const msgBtns = document.getElementById('messageButtons');
+             if (msgBtns) {
+                 msgBtns.classList.remove('hidden');
+             }
              
             // Re-bind listener for show images
               bodyEl.addEventListener('requestShowImages', (e) => {
@@ -617,13 +741,20 @@ export class MessageDetailPanel {
         }
 
 
+        const isEmbedded = ${this.isEmbedded};
+
         window.addEventListener('message', (event) => {
             const msg = event.data;
             switch (msg.type) {
                 case 'loading':
                     headersEl.innerHTML = '';
                     bodyEl.innerHTML = '';
-                    actionBar.classList.add('hidden');
+                    if (!isEmbedded) {
+                        actionBar.classList.add('hidden');
+                    }
+                    const mb = document.getElementById('messageButtons');
+                    if (mb) mb.classList.add('hidden');
+                    
                     loadingEl.classList.remove('hidden');
                     loadingEl.textContent = 'Loading message...';
                     break;
@@ -640,6 +771,12 @@ export class MessageDetailPanel {
                     break;
                 case 'error':
                     loadingEl.classList.add('hidden');
+                    if (!isEmbedded) {
+                        actionBar.classList.add('hidden');
+                    }
+                    const mbe = document.getElementById('messageButtons');
+                    if (mbe) mbe.classList.add('hidden');
+
                     bodyEl.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(msg.message) + '</div>';
                     break;
             }
@@ -653,10 +790,17 @@ export class MessageDetailPanel {
 </html>`;
     }
 
-    private dispose(): void {
+    dispose(): void {
         const key = `${this.accountId}:${this.folderPath}:${this.uid}`;
         MessageDetailPanel.panels.delete(key);
-        this.panel.dispose();
+        if (MessageDetailPanel.splitPanel === this) {
+            MessageDetailPanel.splitPanel = undefined;
+        }
+        if (!this.isEmbedded) {
+            this.panel.dispose();
+        } else if (this.onBack) {
+            this.onBack();
+        }
         for (const d of this.disposables) {
             d.dispose();
         }

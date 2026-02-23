@@ -226,7 +226,6 @@ export class ImapService {
         });
 
         await client.connect();
-        await client.logout();
     }
 
 

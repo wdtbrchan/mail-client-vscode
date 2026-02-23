@@ -4,6 +4,7 @@ import { MailExplorerProvider } from './providers/mailExplorerProvider';
 import { registerAccountCommands } from './commands/accountCommands';
 import { registerMessageCommands } from './commands/messageCommands';
 import { MessageListPanel } from './panels/messageListPanel';
+import { MessageDetailPanel } from './panels/messageDetailPanel';
 
 let explorerProvider: MailExplorerProvider | undefined;
 
@@ -56,6 +57,26 @@ export function activate(context: vscode.ExtensionContext): void {
         provider.startAutoRefresh();
     });
 
+    // Register WebviewPanelSerializers for restoring panels
+    context.subscriptions.push(
+        vscode.window.registerWebviewPanelSerializer(MessageDetailPanel.viewType, {
+            async deserializeWebviewPanel(webviewPanel: vscode.WebviewPanel, state: any) {
+                if (state && state.accountId && state.folderPath && state.uid) {
+                    MessageDetailPanel.restore(
+                        webviewPanel,
+                        state.accountId,
+                        state.folderPath,
+                        state.uid,
+                        explorerProvider!,
+                        accountManager
+                    );
+                } else {
+                    webviewPanel.dispose();
+                }
+            }
+        })
+    );
+
     context.subscriptions.push({
         dispose: () => {
             explorerProvider?.dispose();
@@ -96,6 +117,7 @@ async function autoConnect(
                     if (firstFolder) {
                         MessageListPanel.showInActive(
                             explorerProvider,
+                            accountManager,
                             firstFolder.accountId,
                             firstFolder.folderPath!,
                             firstFolder.label as string,

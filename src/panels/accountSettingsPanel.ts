@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { AccountManager } from '../services/accountManager';
 import { ImapService } from '../services/imapService';
+import { SmtpService } from '../services/smtpService';
 import { IMailAccount } from '../types/account';
 
 /**
@@ -97,6 +98,9 @@ export class AccountSettingsPanel {
             case 'testConnection':
                 await this.handleTestConnection(message.data);
                 break;
+            case 'testSmtpConnection':
+                await this.handleTestSmtpConnection(message.data);
+                break;
             case 'cancel':
                 this.panel.dispose();
                 break;
@@ -182,6 +186,38 @@ export class AccountSettingsPanel {
                 type: 'testResult',
                 success: false,
                 message: `Connection failed: ${errorMsg}`,
+            });
+        }
+    }
+
+    private async handleTestSmtpConnection(data: any): Promise<void> {
+        try {
+            const account: IMailAccount = {
+                id: 'test_smtp',
+                name: data.name,
+                host: data.host,
+                port: parseInt(data.port, 10),
+                secure: data.secure,
+                username: data.username,
+                smtpHost: data.smtpHost || '',
+                smtpPort: parseInt(data.smtpPort, 10) || 465,
+                smtpSecure: data.smtpSecure !== false,
+                smtpUsername: data.smtpUsername || undefined,
+            };
+
+            await SmtpService.testConnection(account, data.smtpPassword || data.password);
+
+            this.panel.webview.postMessage({
+                type: 'testSmtpResult',
+                success: true,
+                message: 'SMTP connection successful!',
+            });
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'SMTP connection failed';
+            this.panel.webview.postMessage({
+                type: 'testSmtpResult',
+                success: false,
+                message: `SMTP failed: ${errorMsg}`,
             });
         }
     }
@@ -370,6 +406,13 @@ export class AccountSettingsPanel {
             border: 1px solid var(--vscode-inputValidation-warningBorder);
             color: var(--vscode-foreground);
         }
+        .status-inline {
+            font-size: 0.9em;
+            display: inline-block;
+        }
+        .status-inline.success { color: var(--vscode-testing-iconPassed); }
+        .status-inline.error { color: var(--vscode-testing-iconFailed); }
+        .status-inline.loading { color: var(--vscode-descriptionForeground); }
         .validation-error {
             color: var(--vscode-errorForeground);
             font-size: 0.85em;
@@ -407,6 +450,32 @@ export class AccountSettingsPanel {
             font-size: 0.9em;
             font-weight: 600;
         }
+        .flex-row {
+            display: flex;
+            align-items: center;
+        }
+        .flex-gap-10 { gap: 10px; }
+        .justify-between { justify-content: space-between; }
+        .width-auto { width: auto; }
+        .width-fit { width: fit-content; }
+        .white-space-nowrap { white-space: nowrap; }
+        .padding-small { padding: 4px 10px; }
+        .margin-left-10 { margin-left: 10px; }
+        .margin-bottom-8 { margin-bottom: 8px; }
+        .margin-bottom-16 { margin-bottom: 16px; }
+        .margin-bottom-24 { margin-bottom: 24px; }
+        .margin-top-16 { margin-top: 16px; }
+        .margin-top-32 { margin-top: 32px; }
+        .font-small { font-size: 0.9em; }
+        .color-description { color: var(--vscode-descriptionForeground); }
+        .font-weight-500 { font-weight: 500; }
+        .display-block { display: block; }
+        .text-left { text-align: left; }
+        .spacer-32 { height: 32px; width: 100%; }
+        .cursor-pointer { cursor: pointer; }
+        .display-list-item { display: list-item; }
+        .custom-name-width { width: 140px; }
+        .flex-1 { flex: 1; }
         .format-btn:hover {
             background: var(--vscode-toolbar-hoverBackground);
         }
@@ -485,6 +554,13 @@ export class AccountSettingsPanel {
             <label for="password">Password</label>
             <input type="password" id="password" placeholder="••••••••" required>
         </div>
+        <div class="form-group">
+            <label></label>
+            <div class="flex-row flex-gap-10">
+                <button class="btn-test width-fit" id="btnTest" type="button">Test Connection</button>
+                <span id="imapTestStatus" class="status-inline"></span>
+            </div>
+        </div>
 
         <hr class="section-divider">
         <h2 class="section-title">SMTP (Outgoing Mail)</h2>
@@ -515,15 +591,27 @@ export class AccountSettingsPanel {
             <label for="smtpPassword">SMTP Password</label>
             <input type="password" id="smtpPassword" placeholder="Leave empty = same as IMAP">
         </div>
-
-        <hr class="section-divider">
-
-        <hr class="section-divider">
-        <h2 class="section-title">Folders</h2>
-        <div style="margin-bottom: 16px; color: var(--vscode-descriptionForeground); font-size: 0.9em;">
-            Map server folders to local functions. Settings take effect after connection.
-            <button class="btn-test" id="btnListFolders" type="button" style="margin-left: 10px; padding: 4px 10px; font-size: 0.9em;">Load Folders</button>
+        <div class="form-group">
+            <label></label>
+            <div class="flex-row flex-gap-10">
+                <button class="btn-test width-fit" id="btnTestSmtp" type="button">Test SMTP Connection</button>
+                <span id="smtpTestStatus" class="status-inline"></span>
+            </div>
         </div>
+
+        <hr class="section-divider">
+
+        <hr class="section-divider">
+        <details>
+            <summary class="section-title cursor-pointer display-list-item">Folders</summary>
+            <div class="margin-top-16">
+                <div class="flex-row flex-gap-10 margin-bottom-8">
+                    <button class="btn-test white-space-nowrap padding-small font-small" id="btnListFolders" type="button">Load Folders</button>
+                    <span id="loadFoldersStatus" class="status-inline"></span>
+                </div>                
+                <div class="margin-bottom-16 color-description font-small">
+                    Map server folders to local functions. Settings take effect after connection.
+                </div>
 
         <div class="form-group">
             <label for="sentFolder">Sent</label>
@@ -558,13 +646,17 @@ export class AccountSettingsPanel {
         </div>
         <div class="form-group">
             <label></label>
-            <button class="btn-secondary" id="btnAddCustomFolder" type="button" style="width: auto;">+ Add Custom Folder</button>
+            <button class="btn-secondary width-auto" id="btnAddCustomFolder" type="button">+ Add Custom Folder</button>
         </div>
+            </div>
+        </details>
 
         <hr class="section-divider">
-        <h2 class="section-title">Signatures</h2>
-        <div style="margin-bottom: 16px;">
-            <label style="display: block; text-align: left; font-weight: 500; margin-bottom: 8px; color: var(--vscode-foreground);">HTML Signature (WYSIWYG)</label>
+        <details>
+            <summary class="section-title cursor-pointer display-list-item">Signatures</summary>
+            <div class="margin-top-16">
+                <div class="margin-bottom-16">
+            <label class="display-block text-left font-weight-500 margin-bottom-8" style="color: var(--vscode-foreground);">HTML Signature (WYSIWYG)</label>
             <div class="wysiwyg-toolbar">
                 <button type="button" class="format-btn" data-cmd="bold" title="Bold"><b>B</b></button>
                 <button type="button" class="format-btn" data-cmd="italic" title="Italic"><i>I</i></button>
@@ -574,13 +666,17 @@ export class AccountSettingsPanel {
             </div>
             <div class="wysiwyg-editor" contenteditable="true" id="signature"></div>
         </div>
-        <div style="margin-bottom: 24px;">
-            <label style="display: block; text-align: left; font-weight: 500; margin-bottom: 8px; color: var(--vscode-foreground);">Markdown Signature</label>
+        
+        <div class="spacer-32"></div>
+
+        <div class="margin-bottom-24">
+            <label class="display-block text-left font-weight-500 margin-bottom-8" style="color: var(--vscode-foreground);">Markdown Signature</label>
             <textarea id="markdownSignature" class="markdown-editor" placeholder="Type markdown signature here..."></textarea>
         </div>
+            </div>
+        </details>
 
         <div class="button-row">
-            <button class="btn-test" id="btnTest" type="button">Test Connection</button>
             <button class="btn-secondary" id="btnCancel" type="button">Cancel</button>
             <button class="btn-primary" id="btnSave" type="button">Save</button>
         </div>
@@ -664,10 +760,23 @@ export class AccountSettingsPanel {
         function showStatus(message, type) {
             statusEl.textContent = message;
             statusEl.className = 'status-message ' + type;
+            if (!message) {
+                statusEl.style.display = 'none';
+            } else {
+                statusEl.style.display = 'block';
+            }
+        }
+
+        function showInlineStatus(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = 'status-inline ' + type;
+            if (!message) el.className = 'status-inline';
         }
 
         function hideStatus() {
             statusEl.className = 'status-message';
+            statusEl.style.display = 'none';
         }
 
         document.getElementById('btnSave').addEventListener('click', () => {
@@ -677,17 +786,26 @@ export class AccountSettingsPanel {
 
         document.getElementById('btnTest').addEventListener('click', () => {
             if (!validate()) return;
-            showStatus('Testing connection...', 'loading');
+            showInlineStatus('imapTestStatus', 'Testing...', 'loading');
+            showStatus('', ''); // clear global
             document.getElementById('btnTest').disabled = true;
             vscode.postMessage({ type: 'testConnection', data: getFormData() });
         });
 
+        document.getElementById('btnTestSmtp').addEventListener('click', () => {
+            if (!validate()) return;
+            showInlineStatus('smtpTestStatus', 'Testing...', 'loading');
+            showStatus('', ''); // clear global
+            document.getElementById('btnTestSmtp').disabled = true;
+            vscode.postMessage({ type: 'testSmtpConnection', data: getFormData() });
+        });
+
         document.getElementById('btnListFolders').addEventListener('click', () => {
             if (!fields.host.value || !fields.username.value || !fields.password.value) {
-                showStatus('Please fill in Host, Username and Password to list folders.', 'error');
+                showInlineStatus('loadFoldersStatus', 'Please fill in Host, Username and Password to list folders.', 'error');
                 return;
             }
-            showStatus('Listing folders...', 'loading');
+            showInlineStatus('loadFoldersStatus', 'Listing folders...', 'loading');
             document.getElementById('btnListFolders').disabled = true;
             vscode.postMessage({ type: 'listFolders', data: getFormData() });
         });
@@ -709,13 +827,12 @@ export class AccountSettingsPanel {
             }
 
             row.innerHTML = \`
-                <input type="text" class="custom-name" placeholder="Name (e.g. Work)" value="\${name}" style="width: 140px;">
-                <select class="custom-path folder-select" style="flex: 1;">\${optionsHtml}</select>
-                <button type="button" class="btn-secondary" onclick="this.parentElement.remove()" style="padding: 4px 10px;">X</button>
+                <input type="text" class="custom-name custom-name-width" placeholder="Name (e.g. Work)" value="\${name}">
+                <select class="custom-path folder-select flex-1">\${optionsHtml}</select>
+                <button type="button" class="btn-secondary padding-small" onclick="this.parentElement.remove()">X</button>
             \`;
-            // Add some inline style for the row layout if needed, or rely on flex
-            row.style.display = 'flex';
-            row.style.gap = '10px';
+            // rely on flex class wrapper instead of inline styles
+            row.classList.add('flex-row', 'flex-gap-10');
             
             customFoldersContainer.appendChild(row);
         }
@@ -818,15 +935,19 @@ export class AccountSettingsPanel {
                     break;
                 case 'testResult':
                     document.getElementById('btnTest').disabled = false;
-                    showStatus(message.message, message.success ? 'success' : 'error');
+                    showInlineStatus('imapTestStatus', message.message, message.success ? 'success' : 'error');
+                    break;
+                case 'testSmtpResult':
+                    document.getElementById('btnTestSmtp').disabled = false;
+                    showInlineStatus('smtpTestStatus', message.message, message.success ? 'success' : 'error');
                     break;
                 case 'foldersList':
                     document.getElementById('btnListFolders').disabled = false;
                     if (message.success) {
-                        showStatus('Folders loaded.', 'success');
+                        showInlineStatus('loadFoldersStatus', 'Folders loaded.', 'success');
                         populateFolderSelects(message.folders);
                     } else {
-                        showStatus('Failed to list folders: ' + message.error, 'error');
+                        showInlineStatus('loadFoldersStatus', 'Failed to list folders: ' + message.error, 'error');
                     }
                     break;
                 case 'saveResult':

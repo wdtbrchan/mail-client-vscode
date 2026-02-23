@@ -183,6 +183,21 @@
           ],
           "description": "Editor mode for composing emails. WYSIWYG shows a rich text editor inside the compose panel. Markdown opens a separate .md file for editing."
         },
+        "mailClient.messageDisplayMode": {
+          "type": "string",
+          "default": "split",
+          "enum": [
+            "preview",
+            "window",
+            "split"
+          ],
+          "enumItemLabels": [
+            "Within List (Preview)",
+            "New Window/Tab",
+            "Split View (Beside)"
+          ],
+          "description": "How to display the message detail when opened from the message list."
+        },
         "mailClient.refreshInterval": {
           "type": "number",
           "default": 60,

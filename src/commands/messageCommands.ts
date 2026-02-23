@@ -78,6 +78,7 @@ export function registerMessageCommands(
             }
             MessageListPanel.showInActive(
                 explorerProvider,
+                accountManager,
                 item.accountId,
                 item.folderPath,
                 item.label as string,
@@ -90,6 +91,7 @@ export function registerMessageCommands(
             }
             MessageListPanel.show(
                 explorerProvider,
+                accountManager,
                 item.accountId,
                 item.folderPath,
                 item.label as string,

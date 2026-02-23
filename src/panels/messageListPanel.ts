@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { MailExplorerProvider, MailTreeItem } from '../providers/mailExplorerProvider';
 import { IMailMessage } from '../types/message';
 import { MessageDetailPanel } from './messageDetailPanel';
+import { AccountManager } from '../services/accountManager';
 
 /**
  * Webview panel for displaying a list of messages in a mail folder.
@@ -19,8 +20,10 @@ export class MessageListPanel {
     private constructor(
         panel: vscode.WebviewPanel,
         private readonly explorerProvider: MailExplorerProvider,
+        private readonly accountManager: AccountManager,
         private accountId: string,
         private folderPath: string,
+        private folderName: string,
     ) {
         this.panel = panel;
         this.panel.webview.html = this.getHtmlContent();
@@ -43,6 +46,7 @@ export class MessageListPanel {
      */
     static showInActive(
         explorerProvider: MailExplorerProvider,
+        accountManager: AccountManager,
         accountId: string,
         folderPath: string,
         folderName: string,
@@ -52,10 +56,13 @@ export class MessageListPanel {
             // Remove old key from panels map
             const oldKey = `${active.accountId}:${active.folderPath}`;
             MessageListPanel.panels.delete(oldKey);
-            // Update to new folder
             active.accountId = accountId;
             active.folderPath = folderPath;
-            active.panel.title = folderName;
+            active.folderName = folderName;
+            
+            // Revert any embedded view to list view
+            active.clearEmbeddedDetail();
+
             // Register under new key
             const newKey = `${accountId}:${folderPath}`;
             MessageListPanel.panels.set(newKey, active);
@@ -64,7 +71,7 @@ export class MessageListPanel {
             return active;
         }
 
-        const instance = MessageListPanel.show(explorerProvider, accountId, folderPath, folderName);
+        const instance = MessageListPanel.show(explorerProvider, accountManager, accountId, folderPath, folderName);
         MessageListPanel.activePanel = instance;
         return instance;
     }
@@ -74,6 +81,7 @@ export class MessageListPanel {
      */
     static show(
         explorerProvider: MailExplorerProvider,
+        accountManager: AccountManager,
         accountId: string,
         folderPath: string,
         folderName: string,
@@ -98,7 +106,7 @@ export class MessageListPanel {
             },
         );
 
-        const instance = new MessageListPanel(panel, explorerProvider, accountId, folderPath);
+        const instance = new MessageListPanel(panel, explorerProvider, accountManager, accountId, folderPath, folderName);
         MessageListPanel.panels.set(key, instance);
         return instance;
     }
@@ -121,7 +129,9 @@ export class MessageListPanel {
             const service = this.explorerProvider.getImapService(this.accountId);
             const messages = await service.getMessages(this.folderPath);
 
-            const locale = vscode.workspace.getConfiguration('mailClient').get<string>('locale') || undefined;
+            const config = vscode.workspace.getConfiguration('mailClient');
+            const locale = config.get<string>('locale') || undefined;
+            const displayMode = config.get<string>('messageDisplayMode', 'split');
 
             this.panel.webview.postMessage({
                 type: 'messages',
@@ -133,6 +143,7 @@ export class MessageListPanel {
                 })),
                 folderPath: this.folderPath,
                 locale: locale,
+                displayMode: displayMode,
             });
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Failed to load messages';
@@ -143,14 +154,66 @@ export class MessageListPanel {
         }
     }
 
+    private embeddedDetailPanel?: MessageDetailPanel;
+
+    private clearEmbeddedDetail() {
+        if (this.embeddedDetailPanel) {
+            this.embeddedDetailPanel.dispose();
+            this.embeddedDetailPanel = undefined;
+            // Restore HTML for the list view since we're navigating away from the embedded view
+            this.panel.webview.html = this.getHtmlContent();
+        }
+    }
+
+    private showDetailEmbedded(uid: number) {
+        this.clearEmbeddedDetail();
+
+        const onBack = () => {
+            this.embeddedDetailPanel = undefined;
+            this.panel.title = this.folderName;
+            this.panel.webview.html = this.getHtmlContent();
+            this.loadMessages(); // Re-fetch or re-render list
+        };
+
+        this.embeddedDetailPanel = MessageDetailPanel.createEmbedded(
+            this.panel,
+            this.explorerProvider,
+            this.accountManager,
+            this.accountId,
+            this.folderPath,
+            uid,
+            onBack
+        );
+    }
+
     private handleMessage(message: any): void {
+        if (this.embeddedDetailPanel) {
+            return; // let the embedded panel handle its own messages
+        }
+
         switch (message.type) {
             case 'openMessage':
-                vscode.commands.executeCommand('mailClient.openMessage', {
-                    accountId: this.accountId,
-                    folderPath: this.folderPath,
-                    uid: message.uid,
-                });
+                const config = vscode.workspace.getConfiguration('mailClient');
+                const displayMode = config.get<string>('messageDisplayMode', 'preview');
+
+                if (displayMode === 'preview') {
+                    this.showDetailEmbedded(message.uid);
+                } else if (displayMode === 'split') {
+                    MessageDetailPanel.showInSplit(
+                        this.explorerProvider,
+                        this.accountManager,
+                        this.accountId,
+                        this.folderPath,
+                        message.uid
+                    );
+                } else {
+                    // window mode
+                    vscode.commands.executeCommand('mailClient.openMessage', {
+                        accountId: this.accountId,
+                        folderPath: this.folderPath,
+                        uid: message.uid,
+                    });
+                }
                 break;
             case 'reply':
                 vscode.commands.executeCommand('mailClient.reply', {
@@ -411,6 +474,11 @@ export class MessageListPanel {
             font-size: 1.1em;
         }
         .error-msg { color: var(--vscode-errorForeground); }
+        
+        /* Hide actions if display mode is 'split' */
+        body.mode-split .message-actions {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -552,6 +620,7 @@ export class MessageListPanel {
                 case 'messages':
                     titleEl.textContent = msg.folderPath;
                     if (msg.locale) { currentLocale = msg.locale; }
+                    if (msg.displayMode) { document.body.className = 'mode-' + msg.displayMode; }
                     renderMessages(msg.messages);
                     break;
                 case 'error':
