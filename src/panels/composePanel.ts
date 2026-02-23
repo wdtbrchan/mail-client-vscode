@@ -10,6 +10,7 @@ import { IMailAccount } from '../types/account';
 const MailComposer = require('nodemailer/lib/mail-composer');
 import { IMailMessageDetail } from '../types/message';
 import { getSharedStyles, getSharedScripts } from './utils/webviewContent';
+import { MessageListPanel } from './messageListPanel';
 
 /**
  * Compose mode: new message, reply, reply-all, or forward.
@@ -430,15 +431,28 @@ export class ComposePanel {
             const imapPassword = await this.accountManager.getPassword(account.id);
             if (imapPassword) {
                 await imapService.connect(account, imapPassword);
-                const sentFolder = account.sentFolder || 'Sent';
-                // Try to append. If folder doesn't exist, this might fail.
-                // We'll catch errors to not block the success message.
-                await imapService.appendMessage(sentFolder, messageBuffer, ['\\Seen']);
-                await imapService.disconnect();
+                
+                let sentFolder = account.sentFolder;
+                if (!sentFolder) {
+                    sentFolder = await imapService.getSentFolderPath();
+                }
+                if (!sentFolder) {
+                    sentFolder = 'Sent';
+                }
+
+                try {
+                    await imapService.appendMessage(sentFolder, messageBuffer, ['\\Seen']);
+                    // Refresh the Sent folder if it's currently open
+                    MessageListPanel.refreshFolder(account.id, sentFolder);
+                } catch (appendErr) {
+                    console.error('Při ukládání zavádějící do odeslané pošty došlo k chybě:', appendErr);
+                    vscode.window.showWarningMessage(`E-mail byl odeslán, ale nepodařilo se jej uložit do složky odeslané pošty: "${sentFolder}".`);
+                } finally {
+                    await imapService.disconnect();
+                }
             }
         } catch (error) {
-            console.error('Failed to save to Sent folder:', error);
-            // Optionally notify user, but requirement says "if not exists, do nothing" (implies silent fail for that part)
+            console.error('Failed to connect to IMAP for saving to Sent folder:', error);
         }
     }
 

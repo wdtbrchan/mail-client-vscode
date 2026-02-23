@@ -90,14 +90,20 @@ export class ImapService {
                 flags: true,
                 bodyStructure: true,
                 size: true,
+                internalDate: true,
             })) {
                 const envelope = msg.envelope;
                 if (!envelope || msg.flags?.has('\\Deleted')) {
                     continue;
                 }
+                let msgDate = envelope.date || msg.internalDate;
+                if (msgDate && !(msgDate instanceof Date)) {
+                    msgDate = new Date(msgDate as any);
+                }
+                
                 messages.push({
                     uid: msg.uid,
-                    date: envelope.date || new Date(),
+                    date: (msgDate as Date) || new Date(),
                     subject: envelope.subject || '(no subject)',
                     from: this.convertAddress(envelope.from?.[0]),
                     to: (envelope.to || []).map((a: any) => this.convertAddress(a)),
@@ -263,6 +269,49 @@ export class ImapService {
         this.ensureConnected(); // Ensure connection first
         const flatList = await this.client!.list();
         return flatList.map(f => f.path);
+    }
+
+    /**
+     * Attempts to automatically detect the Sent folder path.
+     */
+    async getSentFolderPath(): Promise<string | undefined> {
+        this.ensureConnected();
+        try {
+            const folders = await this.listFolders();
+            
+            // 1. Try to find by specialUse '\Sent'
+            const findBySpecialUse = (foldersList: IMailFolder[]): string | undefined => {
+                for (const f of foldersList) {
+                    if (f.specialUse === '\\Sent') return f.path;
+                    if (f.children) {
+                        const found = findBySpecialUse(f.children);
+                        if (found) return found;
+                    }
+                }
+                return undefined;
+            };
+            
+            const bySpecialUse = findBySpecialUse(folders);
+            if (bySpecialUse) return bySpecialUse;
+
+            // 2. Try to find by common names
+            const commonNames = ['sent', 'odeslané', 'odeslana posta', 'sent items', 'odeslaná pošta', 'outbox'];
+            const findByName = (foldersList: IMailFolder[]): string | undefined => {
+                for (const f of foldersList) {
+                    if (commonNames.includes(f.name.toLowerCase())) return f.path;
+                    if (f.children) {
+                        const found = findByName(f.children);
+                        if (found) return found;
+                    }
+                }
+                return undefined;
+            };
+
+            return findByName(folders);
+        } catch (e) {
+            console.error('Error detecting sent folder:', e);
+            return undefined;
+        }
     }
 
     // ---- Private helpers ----
