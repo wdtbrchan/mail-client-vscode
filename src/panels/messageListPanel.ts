@@ -303,8 +303,17 @@ export class MessageListPanel {
             transition: none;
         }
         .toolbar button:hover {
-            background: #ff9800 !important;
+            background: #e68a00 !important; /* Slightly darker orange on hover */
             color: #ffffff !important;
+        }
+
+        /* Highlight New Message button */
+        #btnCompose {
+            background: #ff9800;
+            color: #ffffff;
+            border-left: none;
+            padding: 0 16px;
+            font-weight: 600;
         }
 
         /* Message List */
@@ -319,7 +328,7 @@ export class MessageListPanel {
             justify-content: space-between;
             align-items: center;
             padding: 10px 16px;
-            border-bottom: 1px solid var(--vscode-widget-border);
+            border-bottom: 1px solid #333333; /* Dark gray separator */
             cursor: pointer;
             transition: background-color 0.1s ease;
             position: relative;

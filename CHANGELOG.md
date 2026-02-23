@@ -2,6 +2,10 @@
 
 ## [ upcoming ]
 
+### Added
+- **UI Enhancements**: Added high-visibility orange highlighting to the "New Message" button in the message list toolbar for better accessibility.
+- **Message List Separators**: Introduced a subtle dark gray horizontal separator between messages in the list view to improve visual clarity and item distinction.
+
 ### Fixed
 - **External Links**: Resolved an issue where external links in the email body were blocked by the webview sandbox. Intercepted link clicks in the email content iframe and routed them through VS Code's native `openExternal` handler to ensure they open in the default web browser. This fix applies to message detail view, print preview, and quoted messages in the compose panel.
 
