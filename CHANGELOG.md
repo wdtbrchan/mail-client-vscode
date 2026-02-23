@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.4.0]
 
 ### Added
 - **Message Display Mode**: Added `mailClient.messageDisplayMode` setting with three modes: Within List (Preview), New Window, and Split View (Beside). "Split View" is now the default mode.
@@ -15,7 +15,6 @@
 - **Layout Refinements**: Optimized the "Load Folders" button placement and improved vertical spacing between HTML and Markdown signature editors.
 - **CSP Compliance**: Refactored the settings panel to use CSS classes instead of inline styles, resolving Content Security Policy violations and improving security.
 - **Message List Actions**: Hidden reply, reply-all, and forward action buttons in the message list when Split View mode is active to reduce UI clutter.
-- **Bug Fixes**: Resolved issue with missing `accountManager` in some navigation paths and fixed visibility of the "Back" button when errors occur.
 
 
 ## [0.3.0]
