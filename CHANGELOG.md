@@ -1,5 +1,10 @@
 # Changelog
 
+## [ upcoming ]
+
+### Fixed
+- **External Links**: Resolved an issue where external links in the email body were blocked by the webview sandbox. Intercepted link clicks in the email content iframe and routed them through VS Code's native `openExternal` handler to ensure they open in the default web browser. This fix applies to message detail view, print preview, and quoted messages in the compose panel.
+
 ## [0.4.0]
 
 ### Added

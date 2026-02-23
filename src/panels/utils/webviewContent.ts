@@ -153,7 +153,14 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
                 '    if(document.body) resizeObserver.observe(document.body);' +
                 '    if(document.documentElement) resizeObserver.observe(document.documentElement);' +
                 '    window.addEventListener("load", sendResize);' +
-                '    sendResize();';
+                '    sendResize();' +
+                '    document.addEventListener("click", function(e) {' +
+                '        const a = e.target.closest("a");' +
+                '        if (a && a.href && (a.href.startsWith("http://") || a.href.startsWith("https://"))) {' +
+                '            e.preventDefault();' +
+                '            window.parent.postMessage({ type: "openExternal", url: a.href }, "*");' +
+                '        }' +
+                '    });';
 
             if (msg.html) {
                 // Parse and process HTML for external images
@@ -301,7 +308,7 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
             }
 
             const iframeId = 'message-body-iframe' + iframeNameUniqueSuffix;
-            html += '<iframe id="' + iframeId + '" name="' + iframeId + '" class="message-body-iframe" scrolling="no" sandbox="allow-same-origin allow-scripts allow-popups"></iframe>';
+            html += '<iframe id="' + iframeId + '" name="' + iframeId + '" class="message-body-iframe" scrolling="no" sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe>';
 
             container.innerHTML = html;
 
@@ -332,6 +339,10 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
                      if (iframe) {
                          iframe.style.height = event.data.height + 'px';
                      }
+                } else if (event.data.type === 'openExternal' && event.data.url) {
+                    if (typeof vscode !== 'undefined') {
+                        vscode.postMessage({ type: 'openExternal', url: event.data.url });
+                    }
                 }
             });
             window.resizeHandlerInstalled = true;

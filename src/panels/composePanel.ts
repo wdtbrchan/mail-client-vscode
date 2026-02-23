@@ -253,6 +253,9 @@ export class ComposePanel {
             case 'switchToWysiwyg':
                 await this.switchToWysiwygMode();
                 break;
+            case 'openExternal':
+                vscode.env.openExternal(vscode.Uri.parse(message.url));
+                break;
         }
     }
 

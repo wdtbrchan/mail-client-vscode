@@ -245,6 +245,9 @@ export class MessageDetailPanel {
             case 'print':
                 this.printHtml(message.html);
                 break;
+            case 'openExternal':
+                vscode.env.openExternal(vscode.Uri.parse(message.url));
+                break;
             case 'back':
                 this.dispose();
                 break;
@@ -584,7 +587,7 @@ export class MessageDetailPanel {
             <button id="btnClosePrint" style="margin-right: 8px;">Close</button>
             <button id="btnConfirmPrint"><svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> PRINT</button>
         </div>
-        <iframe id="printIframe" sandbox="allow-same-origin allow-scripts allow-popups allow-modals"></iframe>
+        <iframe id="printIframe" sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
     </div>
 
     <script nonce="${nonce}">
