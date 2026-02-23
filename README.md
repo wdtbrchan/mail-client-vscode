@@ -18,6 +18,7 @@ A simple and efficient IMAP email client directly within your VS Code (or any ot
 - **Auto-Refresh:** Configurable interval for automatic fetching of new messages.
 - **Print Support:** Capability to print messages via the native OS prompt directly from the UI.
 - **Connection Diagnostics:** Independent IMAP and SMTP connection testing with real-time feedback.
+- **Reliable Connections:** Automatic IMAP reconnection and robust monitoring to handle network interruptions.
 
 ## Requirements
 

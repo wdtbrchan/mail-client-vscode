@@ -39,7 +39,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const provider = explorerProvider;
     context.subscriptions.push(
         vscode.commands.registerCommand('mailClient.refreshFolders', () => {
-            provider.refresh();
+            provider.refresh(undefined, true);
         }),
     );
 

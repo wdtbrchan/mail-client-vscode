@@ -11,15 +11,20 @@ import { IMailMessage, IMailMessageDetail, IMailAddress, IMailAttachment } from 
 export class ImapService {
     private client: ImapFlow | null = null;
     private _connected = false;
+    private account?: IMailAccount;
+    private password?: string;
 
     get connected(): boolean {
-        return this._connected;
+        return this._connected && (this.client?.usable ?? false);
     }
 
     /**
      * Connects to the IMAP server using account credentials.
      */
     async connect(account: IMailAccount, password: string): Promise<void> {
+        this.account = account;
+        this.password = password;
+
         this.client = new ImapFlow({
             host: account.host,
             port: account.port,
@@ -29,6 +34,17 @@ export class ImapService {
                 pass: password,
             },
             logger: false,
+        });
+
+        // Add event listeners for connection status
+        this.client.on('error', (err) => {
+            console.error(`IMAP Error for ${account.username}:`, err);
+            this._connected = false;
+        });
+
+        this.client.on('close', () => {
+            console.log(`IMAP Connection closed for ${account.username}`);
+            this._connected = false;
         });
 
         await this.client.connect();
@@ -52,7 +68,7 @@ export class ImapService {
      * casts status to boolean, losing actual unseen/messages counts.
      */
     async listFolders(): Promise<IMailFolder[]> {
-        this.ensureConnected();
+        await this.ensureConnected();
         const flatList = await this.client!.list({
             statusQuery: { messages: true, unseen: true },
         });
@@ -66,7 +82,7 @@ export class ImapService {
      * @param offset - Number of messages to skip (for pagination)
      */
     async getMessages(folderPath: string, limit = 50, offset = 0): Promise<IMailMessage[]> {
-        this.ensureConnected();
+        await this.ensureConnected();
 
         const lock = await this.client!.getMailboxLock(folderPath);
         try {
@@ -128,7 +144,7 @@ export class ImapService {
      * @param uid - Message UID
      */
     async getMessage(folderPath: string, uid: number): Promise<IMailMessageDetail> {
-        this.ensureConnected();
+        await this.ensureConnected();
 
         const lock = await this.client!.getMailboxLock(folderPath);
         try {
@@ -190,7 +206,7 @@ export class ImapService {
      * Deletes a message by adding the \Deleted flag.
      */
     async deleteMessage(folderPath: string, uid: number): Promise<void> {
-        this.ensureConnected();
+        await this.ensureConnected();
         const lock = await this.client!.getMailboxLock(folderPath);
         try {
             await this.client!.messageFlagsAdd(String(uid), ['\\Deleted'], { uid: true });
@@ -206,7 +222,7 @@ export class ImapService {
      * @param flags - Optional flags to set (e.g. ['\\Seen'])
      */
     async appendMessage(folderPath: string, message: Buffer | string, flags: string[] = []): Promise<void> {
-        this.ensureConnected();
+        await this.ensureConnected();
         const lock = await this.client!.getMailboxLock(folderPath);
         try {
             await this.client!.append(folderPath, message, flags);
@@ -240,7 +256,7 @@ export class ImapService {
      * Moves a message to another folder.
      */
     async moveMessage(folderPath: string, uid: number, targetFolder: string): Promise<void> {
-        this.ensureConnected();
+        await this.ensureConnected();
         const lock = await this.client!.getMailboxLock(folderPath);
         try {
             await this.client!.messageMove(String(uid), targetFolder, { uid: true });
@@ -253,7 +269,7 @@ export class ImapService {
      * Marks a message as seen (read).
      */
     async markMessageSeen(folderPath: string, uid: number): Promise<void> {
-        this.ensureConnected();
+        await this.ensureConnected();
         const lock = await this.client!.getMailboxLock(folderPath);
         try {
             await this.client!.messageFlagsAdd(String(uid), ['\\Seen'], { uid: true });
@@ -266,7 +282,7 @@ export class ImapService {
      * Lists all folder paths as a flat array.
      */
     async listFolderPaths(): Promise<string[]> {
-        this.ensureConnected(); // Ensure connection first
+        await this.ensureConnected(); // Ensure connection first
         const flatList = await this.client!.list();
         return flatList.map(f => f.path);
     }
@@ -275,7 +291,7 @@ export class ImapService {
      * Attempts to automatically detect the Sent folder path.
      */
     async getSentFolderPath(): Promise<string | undefined> {
-        this.ensureConnected();
+        await this.ensureConnected();
         try {
             const folders = await this.listFolders();
             
@@ -316,9 +332,14 @@ export class ImapService {
 
     // ---- Private helpers ----
 
-    private ensureConnected(): void {
-        if (!this.client || !this._connected) {
-            throw new Error('Not connected to IMAP server');
+    private async ensureConnected(): Promise<void> {
+        if (!this.client || !this.connected) {
+            if (this.account && this.password) {
+                console.log(`Attempting to auto-reconnect for ${this.account.username}...`);
+                await this.connect(this.account, this.password);
+            } else {
+                throw new Error('Not connected to IMAP server');
+            }
         }
     }
 
@@ -396,7 +417,7 @@ export class ImapService {
      * @returns Buffer containing the attachment content, or undefined if not found
      */
     async getAttachment(folderPath: string, uid: number, filename: string): Promise<Buffer | undefined> {
-        this.ensureConnected(); // Ensure connection first
+        await this.ensureConnected(); // Ensure connection first
 
         const lock = await this.client!.getMailboxLock(folderPath);
         try {
