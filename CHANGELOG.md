@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.5.0]
 
 ### Added
 - **Message Search**: Added the ability to search for messages within a folder using IMAP search features. A search input is now available in the message list toolbar.
