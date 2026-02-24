@@ -405,7 +405,7 @@ export class MessageDetailPanel {
         const account = this.accountManager.getAccount(this.accountId);
         const customFolders = account?.customFolders || [];
         const customButtonsHtml = customFolders.map((cf, i) => 
-            `<button class="action-btn" id="btnCustom_${i}" title="Move to ${cf.name}">📂 ${cf.name}</button>`
+            `<button class="action-btn" id="btnCustom_${i}" title="Move to ${cf.name}"><span class="btn-icon">📂</span> ${cf.name}</button>`
         ).join('');
 
         const sharedStyles = getSharedStyles(nonce);
@@ -451,11 +451,12 @@ export class MessageDetailPanel {
         /* Action toolbar */
         .action-bar {
             display: flex;
+            flex-wrap: wrap;       /* Allow wrapping */
             flex-shrink: 0;
             padding: 0;
             border-bottom: 1px solid var(--vscode-widget-border);
             background: var(--vscode-editorWidget-background);
-            height: 36px;
+            min-height: 36px;      /* Changed from height to min-height */
         }
         .action-btn {
             display: flex;
@@ -463,6 +464,7 @@ export class MessageDetailPanel {
             gap: 6px;
             padding: 0 16px;
             border: none;
+            border-bottom: 1px solid var(--vscode-widget-border); /* Add a border for wrapped rows */
             border-right: 1px solid var(--vscode-widget-border);
             border-radius: 0;
             background: transparent;
@@ -470,12 +472,19 @@ export class MessageDetailPanel {
             cursor: pointer;
             font-family: inherit;
             font-size: 0.9em;
-            height: 100%;
+            height: 36px; /* Fixed height for each row/button */
         }
         .action-btn svg {
-            width: 18px;
-            height: 18px;
+            width: 24px;
+            height: 24px;
             fill: currentColor;
+        }
+        .btn-icon {
+            font-size: 1.6em;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
         }
         .action-btn.icon-only {
             padding: 0;
@@ -576,19 +585,22 @@ export class MessageDetailPanel {
 
     <div class="action-bar ${this.isEmbedded ? '' : 'hidden'}" id="actionBar">
         ${this.isEmbedded ? '<button class="action-btn" id="btnBack" title="Back to List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back</button>' : ''}
-        <div id="messageButtons" class="hidden" style="display: contents;">
-            <button class="action-btn" id="btnInbox" title="Move to Inbox">📥 Inbox</button>
-            <button class="action-btn" id="btnArchive" title="Archive">📂 Archive</button>
-            <button class="action-btn" id="btnSpam" title="Mark as Spam">⛔ Spam</button>
-            <button class="action-btn" id="btnNewsletters" title="Move to Newsletters">📰 News</button>
-            <button class="action-btn" id="btnTrash" title="Move to Trash">🗑 Trash</button>
-            <button class="action-btn danger hidden" id="btnDelete" title="Delete Permanently">❌ Delete</button>
-            ${customButtonsHtml}
-            <div style="flex: 1;"></div>
+        <div id="messageButtons" class="hidden" style="display: flex; flex-wrap: wrap; flex: 1;">
+            <div style="display: flex; flex-wrap: wrap;">
+                <button class="action-btn" id="btnInbox" title="Move to Inbox"><span class="btn-icon">📥</span> Inbox</button>
+                <button class="action-btn" id="btnArchive" title="Archive"><span class="btn-icon">📂</span> Archive</button>
+                <button class="action-btn" id="btnSpam" title="Mark as Spam"><span class="btn-icon">⛔</span> Spam</button>
+                <button class="action-btn" id="btnNewsletters" title="Move to Newsletters"><span class="btn-icon">📰</span> News</button>
+                <button class="action-btn" id="btnTrash" title="Move to Trash"><span class="btn-icon">🗑</span> Trash</button>
+                <button class="action-btn danger hidden" id="btnDelete" title="Delete Permanently"><span class="btn-icon">❌</span> Delete</button>
+                ${customButtonsHtml}
+            </div>
+            <div style="display: flex; margin-left: auto;">
             <button class="action-btn icon-only" id="btnPrint" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
             <button class="action-btn icon-only" id="btnForward" title="Forward"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"></path></svg></button>
             <button class="action-btn icon-only" id="btnReply" title="Reply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6L9 12L15 18"></path></svg></button>
             <button class="action-btn icon-only" id="btnReplyAll" title="Reply All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6L11 12L17 18"></path><path d="M10 6L4 12L10 18"></path></svg></button>
+            </div>
         </div>
     </div>
 

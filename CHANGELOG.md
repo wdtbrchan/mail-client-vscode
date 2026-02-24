@@ -7,6 +7,8 @@
 
 ### Changed
 - **Connection Errors**: Removed automatic background reconnections which caused infinite loading loops. Connection errors are now displayed as a tooltip on a warning item in the folder tree, requiring a manual refresh to reconnect.
+- **Message Detail UI**: Action bar in message detail view is now responsive. Folder action buttons automatically wrap on smaller screens, while reply/forward/print buttons stay aligned to the right.
+- **Action Buttons**: Replaced text labels with larger SVG icons for "New Message" and "Refresh" buttons to improve visual hierarchy and reduce UI clutter. Tooltips are added for clarity.
 
 ## [0.5.0]
 

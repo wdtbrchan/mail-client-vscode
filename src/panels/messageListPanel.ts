@@ -313,13 +313,30 @@ export class MessageListPanel {
             color: #ffffff !important;
         }
 
-        /* Highlight New Message button */
+        /* Action Buttons */
+        #btnCompose, #btnRefresh {
+            color: var(--vscode-foreground);
+            border-left: none;
+            padding: 0;
+            width: 42px;
+            justify-content: center;
+        }
         #btnCompose {
             background: #ff9800;
             color: #ffffff;
-            border-left: none;
-            padding: 0 16px;
             font-weight: 600;
+        }
+        #btnCompose:hover {
+            background: #e68a00 !important;
+        }
+        #btnCompose svg, #btnRefresh svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
         /* Search Box */
@@ -561,8 +578,8 @@ export class MessageListPanel {
             <input type="text" id="searchInput" placeholder="Search in folder..." title="Type query and press Enter to search using IMAP" value="${this.currentSearchQuery ? this.currentSearchQuery.replace(/"/g, '&quot;') : ''}" />
             <button id="btnClearSearch" title="Clear Search" style="display: ${this.currentSearchQuery ? 'block' : 'none'};">✕</button>
         </div>
-        <button id="btnCompose" title="New Message">✉ New Message</button>
-        <button id="btnRefresh" title="Refresh">↻ Refresh</button>
+        <button id="btnRefresh" title="Refresh"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button>
+        <button id="btnCompose" title="New Message"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg></button>
     </div>
 
     <div id="content">
