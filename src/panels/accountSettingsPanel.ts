@@ -115,6 +115,7 @@ export class AccountSettingsPanel {
             const account: IMailAccount = {
                 id: this.existingAccount?.id || this.accountManager.generateId(),
                 name: data.name,
+                senderName: data.senderName || undefined,
                 host: data.host,
                 port: parseInt(data.port, 10),
                 secure: data.secure,
@@ -525,6 +526,10 @@ export class AccountSettingsPanel {
             <label for="name">Account Name</label>
             <input type="text" id="name" placeholder="My Email" required>
         </div>
+        <div class="form-group">
+            <label for="senderName">Sender Name</label>
+            <input type="text" id="senderName" placeholder="John Doe">
+        </div>
 
         <hr class="section-divider">
 
@@ -689,6 +694,7 @@ export class AccountSettingsPanel {
 
         const fields = {
             name: document.getElementById('name'),
+            senderName: document.getElementById('senderName'),
             host: document.getElementById('host'),
             port: document.getElementById('port'),
             secure: document.getElementById('secure'),
@@ -725,6 +731,7 @@ export class AccountSettingsPanel {
 
             return {
                 name: fields.name.value.trim(),
+                senderName: fields.senderName.value.trim(),
                 host: fields.host.value.trim(),
                 port: fields.port.value,
                 secure: fields.secure.checked,
@@ -898,6 +905,7 @@ export class AccountSettingsPanel {
                 case 'loadAccount':
                     titleEl.textContent = 'Edit: ' + message.account.name;
                     fields.name.value = message.account.name || '';
+                    fields.senderName.value = message.account.senderName || '';
                     fields.host.value = message.account.host || '';
                     fields.port.value = message.account.port || 993;
                     fields.secure.checked = message.account.secure !== false;

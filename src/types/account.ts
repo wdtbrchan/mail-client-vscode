@@ -7,6 +7,9 @@ export interface IMailAccount {
     id: string;
     /** Display name for the account */
     name: string;
+    
+    /** Sender display name to be used in From header */
+    senderName?: string;
 
     // --- IMAP (incoming) ---
     /** IMAP server hostname */

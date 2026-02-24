@@ -1,5 +1,10 @@
 # Changelog
 
+## [ upcoming ]
+
+### Added
+- **Sender Name**: Added a new field in account settings to configure a custom display name (`senderName`) for outgoing emails, independent of the general account name. 
+
 ## [0.5.0]
 
 ### Added
