@@ -7,6 +7,9 @@
 - **Message Actions**: Added an "Inbox" button to the message detail view to quickly move messages back to the inbox.
 - **Smart Action Buttons**: Action buttons (Inbox, Archive, Spam, Newsletters, Trash, and Custom Folders) are now automatically hidden when the message is already residing in the respective folder.
 
+### Changed
+- **Message Detail Layout**: The message header and action toolbar are now fixed to the top of the panel, ensuring they remain visible while scrolling through long message content.
+
 ## [0.4.2]
 
 ### Added

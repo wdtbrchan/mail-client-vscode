@@ -20,6 +20,7 @@
 - [x] Improve message list appearance (implemented tiled list actions and orange hover).
 - [x] Implement multiple message display modes (within list, new window, split view).
 - [x] Style Markdown preview label as a corner badge.
+- [x] Fixed message detail header and toolbar to stay stationary while scrolling message content.
 - [ ] Drag & Drop support (e.g., moving messages to folders).
 - [ ] Dark/Light mode fully integrated with VS Code themes.
 

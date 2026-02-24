@@ -431,6 +431,19 @@ export class MessageDetailPanel {
             font-size: var(--vscode-font-size);
             color: var(--vscode-foreground);
             background: var(--vscode-editor-background);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #messageHeaders {
+            flex-shrink: 0;
+        }
+
+        #messageBody {
+            flex: 1;
+            overflow-y: auto;
         }
 
         ${sharedStyles}
@@ -438,6 +451,7 @@ export class MessageDetailPanel {
         /* Action toolbar */
         .action-bar {
             display: flex;
+            flex-shrink: 0;
             padding: 0;
             border-bottom: 1px solid var(--vscode-widget-border);
             background: var(--vscode-editorWidget-background);
