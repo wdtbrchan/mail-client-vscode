@@ -13,6 +13,7 @@
 - [x] Improve IMAP connection reliability and automatic reconnection.
 - [x] Message searching.
 - [x] Fix sender name parsing when containing commas (unquoted).
+- [x] Fix sender name display in compose/reply panel.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
 
@@ -22,6 +23,8 @@
 - [x] Implement multiple message display modes (within list, new window, split view).
 - [x] Style Markdown preview label as a corner badge.
 - [x] Fixed message detail header and toolbar to stay stationary while scrolling message content.
+- [x] Improved message movement flow (keep window open, auto-navigate to next message).
+- [x] Added visual highlighting for the currently opened message in the list.
 - [ ] Drag & Drop support (e.g., moving messages to folders).
 - [ ] Dark/Light mode fully integrated with VS Code themes.
 

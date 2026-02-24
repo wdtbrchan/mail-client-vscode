@@ -802,7 +802,7 @@ export class ComposePanel {
 </head>
 <body>
     <div class="account-info">
-        From: <strong>${this.escapeHtml(this.options.account.name)}</strong>
+        From: <strong>${this.escapeHtml(this.options.account.senderName || this.options.account.name)}</strong>
         (${this.escapeHtml(this.options.account.smtpUsername || this.options.account.username)})
     </div>
 

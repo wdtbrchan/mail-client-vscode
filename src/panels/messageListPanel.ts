@@ -17,6 +17,8 @@ export class MessageListPanel {
     private readonly panel: vscode.WebviewPanel;
     private disposables: vscode.Disposable[] = [];
     private currentSearchQuery: string = '';
+    private currentMessages: IMailMessage[] = [];
+    public activeUid?: number;
 
     private constructor(
         panel: vscode.WebviewPanel,
@@ -131,6 +133,8 @@ export class MessageListPanel {
             const service = this.explorerProvider.getImapService(this.accountId);
             const messages = await service.getMessages(this.folderPath, 50, 0, this.currentSearchQuery);
 
+            this.currentMessages = messages;
+
             const config = vscode.workspace.getConfiguration('mailClient');
             const locale = config.get<string>('locale') || undefined;
             const displayMode = config.get<string>('messageDisplayMode', 'split');
@@ -146,6 +150,7 @@ export class MessageListPanel {
                 folderPath: this.folderPath,
                 locale: locale,
                 displayMode: displayMode,
+                activeUid: this.activeUid,
             });
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Failed to load messages';
@@ -154,6 +159,38 @@ export class MessageListPanel {
                 message: errorMsg,
             });
         }
+    }
+
+    public static setActiveUid(accountId: string, folderPath: string, uid: number) {
+        const panel = this.getPanel(accountId, folderPath);
+        if (panel) {
+            panel.activeUid = uid;
+            panel.panel.webview.postMessage({ type: 'setActive', uid });
+        }
+    }
+
+    private static getPanel(accountId: string, folderPath: string): MessageListPanel | undefined {
+        const key = `${accountId}:${folderPath}`;
+        let panel = MessageListPanel.panels.get(key);
+        if (!panel && MessageListPanel.activePanel && MessageListPanel.activePanel.accountId === accountId && MessageListPanel.activePanel.folderPath === folderPath) {
+            panel = MessageListPanel.activePanel;
+        }
+        return panel;
+    }
+
+    public static getNextMessageUid(accountId: string, folderPath: string, currentUid: number): number | undefined {
+        const panel = this.getPanel(accountId, folderPath);
+
+        if (panel) {
+            const msgs = panel.currentMessages;
+            const idx = msgs.findIndex(m => m.uid === currentUid);
+            if (idx >= 0 && idx + 1 < msgs.length) {
+                return msgs[idx + 1].uid;
+            } else if (idx > 0) {
+                return msgs[idx - 1].uid;
+            }
+        }
+        return undefined;
     }
 
     private embeddedDetailPanel?: MessageDetailPanel;
@@ -195,6 +232,9 @@ export class MessageListPanel {
 
         switch (message.type) {
             case 'openMessage':
+                this.activeUid = message.uid;
+                this.panel.webview.postMessage({ type: 'setActive', uid: message.uid });
+
                 const config = vscode.workspace.getConfiguration('mailClient');
                 const displayMode = config.get<string>('messageDisplayMode', 'preview');
 
@@ -398,6 +438,17 @@ export class MessageListPanel {
         
         .message-item:hover {
             background: var(--vscode-list-hoverBackground);
+        }
+        
+        /* Active (Opened) Indicator */
+        .message-item.active {
+            background-color: var(--vscode-list-activeSelectionBackground);
+            color: var(--vscode-list-activeSelectionForeground);
+        }
+        .message-item.active .message-subject,
+        .message-item.active .message-from,
+        .message-item.active .message-date {
+            color: var(--vscode-list-activeSelectionForeground);
         }
         
         /* Unread Indicator & Styling */
@@ -740,6 +791,17 @@ export class MessageListPanel {
                     if (msg.locale) { currentLocale = msg.locale; }
                     if (msg.displayMode) { document.body.className = 'mode-' + msg.displayMode; }
                     renderMessages(msg.messages);
+                    if (msg.activeUid !== undefined) {
+                        const item = document.querySelector('.message-item[data-uid="' + msg.activeUid + '"]');
+                        if (item) item.classList.add('active');
+                    }
+                    break;
+                case 'setActive':
+                    document.querySelectorAll('.message-item').forEach(el => el.classList.remove('active'));
+                    if (msg.uid !== undefined) {
+                        const activeItem = document.querySelector('.message-item[data-uid="' + msg.uid + '"]');
+                        if (activeItem) activeItem.classList.add('active');
+                    }
                     break;
                 case 'error':
                     contentEl.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(msg.message) + '</div>';

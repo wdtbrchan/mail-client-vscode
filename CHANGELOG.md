@@ -2,7 +2,13 @@
 
 ## [ upcoming ]
 
+### Added
+- **Message Move Flow**: The message detail panel now remains open after moving a message (Archive, Trash, Spam, etc.) or deleting it.
+- **Auto-navigation**: After a message is moved or deleted, the next available message in the current folder is automatically loaded and displayed.
+- **Active Highlight**: The currently opened message is now visually highlighted in the message list for better navigation context.
+
 ### Fixed
+- **Sender Name Display**: Fixed an issue where the account name was shown instead of the configured sender name in the compose/reply panel.
 - **Sender Name Parsing**: Fixed an issue where names containing commas (e.g., "Doe, John") were truncated in the message list and detail view.
 
 ## [0.6.0]

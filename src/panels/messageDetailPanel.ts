@@ -207,6 +207,9 @@ export class MessageDetailPanel {
                 MessageListPanel.refreshFolder(this.accountId, this.folderPath);
                 this.explorerProvider.refresh();
             }
+
+            // Sync the active message selection in the list view
+            MessageListPanel.setActiveUid(this.accountId, this.folderPath, this.uid);
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Failed to load message';
             this.panel.webview.postMessage({
@@ -309,6 +312,9 @@ export class MessageDetailPanel {
         }
 
         try {
+            const nextUid = MessageListPanel.getNextMessageUid(this.accountId, this.folderPath, this.uid);
+            this.panel.webview.postMessage({ type: 'loading', text: 'Přesouvání zprávy...' });
+
             const service = this.explorerProvider.getImapService(this.accountId);
             await service.moveMessage(this.folderPath, this.uid, targetFolder);
             
@@ -317,7 +323,24 @@ export class MessageDetailPanel {
             // Refresh logic similar to delete
             MessageListPanel.refreshFolder(this.accountId, this.folderPath);
             this.explorerProvider.refresh();
-            this.panel.dispose();
+            
+            if (nextUid !== undefined) {
+                const oldKey = `${this.accountId}:${this.folderPath}:${this.uid}`;
+                MessageDetailPanel.panels.delete(oldKey);
+                
+                this.uid = nextUid;
+                
+                const newKey = `${this.accountId}:${this.folderPath}:${this.uid}`;
+                MessageDetailPanel.panels.set(newKey, this);
+
+                if (MessageDetailPanel.splitPanel === this) {
+                    // splitPanel is already referencing 'this', so no need to update it
+                }
+                
+                this.loadMessage();
+            } else {
+                this.panel.webview.postMessage({ type: 'messageMoved', target: targetFolder });
+            }
         } catch (error) {
              const errorMsg = error instanceof Error ? error.message : 'Move failed';
             vscode.window.showErrorMessage(`Failed to move message: ${errorMsg}`);
@@ -326,6 +349,9 @@ export class MessageDetailPanel {
 
     private async moveMessageCustom(targetPath: string): Promise<void> {
         try {
+            const nextUid = MessageListPanel.getNextMessageUid(this.accountId, this.folderPath, this.uid);
+            this.panel.webview.postMessage({ type: 'loading', text: 'Přesouvání zprávy...' });
+
             const service = this.explorerProvider.getImapService(this.accountId);
             await service.moveMessage(this.folderPath, this.uid, targetPath);
             
@@ -333,7 +359,24 @@ export class MessageDetailPanel {
             
             MessageListPanel.refreshFolder(this.accountId, this.folderPath);
             this.explorerProvider.refresh();
-            this.panel.dispose();
+            
+            if (nextUid !== undefined) {
+                const oldKey = `${this.accountId}:${this.folderPath}:${this.uid}`;
+                MessageDetailPanel.panels.delete(oldKey);
+                
+                this.uid = nextUid;
+                
+                const newKey = `${this.accountId}:${this.folderPath}:${this.uid}`;
+                MessageDetailPanel.panels.set(newKey, this);
+
+                if (MessageDetailPanel.splitPanel === this) {
+                    // splitPanel is already referencing 'this', so no need to update it
+                }
+                
+                this.loadMessage();
+            } else {
+                this.panel.webview.postMessage({ type: 'messageMoved', target: targetPath });
+            }
         } catch (error) {
              const errorMsg = error instanceof Error ? error.message : 'Move failed';
             vscode.window.showErrorMessage(`Failed to move message: ${errorMsg}`);
@@ -351,6 +394,9 @@ export class MessageDetailPanel {
         }
 
         try {
+            const nextUid = MessageListPanel.getNextMessageUid(this.accountId, this.folderPath, this.uid);
+            this.panel.webview.postMessage({ type: 'loading', text: 'Mazání zprávy...' });
+
             const service = this.explorerProvider.getImapService(this.accountId);
             await service.deleteMessage(this.folderPath, this.uid);
 
@@ -360,8 +406,19 @@ export class MessageDetailPanel {
             // Refresh folder tree (updates unread counts / badge)
             this.explorerProvider.refresh();
 
-            // Close this detail panel
-            this.panel.dispose();
+            if (nextUid !== undefined) {
+                const oldKey = `${this.accountId}:${this.folderPath}:${this.uid}`;
+                MessageDetailPanel.panels.delete(oldKey);
+                
+                this.uid = nextUid;
+                
+                const newKey = `${this.accountId}:${this.folderPath}:${this.uid}`;
+                MessageDetailPanel.panels.set(newKey, this);
+                
+                this.loadMessage();
+            } else {
+                this.panel.webview.postMessage({ type: 'messageDeleted' });
+            }
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Failed to delete message';
             vscode.window.showErrorMessage(`Delete failed: ${errorMsg}`);
@@ -838,7 +895,26 @@ export class MessageDetailPanel {
                     if (mb) mb.classList.add('hidden');
                     
                     loadingEl.classList.remove('hidden');
-                    loadingEl.innerHTML = '<span class="loader"></span>Loading message...';
+                    const loadingText = msg.text || 'Loading message...';
+                    loadingEl.innerHTML = '<span class="loader"></span>' + escapeHtml(loadingText);
+                    break;
+                case 'messageMoved':
+                    headersEl.innerHTML = '';
+                    bodyEl.innerHTML = '<div class="empty-msg">Zpráva byla přesunuta do ' + escapeHtml(msg.target) + '.</div>';
+                    if (!isEmbedded) {
+                        actionBar.classList.add('hidden');
+                    }
+                    if (document.getElementById('messageButtons')) document.getElementById('messageButtons').classList.add('hidden');
+                    loadingEl.classList.add('hidden');
+                    break;
+                case 'messageDeleted':
+                    headersEl.innerHTML = '';
+                    bodyEl.innerHTML = '<div class="empty-msg">Zpráva byla smazána.</div>';
+                    if (!isEmbedded) {
+                        actionBar.classList.add('hidden');
+                    }
+                    if (document.getElementById('messageButtons')) document.getElementById('messageButtons').classList.add('hidden');
+                    loadingEl.classList.add('hidden');
                     break;
                 case 'message':
                     console.log('Received message data', msg);
