@@ -12,6 +12,7 @@
 - [x] Implement Print functionality.
 - [x] Improve IMAP connection reliability and automatic reconnection.
 - [x] Message searching.
+- [x] Fix sender name parsing when containing commas (unquoted).
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
 

@@ -2,6 +2,9 @@
 
 ## [ upcoming ]
 
+### Fixed
+- **Sender Name Parsing**: Fixed an issue where names containing commas (e.g., "Doe, John") were truncated in the message list and detail view.
+
 ## [0.6.0]
 
 ### Added

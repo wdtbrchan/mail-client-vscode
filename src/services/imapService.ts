@@ -164,9 +164,9 @@ export class ImapService {
                     uid: msg.uid,
                     date: (msgDate as Date) || new Date(),
                     subject: envelope.subject || '(no subject)',
-                    from: this.convertAddress(envelope.from?.[0]),
-                    to: (envelope.to || []).map((a: any) => this.convertAddress(a)),
-                    cc: envelope.cc?.map((a: any) => this.convertAddress(a)),
+                    from: this.fixAddressList(envelope.from || [])[0] || { address: 'unknown' },
+                    to: this.fixAddressList(envelope.to || []),
+                    cc: this.fixAddressList(envelope.cc || []),
                     hasAttachments: this.hasAttachments(msg.bodyStructure),
                     seen: msg.flags?.has('\\Seen') ?? false,
                     size: msg.size || 0,
@@ -211,10 +211,10 @@ export class ImapService {
             const mapAddresses = (field: any): IMailAddress[] => {
                 if (!field) return [];
                 if (field.value && Array.isArray(field.value)) {
-                    return field.value.map((a: any) => ({ name: a.name, address: a.address || 'unknown' }));
+                    return this.fixAddressList(field.value);
                 }
                 if (Array.isArray(field)) {
-                    return field.flatMap((f: any) => mapAddresses(f));
+                    return this.fixAddressList(field);
                 }
                 return [];
             };
@@ -420,6 +420,43 @@ export class ImapService {
         }
 
         return rootFolders;
+    }
+
+    private fixAddressList(addresses: any[]): IMailAddress[] {
+        if (!addresses || !Array.isArray(addresses)) {
+            return [];
+        }
+
+        const result: IMailAddress[] = [];
+        let pendingName = '';
+
+        for (const addr of addresses) {
+            const name = addr.name || '';
+            const address = addr.address;
+
+            if (!address && name) {
+                // Orphan name (likely due to an unquoted comma), keep it for the next entry
+                pendingName = pendingName ? `${pendingName}, ${name}` : name;
+            } else {
+                // We have an address, or both are empty
+                const finalName = pendingName ? `${pendingName}, ${name}` : (name || undefined);
+                result.push({
+                    name: finalName ? finalName.trim() : undefined,
+                    address: address || 'unknown'
+                });
+                pendingName = '';
+            }
+        }
+
+        // If there's leftover pendingName and no addresses were added
+        if (pendingName && result.length === 0) {
+            result.push({
+                name: pendingName.trim(),
+                address: 'unknown'
+            });
+        }
+
+        return result;
     }
 
     private convertAddress(addr: any): IMailAddress {
