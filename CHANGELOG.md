@@ -5,6 +5,9 @@
 ### Added
 - **Sender Name**: Added a new field in account settings to configure a custom display name (`senderName`) for outgoing emails, independent of the general account name. 
 
+### Changed
+- **Connection Errors**: Removed automatic background reconnections which caused infinite loading loops. Connection errors are now displayed as a tooltip on a warning item in the folder tree, requiring a manual refresh to reconnect.
+
 ## [0.5.0]
 
 ### Added

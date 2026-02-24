@@ -13,6 +13,8 @@ export class ImapService {
     private _connected = false;
     private account?: IMailAccount;
     private password?: string;
+    public hasConnectionError = false;
+    public lastConnectionError?: string;
 
     get connected(): boolean {
         return this._connected && (this.client?.usable ?? false);
@@ -40,6 +42,8 @@ export class ImapService {
         this.client.on('error', (err) => {
             console.error(`IMAP Error for ${account.username}:`, err);
             this._connected = false;
+            this.hasConnectionError = true;
+            this.lastConnectionError = err instanceof Error ? err.message : String(err);
         });
 
         this.client.on('close', () => {
@@ -47,8 +51,16 @@ export class ImapService {
             this._connected = false;
         });
 
-        await this.client.connect();
-        this._connected = true;
+        try {
+            await this.client.connect();
+            this._connected = true;
+            this.hasConnectionError = false;
+            this.lastConnectionError = undefined;
+        } catch (error) {
+            this.hasConnectionError = true;
+            this.lastConnectionError = error instanceof Error ? error.message : String(error);
+            throw error;
+        }
     }
 
     /**
@@ -56,9 +68,15 @@ export class ImapService {
      */
     async disconnect(): Promise<void> {
         if (this.client) {
-            await this.client.logout();
+            try {
+                await this.client.logout();
+            } catch (e) {
+                // Ignore errors during logout
+            }
             this.client = null;
             this._connected = false;
+            this.hasConnectionError = false;
+            this.lastConnectionError = undefined;
         }
     }
 
@@ -359,12 +377,7 @@ export class ImapService {
 
     private async ensureConnected(): Promise<void> {
         if (!this.client || !this.connected) {
-            if (this.account && this.password) {
-                console.log(`Attempting to auto-reconnect for ${this.account.username}...`);
-                await this.connect(this.account, this.password);
-            } else {
-                throw new Error('Not connected to IMAP server');
-            }
+            throw new Error('Not connected to IMAP server. Please refresh connection manually.');
         }
     }
 

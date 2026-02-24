@@ -119,6 +119,8 @@ export class MailExplorerProvider implements vscode.TreeDataProvider<MailTreeIte
         if (forceReconnect) {
             const tasks: Promise<void>[] = [];
             for (const service of this.imapServices.values()) {
+                service.hasConnectionError = false;
+                service.lastConnectionError = undefined;
                 tasks.push(service.disconnect().catch(() => { }));
             }
             await Promise.all(tasks);
@@ -227,6 +229,13 @@ export class MailExplorerProvider implements vscode.TreeDataProvider<MailTreeIte
         }
 
         const service = this.getImapService(accountId);
+        
+        if (service.hasConnectionError) {
+            const item = new MailTreeItem('folder', accountId, `⚠ Connection error`, vscode.TreeItemCollapsibleState.None);
+            item.tooltip = service.lastConnectionError || 'Please refresh connection manually';
+            return [item];
+        }
+
         if (!service.connected) {
             // Try to connect automatically
             const account = this.accountManager.getAccount(accountId);
@@ -242,29 +251,24 @@ export class MailExplorerProvider implements vscode.TreeDataProvider<MailTreeIte
             try {
                 await service.connect(account, password);
             } catch (error) {
+                service.hasConnectionError = true;
                 const errorMsg = error instanceof Error ? error.message : 'Connection failed';
-                return [new MailTreeItem('folder', accountId, `⚠ ${errorMsg}`, vscode.TreeItemCollapsibleState.None)];
+                service.lastConnectionError = errorMsg;
+                const item = new MailTreeItem('folder', accountId, `⚠ Connection error`, vscode.TreeItemCollapsibleState.None);
+                item.tooltip = errorMsg;
+                return [item];
             }
         }
 
         try {
             folders = await service.listFolders();
         } catch (error) {
-            // Connection might have dropped, try to reconnect once
-            try {
-                const account = this.accountManager.getAccount(accountId);
-                const password = await this.accountManager.getPassword(accountId);
-                if (account && password) {
-                    await service.disconnect().catch(() => { });
-                    await service.connect(account, password);
-                    folders = await service.listFolders();
-                } else {
-                    throw error;
-                }
-            } catch (retryError) {
-                const errorMsg = retryError instanceof Error ? retryError.message : 'Failed to list folders (reconnect failed)';
-                return [new MailTreeItem('folder', accountId, `⚠ ${errorMsg}`, vscode.TreeItemCollapsibleState.None)];
-            }
+            service.hasConnectionError = true;
+            const errorMsg = error instanceof Error ? error.message : 'Failed to list folders';
+            service.lastConnectionError = errorMsg;
+            const item = new MailTreeItem('folder', accountId, `⚠ Connection error`, vscode.TreeItemCollapsibleState.None);
+            item.tooltip = errorMsg;
+            return [item];
         }
 
         this.folderCache.set(accountId, folders);
