@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.7.0]
 
 ### Added
 - **Message Move Flow**: The message detail panel now remains open after moving a message (Archive, Trash, Spam, etc.) or deleting it.
