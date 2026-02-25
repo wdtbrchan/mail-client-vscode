@@ -62,11 +62,12 @@ export function getSharedStyles(nonce: string): string {
         /* Message body iframe */
         .message-body-iframe {
             width: calc(100% - 32px);
+            min-width: calc(100% - 32px);
             margin: 16px;
             border: none;
             display: block;
             background-color: #ffffff;
-            /* Height will be set by JS */
+            /* Height and potentially width will be set by JS */
         }
 
         /* External Images Warning */
@@ -165,8 +166,10 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
                 '        window.parent.postMessage({ type: "error", message: "Iframe script error: " + msg }, "*");' +
                 '    };' +
                 '    function sendResize() {' +
+                '        const wrapper = document.getElementById("resizer-wrapper");' +
                 '        const height = Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);' +
-                '        window.parent.postMessage({ type: "resize", height: height + 20, source: window.name }, "*");' +
+                '        const width = wrapper ? wrapper.offsetWidth : document.body.scrollWidth;' +
+                '        window.parent.postMessage({ type: "resize", height: height + 20, width: width, source: window.name }, "*");' +
                 '    }' +
                 '    const resizeObserver = new ResizeObserver(entries => sendResize());' +
                 '    if(document.body) resizeObserver.observe(document.body);' +
@@ -211,7 +214,7 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
                     link.setAttribute('target', '_blank');
                 });
                 
-                bodyContent = doc.body ? doc.body.innerHTML : '';
+                bodyContent = doc.body ? '<div id="resizer-wrapper" style="display: table; min-width: 100%;">' + doc.body.innerHTML + '</div>' : '';
                  
                  // Add base styles
                  const style = doc.createElement('style');
@@ -260,7 +263,7 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
                 '        }' +
                 '    </style>' +
                 '</head>' +
-                '<body>' + escapeHtml(msg.text) + 
+                '<body><div id="resizer-wrapper" style="display: table; min-width: 100%;">' + escapeHtml(msg.text) + '</div>' + 
                 '<script nonce="${nonce}">' + resizeScriptContent + '<\\/script>' +
                 '</body>';
             } else {
@@ -276,7 +279,7 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
                 '        }' +
                 '    </style>' +
                 '</head>' +
-                '<body>No content available.' + 
+                '<body><div id="resizer-wrapper" style="display: table; min-width: 100%;">No content available.</div>' + 
                 '<script nonce="${nonce}">' + resizeScriptContent + '<\\/script>' +
                 '</body>';
             }
@@ -357,12 +360,26 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
                      const iframe = document.getElementsByName(event.data.source)[0];
                      if (iframe) {
                          iframe.style.height = event.data.height + 'px';
+                         if (event.data.width) {
+                             const containerWidth = iframe.parentElement ? iframe.parentElement.clientWidth : window.innerWidth;
+                             if (event.data.width > (containerWidth - 32)) {
+                                 iframe.style.width = event.data.width + 'px';
+                             } else {
+                                 iframe.style.width = 'calc(100% - 32px)';
+                             }
+                         }
                      }
                 } else if (event.data.type === 'openExternal' && event.data.url) {
                     if (typeof vscode !== 'undefined') {
                         vscode.postMessage({ type: 'openExternal', url: event.data.url });
                     }
                 }
+            });
+
+            window.addEventListener('resize', () => {
+                document.querySelectorAll('.message-body-iframe').forEach(iframe => {
+                    iframe.style.width = 'calc(100% - 32px)';
+                });
             });
             window.resizeHandlerInstalled = true;
         }

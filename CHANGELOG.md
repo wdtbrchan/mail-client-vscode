@@ -1,5 +1,13 @@
 # Changelog
 
+## [ upcoming ]
+
+### Added
+- **Horizontal Scrollbar**: Added a horizontal scrollbar to the message detail view that automatically appears when content (like wide tables or images) exceeds the window width.
+
+### Fixed
+- **Infinite Expansion**: Resolved an issue where the message body would infinitely expand horizontally by implementing a stable width measurement wrapper and safer resize logic in the webview.
+
 ## [0.8.0]
 
 ### Added

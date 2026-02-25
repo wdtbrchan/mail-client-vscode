@@ -521,7 +521,7 @@ export class MessageDetailPanel {
 
         #messageBody {
             flex: 1;
-            overflow-y: auto;
+            overflow: auto;
         }
 
         ${sharedStyles}
