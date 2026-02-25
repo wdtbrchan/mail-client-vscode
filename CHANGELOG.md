@@ -3,11 +3,16 @@
 ## [ upcoming ]
 
 ### Added
+- **WYSIWYG Font Size**: Added a new dropdown menu in the WYSIWYG editor to select between 5 different text sizes (very small, small, normal, big, very big).
 - **Send + Archive**: Added a new secondary send action in the compose panel (for replies and forwards) that automatically moves the original message to the Archive folder after sending.
 - **Icon-only Buttons**: Updated the "Send" and "Send + Archive" buttons to use a modern, icon-only design with a borderless style and orange hover effects.
 - **Compact Mode Toggle**: Refactored the Markdown/WYSIWYG mode switching buttons into a pair of compact, labeled buttons with active state highlighting.
 
+### Changed
+- **WYSIWYG Toolbar**: Refactored formatting buttons to a new, centered row for better layout and accessibility.
+
 ### Fixed
+- **Sender Name Display**: Fixed an issue where the account name was shown instead of the configured sender name in the compose/reply panel.
 - **Instant Folder Sync**: Improved folder synchronization after archiving from the compose panel by reusing the primary IMAP connection for the move operation.
 - **Workflow Continuity**: The message detail panel now automatically navigates to the next available message after an email is sent and the original is archived.
 

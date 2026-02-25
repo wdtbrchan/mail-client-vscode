@@ -773,11 +773,17 @@ export class ComposePanel {
         }
 
         /* WYSIWYG editor */
+        .wysiwyg-toolbar-row {
+            padding: 4px 16px;
+            border-bottom: 1px solid var(--vscode-widget-border);
+            background: var(--vscode-editorWidget-background);
+            display: flex;
+            justify-content: center;
+        }
         .wysiwyg-toolbar {
             display: flex;
             align-items: center;
-            padding: 0 16px;
-            height: 100%;
+            height: 32px;
         }
         .format-group {
             display: flex;
@@ -805,6 +811,19 @@ export class ComposePanel {
             background: var(--vscode-toolbar-hoverBackground);
             color: var(--vscode-icon-foreground);
         }
+        .format-select {
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 3px;
+            padding: 2px 4px;
+            font-family: inherit;
+            font-size: 0.85em;
+            outline: none;
+        }
+        .format-select:focus {
+            border-color: var(--vscode-focusBorder);
+        }
         .wysiwyg-editor {
             min-height: 200px;
             padding: 6px;
@@ -831,6 +850,12 @@ export class ComposePanel {
         .wysiwyg-editor:focus {
             border-color: var(--vscode-focusBorder);
         }
+        /* Font size mapping */
+        .wysiwyg-editor font[size="1"] { font-size: 0.65em; }
+        .wysiwyg-editor font[size="2"] { font-size: 0.8em; }
+        .wysiwyg-editor font[size="3"] { font-size: 1em; }
+        .wysiwyg-editor font[size="5"] { font-size: 1.5em; }
+        .wysiwyg-editor font[size="7"] { font-size: 2em; }
         .mode-toggle {
             display: flex;
             background: var(--vscode-button-secondaryBackground);
@@ -896,27 +921,6 @@ export class ComposePanel {
     <div class="action-bar">
         <div class="action-bar-left">
             <button class="btn-discard" id="btnDiscard">✕ Discard</button>
-            ${this.isWysiwyg ? `
-                <div class="wysiwyg-toolbar">
-                    <div class="format-group">
-                        <button class="format-btn" data-cmd="bold" title="Bold"><b>B</b></button>
-                        <button class="format-btn" data-cmd="italic" title="Italic"><i>I</i></button>
-                        <button class="format-btn" data-cmd="underline" title="Underline"><u>U</u></button>
-                        <button class="format-btn" data-cmd="strikethrough" title="Strikethrough"><s>S</s></button>
-                        <div class="format-divider"></div>
-                        <button class="format-btn" data-cmd="insertUnorderedList" title="Bullet List">•</button>
-                        <button class="format-btn" data-cmd="insertOrderedList" title="Numbered List">1.</button>
-                        <div class="format-divider"></div>
-                        <button class="format-btn" data-cmd="outdent" title="Decrease Indent">⇤</button>
-                        <button class="format-btn" data-cmd="indent" title="Increase Indent">⇥</button>
-                        <div class="format-divider"></div>
-                        <button class="format-btn" data-cmd="formatBlock" data-val="BLOCKQUOTE" title="Quote">❞</button>
-                        <div class="format-divider"></div>
-                        <button class="format-btn" data-cmd="fontName" data-val="monospace" title="Monospace Font" style="font-family: monospace;">&lt;/&gt;</button>
-                        <button class="format-btn" data-cmd="removeFormat" title="Clear Formatting">⌫</button>
-                    </div>
-                </div>
-            ` : ''}
         </div>
         <div class="action-bar-right">
             <div class="mode-toggle">
@@ -930,6 +934,38 @@ export class ComposePanel {
             ` : ''}
         </div>
     </div>
+
+    ${this.isWysiwyg ? `
+        <div class="wysiwyg-toolbar-row">
+            <div class="wysiwyg-toolbar">
+                <div class="format-group">
+                    <select class="format-select" id="fontSizeSelect" title="Text Size">
+                        <option value="1">very small</option>
+                        <option value="2">small</option>
+                        <option value="3" selected>normal</option>
+                        <option value="5">big</option>
+                        <option value="7">very big</option>
+                    </select>
+                    <div class="format-divider"></div>
+                    <button class="format-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                    <button class="format-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                    <button class="format-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                    <button class="format-btn" data-cmd="strikethrough" title="Strikethrough"><s>S</s></button>
+                    <div class="format-divider"></div>
+                    <button class="format-btn" data-cmd="insertUnorderedList" title="Bullet List">•</button>
+                    <button class="format-btn" data-cmd="insertOrderedList" title="Numbered List">1.</button>
+                    <div class="format-divider"></div>
+                    <button class="format-btn" data-cmd="outdent" title="Decrease Indent">⇤</button>
+                    <button class="format-btn" data-cmd="indent" title="Increase Indent">⇥</button>
+                    <div class="format-divider"></div>
+                    <button class="format-btn" data-cmd="formatBlock" data-val="BLOCKQUOTE" title="Quote">❞</button>
+                    <div class="format-divider"></div>
+                    <button class="format-btn" data-cmd="fontName" data-val="monospace" title="Monospace Font" style="font-family: monospace;">&lt;/&gt;</button>
+                    <button class="format-btn" data-cmd="removeFormat" title="Clear Formatting">⌫</button>
+                </div>
+            </div>
+        </div>
+    ` : ''}
 
     <div class="preview-area ${this.isWysiwyg ? 'is-wysiwyg' : ''}">
         ${this.isWysiwyg ? `
@@ -1014,6 +1050,32 @@ export class ComposePanel {
                     wysiwygEditor.focus();
                 });
             });
+
+            // Font size
+            const fontSizeSelect = document.getElementById('fontSizeSelect');
+            let lastFontSizeRange = null;
+            if (fontSizeSelect) {
+                fontSizeSelect.addEventListener('mousedown', () => {
+                    const sel = window.getSelection();
+                    if (sel.rangeCount > 0) {
+                        const range = sel.getRangeAt(0);
+                        // Only save if selection is inside editor
+                        if (wysiwygEditor.contains(range.commonAncestorContainer)) {
+                            lastFontSizeRange = range.cloneRange();
+                        }
+                    }
+                });
+                fontSizeSelect.addEventListener('change', (e) => {
+                    if (lastFontSizeRange) {
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(lastFontSizeRange);
+                    }
+                    document.execCommand('fontSize', false, e.target.value);
+                    wysiwygEditor.focus();
+                    lastFontSizeRange = null;
+                });
+            }
 
             // Switch to Markdown mode
             document.getElementById('switchToMd').addEventListener('click', () => {
