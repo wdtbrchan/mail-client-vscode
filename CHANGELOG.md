@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.8.0]
 
 ### Added
 - **WYSIWYG Font Size**: Added a new dropdown menu in the WYSIWYG editor to select between 5 different text sizes (very small, small, normal, big, very big).
