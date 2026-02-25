@@ -11,6 +11,7 @@ const MailComposer = require('nodemailer/lib/mail-composer');
 import { IMailMessageDetail } from '../types/message';
 import { getSharedStyles, getSharedScripts } from './utils/webviewContent';
 import { MessageListPanel } from './messageListPanel';
+import { MessageDetailPanel } from './messageDetailPanel';
 
 /**
  * Compose mode: new message, reply, reply-all, or forward.
@@ -24,6 +25,10 @@ export interface ComposeOptions {
     mode: ComposeMode;
     /** Original message (for reply/forward) */
     originalMessage?: IMailMessageDetail;
+    /** Original folder path for archive action */
+    originalFolderPath?: string;
+    /** Explorer provider to reuse existing IMAP connection */
+    explorerProvider?: import('../providers/mailExplorerProvider').MailExplorerProvider;
 }
 
 /**
@@ -234,10 +239,11 @@ export class ComposePanel {
     private async handleMessage(message: any): Promise<void> {
         switch (message.type) {
             case 'send':
+            case 'sendAndArchive':
                 if (this.isWysiwyg) {
                     this.wysiwygHtml = message.wysiwygHtml || '';
                 }
-                await this.sendEmail(message);
+                await this.sendEmail(message, message.type === 'sendAndArchive');
                 break;
             case 'discard':
                 this.panel.dispose();
@@ -294,7 +300,7 @@ export class ComposePanel {
         });
     }
 
-    private async sendEmail(message: any): Promise<void> {
+    private async sendEmail(message: any, archiveOriginal: boolean = false): Promise<void> {
         const { to, cc, bcc, subject } = message;
 
         if (!to || !to.trim()) {
@@ -317,9 +323,9 @@ export class ComposePanel {
                 if (!imapPassword) {
                     throw new Error('No SMTP password found for this account.');
                 }
-                await this.doSend(account, imapPassword, to, cc, bcc, subject);
+                await this.doSend(account, imapPassword, to, cc, bcc, subject, archiveOriginal);
             } else {
-                await this.doSend(account, smtpPassword, to, cc, bcc, subject);
+                await this.doSend(account, smtpPassword, to, cc, bcc, subject, archiveOriginal);
             }
 
             vscode.window.showInformationMessage('Message sent successfully.');
@@ -366,6 +372,7 @@ export class ComposePanel {
         cc: string,
         bcc: string,
         subject: string,
+        archiveOriginal: boolean = false,
     ): Promise<void> {
         // Get body HTML based on mode
         let bodyHtml: string;
@@ -432,22 +439,44 @@ export class ComposePanel {
             const imapPassword = await this.accountManager.getPassword(account.id);
             if (imapPassword) {
                 await imapService.connect(account, imapPassword);
-                
-                let sentFolder = account.sentFolder;
-                if (!sentFolder) {
-                    sentFolder = await imapService.getSentFolderPath();
-                }
-                if (!sentFolder) {
-                    sentFolder = 'Sent';
-                }
-
                 try {
-                    await imapService.appendMessage(sentFolder, messageBuffer, ['\\Seen']);
-                    // Refresh the Sent folder if it's currently open
-                    MessageListPanel.refreshFolder(account.id, sentFolder);
-                } catch (appendErr) {
-                    console.error('Při ukládání zavádějící do odeslané pošty došlo k chybě:', appendErr);
-                    vscode.window.showWarningMessage(`E-mail byl odeslán, ale nepodařilo se jej uložit do složky odeslané pošty: "${sentFolder}".`);
+                    let sentFolder = account.sentFolder;
+                    if (!sentFolder) {
+                        sentFolder = await imapService.getSentFolderPath();
+                    }
+                    if (!sentFolder) {
+                        sentFolder = 'Sent';
+                    }
+
+                    try {
+                        await imapService.appendMessage(sentFolder, messageBuffer, ['\\Seen']);
+                        // Refresh the Sent folder if it's currently open
+                        MessageListPanel.refreshFolder(account.id, sentFolder);
+                    } catch (appendErr) {
+                        console.error('Při ukládání zavádějící do odeslané pošty došlo k chybě:', appendErr);
+                        vscode.window.showWarningMessage(`E-mail byl odeslán, ale nepodařilo se jej uložit do složky odeslané pošty: "${sentFolder}".`);
+                    }
+
+                    if (archiveOriginal && this.options.originalMessage && this.options.originalFolderPath) {
+                        const archiveFolder = account.archiveFolder || 'Archive';
+                        try {
+                            const uid = this.options.originalMessage.uid;
+                            if (this.options.originalFolderPath !== archiveFolder) {
+                                if (this.options.explorerProvider) {
+                                    const existingService = this.options.explorerProvider.getImapService(account.id);
+                                    await existingService.moveMessage(this.options.originalFolderPath, uid, archiveFolder);
+                                } else {
+                                    await imapService.moveMessage(this.options.originalFolderPath, uid, archiveFolder);
+                                }
+                                MessageListPanel.refreshFolder(account.id, this.options.originalFolderPath);
+                                MessageDetailPanel.handleExternalMove(account.id, this.options.originalFolderPath, uid);
+                                vscode.window.showInformationMessage(`Original message moved to ${archiveFolder}`);
+                            }
+                        } catch (archiveErr) {
+                             console.error('Failed to move original message to archive:', archiveErr);
+                             vscode.window.showWarningMessage(`E-mail byl odeslán, ale nepodařilo se archivovat původní zprávu.`);
+                        }
+                    }
                 } finally {
                     await imapService.disconnect();
                 }
@@ -639,28 +668,45 @@ export class ComposePanel {
             align-items: center;
         }
         .btn-send {
-            padding: 0 40px;
-            background: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
-            border: none;
-            border-left: 1px solid var(--vscode-widget-border);
-            border-radius: 0;
+            padding: 0 16px;
+            background: transparent;
+            color: #ff9800; /* Orange text and icon */
+            border: none; /* No border for Send button */
+            border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
             font-family: inherit;
-            font-size: 1.1em;
+            font-size: 1.8em; /* Larger icons */
             height: 100%;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .btn-send:hover {
-            background: #ff9800 !important;
-            color: #ffffff !important;
+            background: rgba(255, 152, 0, 0.2) !important; /* Slightly stronger orange hover */
+            color: #ff9800 !important;
         }
         .btn-send:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+        .btn-send-archive {
+            background: transparent; /* Transparent background */
+            color: #ff9800; /* Orange icon */
+            border: none; /* No border for Send+Archive button */
+            border-radius: 4px;
+            margin-left: 4px; /* Slightly closer */
+            padding: 0 12px;
+            font-size: 1.6em; /* Slightly smaller to fit both icons nicely */
+            gap: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-send-archive:hover {
+            background: rgba(255, 152, 0, 0.2) !important;
+            color: #ff9800 !important;
         }
         .btn-discard {
             padding: 0 20px;
@@ -866,7 +912,10 @@ export class ComposePanel {
                 <button class="switch-mode-link" id="switchToWysiwyg" style="margin-right: 16px;">Switch to WYSIWYG mode</button>
             `}
             <span class="status-text" id="statusText"></span>
-            <button class="btn-send" id="btnSend">✉ Send</button>
+            <button class="btn-send" id="btnSend" title="Send">✉</button>
+            ${(this.options.mode === 'reply' || this.options.mode === 'replyAll' || this.options.mode === 'forward') ? `
+                <button class="btn-send btn-send-archive" id="btnSendArchive" title="Send + Archive"><span>✉</span><span>⬇</span></button>
+            ` : ''}
         </div>
     </div>
 
@@ -899,6 +948,7 @@ export class ComposePanel {
         const previewContent = !isWysiwyg ? document.getElementById('previewContent') : null;
         const statusText = document.getElementById('statusText');
         const btnSend = document.getElementById('btnSend');
+        const btnSendArchive = document.getElementById('btnSendArchive');
         const attachmentList = document.getElementById('attachmentList');
         const originalMessageContainer = document.getElementById('original-message-container');
         const originalMessageContent = document.getElementById('original-message-content');
@@ -979,6 +1029,22 @@ export class ComposePanel {
             vscode.postMessage(sendMsg);
         });
 
+        if (btnSendArchive) {
+            btnSendArchive.addEventListener('click', () => {
+                const sendMsg = {
+                    type: 'sendAndArchive',
+                    to: fieldTo.value,
+                    cc: fieldCc.value,
+                    bcc: fieldBcc.value,
+                    subject: fieldSubject.value,
+                };
+                if (isWysiwyg) {
+                    sendMsg.wysiwygHtml = wysiwygEditor.innerHTML;
+                }
+                vscode.postMessage(sendMsg);
+            });
+        }
+
         // Discard
         document.getElementById('btnDiscard').addEventListener('click', () => {
             vscode.postMessage({ type: 'discard' });
@@ -1033,13 +1099,15 @@ export class ComposePanel {
                     break;
                 case 'sending':
                     btnSend.disabled = true;
+                    if (btnSendArchive) btnSendArchive.disabled = true;
                     btnSend.innerHTML = '<span class="loader" style="margin: 0;"></span>';
                     statusText.textContent = '';
                     statusText.classList.remove('error-text');
                     break;
                 case 'error':
                     btnSend.disabled = false;
-                    btnSend.innerHTML = '✉ Send';
+                    if (btnSendArchive) btnSendArchive.disabled = false;
+                    btnSend.innerHTML = '✉';
                     statusText.textContent = msg.message;
                     statusText.classList.add('error-text');
                     break;

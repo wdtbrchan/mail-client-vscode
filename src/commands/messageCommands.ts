@@ -64,6 +64,8 @@ export function registerMessageCommands(
                 account,
                 mode,
                 originalMessage,
+                originalFolderPath: args?.folderPath,
+                explorerProvider,
             });
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Failed to open compose';

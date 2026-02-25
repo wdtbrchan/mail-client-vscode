@@ -5,6 +5,7 @@
 - [x] Add support for mimetypes
 - [x] Implement email sending (SMTP).
 - [x] Implement Folder Management (Sent, Trash, Spam, Archive, Custom).
+- [x] Implement Send + Archive action in compose panel.
 - [x] Implement Message Actions (Archive, Spam, Trash, Newsletter).
 - [x] Support for attachments (uploading and downloading).
 - [x] Refactor message preview logic.

@@ -157,6 +157,27 @@ export class MessageDetailPanel {
     }
 
     /**
+     * Handles external message move/delete by loading the next message or closing the panel.
+     */
+    public static handleExternalMove(accountId: string, folderPath: string, uid: number): void {
+        const nextUid = MessageListPanel.getNextMessageUid(accountId, folderPath, uid);
+        const key = `${accountId}:${folderPath}:${uid}`;
+        const instance = MessageDetailPanel.panels.get(key);
+        
+        if (instance) {
+            if (nextUid !== undefined) {
+                MessageDetailPanel.panels.delete(key);
+                instance.uid = nextUid;
+                const newKey = `${accountId}:${folderPath}:${nextUid}`;
+                MessageDetailPanel.panels.set(newKey, instance);
+                instance.loadMessage();
+            } else {
+                instance.panel.dispose();
+            }
+        }
+    }
+
+    /**
      * Creates an embedded message detail panel reusing an existing WebviewPanel.
      */
     static createEmbedded(
