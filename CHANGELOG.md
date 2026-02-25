@@ -5,6 +5,7 @@
 ### Added
 - **Send + Archive**: Added a new secondary send action in the compose panel (for replies and forwards) that automatically moves the original message to the Archive folder after sending.
 - **Icon-only Buttons**: Updated the "Send" and "Send + Archive" buttons to use a modern, icon-only design with a borderless style and orange hover effects.
+- **Compact Mode Toggle**: Refactored the Markdown/WYSIWYG mode switching buttons into a pair of compact, labeled buttons with active state highlighting.
 
 ### Fixed
 - **Instant Folder Sync**: Improved folder synchronization after archiving from the compose panel by reusing the primary IMAP connection for the move operation.

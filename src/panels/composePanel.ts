@@ -831,18 +831,31 @@ export class ComposePanel {
         .wysiwyg-editor:focus {
             border-color: var(--vscode-focusBorder);
         }
-        .switch-mode-link {
-            font-size: 0.85em;
-            color: var(--vscode-descriptionForeground);
-            cursor: pointer;
-            background: none;
-            border: none;
-            font-family: inherit;
-            padding: 0 8px;
+        .mode-toggle {
+            display: flex;
+            background: var(--vscode-button-secondaryBackground);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-right: 16px;
+            height: 24px;
         }
-        .switch-mode-link:hover {
-            text-decoration: underline;
-            color: var(--vscode-foreground);
+        .mode-btn {
+            border: none;
+            background: transparent;
+            color: var(--vscode-button-secondaryForeground);
+            padding: 0 8px;
+            font-size: 0.85em;
+            cursor: pointer;
+            font-family: inherit;
+            height: 100%;
+        }
+        .mode-btn:hover {
+            background: var(--vscode-button-secondaryHoverBackground);
+        }
+        .mode-btn.active {
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            font-weight: bold;
         }
     </style>
 </head>
@@ -906,11 +919,10 @@ export class ComposePanel {
             ` : ''}
         </div>
         <div class="action-bar-right">
-            ${this.isWysiwyg ? `
-                <button class="switch-mode-link" id="switchToMd" style="margin-right: 16px;">Switch to Markdown mode</button>
-            ` : `
-                <button class="switch-mode-link" id="switchToWysiwyg" style="margin-right: 16px;">Switch to WYSIWYG mode</button>
-            `}
+            <div class="mode-toggle">
+                <button class="mode-btn ${this.isWysiwyg ? 'active' : ''}" id="switchToWysiwyg">wysiwyg</button>
+                <button class="mode-btn ${!this.isWysiwyg ? 'active' : ''}" id="switchToMd">markdown</button>
+            </div>
             <span class="status-text" id="statusText"></span>
             <button class="btn-send" id="btnSend" title="Send">✉</button>
             ${(this.options.mode === 'reply' || this.options.mode === 'replyAll' || this.options.mode === 'forward') ? `
@@ -1005,12 +1017,18 @@ export class ComposePanel {
 
             // Switch to Markdown mode
             document.getElementById('switchToMd').addEventListener('click', () => {
-                vscode.postMessage({ type: 'switchToMarkdown' });
+                if (isWysiwyg) vscode.postMessage({ type: 'switchToMarkdown' });
+            });
+            document.getElementById('switchToWysiwyg').addEventListener('click', () => {
+                if (!isWysiwyg) vscode.postMessage({ type: 'switchToWysiwyg' });
             });
         } else {
-            // Switch to WYSIWYG mode
+            // Mode switching even in MD mode
+            document.getElementById('switchToMd').addEventListener('click', () => {
+                if (isWysiwyg) vscode.postMessage({ type: 'switchToMarkdown' });
+            });
             document.getElementById('switchToWysiwyg').addEventListener('click', () => {
-                vscode.postMessage({ type: 'switchToWysiwyg' });
+                if (!isWysiwyg) vscode.postMessage({ type: 'switchToWysiwyg' });
             });
         }
 

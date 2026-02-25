@@ -26,6 +26,7 @@
 - [x] Fixed message detail header and toolbar to stay stationary while scrolling message content.
 - [x] Improved message movement flow (keep window open, auto-navigate to next message).
 - [x] Added visual highlighting for the currently opened message in the list.
+- [x] Refactored Markdown/WYSIWYG mode toggle into compact, labeled buttons.
 - [ ] Drag & Drop support (e.g., moving messages to folders).
 - [ ] Dark/Light mode fully integrated with VS Code themes.
 
