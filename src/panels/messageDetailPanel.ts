@@ -891,7 +891,14 @@ export class MessageDetailPanel {
              loadingEl.classList.add('hidden');
              
              // Render everything into bodyEl (which is in the DOM, so getElementById works)
-             renderMessage(bodyEl, msg, showImages, '_main');
+             // Create warning element dynamically if not present, and place above bodyEl
+             let warningEl = document.getElementById('messageWarning');
+             if (!warningEl) {
+                 warningEl = document.createElement('div');
+                 warningEl.id = 'messageWarning';
+                 bodyEl.parentNode.insertBefore(warningEl, bodyEl);
+             }
+             renderMessage(bodyEl, msg, showImages, '_main', false, true, warningEl);
              
              // Extract headers + attachments from bodyEl and move to headersEl
              headersEl.innerHTML = '';

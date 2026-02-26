@@ -1,5 +1,10 @@
 # Changelog
 
+## [ upcoming ]
+
+### Fixed
+- **Image Whitelist**: Fixed an issue where the "External images blocked" warning was injected into the original message body when replying or forwarding.
+
 ## [0.9.0]
 
 ### Added

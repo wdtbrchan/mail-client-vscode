@@ -1169,7 +1169,7 @@ export class ComposePanel {
                             'Datum: ' + dateStr + '<br>' +
                             'Předmět: ' + (om.subject || '');
                         // Render original message content indented (skipHeaders=true to avoid duplicate header)
-                        renderMessage(originalMessageContent, msg.message, false, '_orig', true);
+                        renderMessage(originalMessageContent, msg.message, false, '_orig', true, false, null);
                         
                         originalMessageContent.addEventListener('requestShowImages', (e) => {
                             const message = e.detail.message;

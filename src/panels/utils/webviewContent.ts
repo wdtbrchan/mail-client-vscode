@@ -297,9 +297,12 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
          * @param {object} msg The message object (IMailMessageDetail).
          * @param {boolean} showImages Whether to show external images.
          * @param {string} iframeNameUniqueSuffix A suffix for the iframe name/id to avoid collisions if multiple are present.
+         * @param {boolean} skipHeaders Whether to skip rendering headers.
+         * @param {boolean} showWarning Whether to show the external images warning if applicable.
+         * @param {HTMLElement} warningContainer Optional separate container for the warning.
          * @returns {HTMLIFrameElement} The created iframe element.
          */
-        function renderMessage(container, msg, showImages = false, iframeNameUniqueSuffix = '', skipHeaders = false) {
+        function renderMessage(container, msg, showImages = false, iframeNameUniqueSuffix = '', skipHeaders = false, showWarning = true, warningContainer = null) {
             let html = '';
             if (!skipHeaders) {
             html += '<div class="message-headers">';
@@ -326,14 +329,22 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
 
             const { html: bodyContent, hasBlockedImages } = renderMessageContent(msg, showImages);
 
-            if (hasBlockedImages) {
-                html += '<div class="images-blocked-warning" id="imagesBlockedWarning' + iframeNameUniqueSuffix + '">';
-                html += '<span>External images were blocked to protect your privacy.</span>';
-                html += '<div>';
-                html += '<button id="btnShowImages' + iframeNameUniqueSuffix + '">Show Images</button>';
-                html += '<button id="btnWhitelistImages' + iframeNameUniqueSuffix + '">Always load from ' + escapeHtml(msg.from?.address || '') + '</button>';
-                html += '</div>';
-                html += '</div>';
+            if (hasBlockedImages && showWarning) {
+                const warningHtml = '<div class="images-blocked-warning" id="imagesBlockedWarning' + iframeNameUniqueSuffix + '">' +
+                    '<span>External images were blocked to protect your privacy.</span>' +
+                    '<div>' +
+                    '<button id="btnShowImages' + iframeNameUniqueSuffix + '">Show Images</button>' +
+                    '<button id="btnWhitelistImages' + iframeNameUniqueSuffix + '">Always load from ' + escapeHtml(msg.from?.address || '') + '</button>' +
+                    '</div>' +
+                    '</div>';
+                
+                if (warningContainer) {
+                    warningContainer.innerHTML = warningHtml;
+                } else {
+                    html += warningHtml;
+                }
+            } else if (warningContainer) {
+                warningContainer.innerHTML = '';
             }
 
             const iframeId = 'message-body-iframe' + iframeNameUniqueSuffix;
@@ -347,7 +358,7 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
                 iframe.srcdoc = fullIframeContent;
             }
 
-            if (hasBlockedImages) {
+            if (hasBlockedImages && showWarning) {
                 document.getElementById('btnShowImages' + iframeNameUniqueSuffix).addEventListener('click', () => {
                    // Request re-render via a callback or event if we were in a class, 
                    // but here we might need to handle it outside or add a callback param.
