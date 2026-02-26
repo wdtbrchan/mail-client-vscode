@@ -202,6 +202,12 @@ export class MessageDetailPanel {
 
             this.panel.title = message.subject || '(no subject)';
 
+            const config = vscode.workspace.getConfiguration('mailClient');
+            const whitelist: string[] = config.get('imageWhitelist') || [];
+            const isWhitelisted = whitelist.includes(message.from.address);
+            const folderSettings = this.getFolderSettings();
+            const isSpam = this.folderPath === (folderSettings.spam || 'Spam');
+
             this.panel.webview.postMessage({
                 type: 'message',
                 message: {
@@ -216,8 +222,10 @@ export class MessageDetailPanel {
                     ccDisplay: message.cc?.map(c =>
                         c.name ? `${c.name} <${c.address}>` : c.address
                     ).join(', '),
-                    folderSettings: this.getFolderSettings(),
-                    currentResidesIn: this.folderPath
+                    folderSettings: folderSettings,
+                    currentResidesIn: this.folderPath,
+                    isWhitelisted: isWhitelisted,
+                    isSpam: isSpam
                 },
             });
 
@@ -273,9 +281,23 @@ export class MessageDetailPanel {
             case 'openExternal':
                 vscode.env.openExternal(vscode.Uri.parse(message.url));
                 break;
+            case 'whitelistSender':
+                this.whitelistSender(message.sender);
+                break;
             case 'back':
                 this.dispose();
                 break;
+        }
+    }
+
+    private async whitelistSender(sender: string): Promise<void> {
+        const config = vscode.workspace.getConfiguration('mailClient');
+        const whitelist: string[] = config.get('imageWhitelist') || [];
+        if (!whitelist.includes(sender)) {
+            const newWhitelist = [...whitelist, sender];
+            await config.update('imageWhitelist', newWhitelist, vscode.ConfigurationTarget.Global);
+            vscode.window.showInformationMessage(`Sender ${sender} added to the image whitelist.`);
+            this.loadMessage(); // Reload message to show images
         }
     }
 
@@ -889,6 +911,11 @@ export class MessageDetailPanel {
               bodyEl.addEventListener('requestShowImages', (e) => {
                 const message = e.detail.message;
                 renderMessageView(message, true);
+              });
+
+              bodyEl.addEventListener('requestWhitelistSender', (e) => {
+                const message = e.detail.message;
+                vscode.postMessage({ type: 'whitelistSender', sender: message.from.address });
               });
 
             // Attachment buttons

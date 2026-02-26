@@ -221,6 +221,21 @@ export class ImapService {
 
             const from = parsed.from ? mapAddresses(parsed.from)[0] : { address: 'unknown' };
 
+            let dkimValid = false;
+            let spfValid = false;
+            const authHeader = parsed.headers.get('authentication-results');
+            if (authHeader) {
+                // authHeader could be string, array, or object with value
+                const getStr = (val: any) => typeof val === 'string' ? val : (val && val.value ? val.value : '');
+                const headerStr = Array.isArray(authHeader) ? authHeader.map(getStr).join(' ') : getStr(authHeader);
+                
+                if (headerStr) {
+                    const lowerHeader = headerStr.toLowerCase();
+                    if (lowerHeader.match(/dkim=(pass|ok)/)) dkimValid = true;
+                    if (lowerHeader.match(/spf=(pass|ok)/)) spfValid = true;
+                }
+            }
+
             return {
                 uid: uid,
                 date: parsed.date || new Date(),
@@ -239,6 +254,8 @@ export class ImapService {
                     size: att.size,
                     disposition: att.contentDisposition
                 })),
+                spfValid,
+                dkimValid,
             };
         } finally {
             lock.release();

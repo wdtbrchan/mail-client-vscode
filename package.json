@@ -203,6 +203,12 @@
           "default": 60,
           "minimum": 0,
           "description": "Auto-refresh interval in seconds (0 = disabled)."
+        },
+        "mailClient.imageWhitelist": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "List of sender email addresses that will automatically load remote images."
         }
       }
     },

@@ -56,4 +56,8 @@ export interface IMailMessageDetail extends IMailMessage {
     text?: string;
     /** List of attachments */
     attachments: IMailAttachment[];
+    /** Whether SPF check passed */
+    spfValid?: boolean;
+    /** Whether DKIM check passed */
+    dkimValid?: boolean;
 }

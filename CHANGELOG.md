@@ -1,5 +1,11 @@
 # Changelog
 
+## [ upcoming ]
+
+### Added
+- **Image Whitelist**: Added a new "Always load from [email]" button when external images are blocked. Users can now whitelist trusted senders to automatically load remote images in future emails.
+- **Spam Protection**: Enhanced security by ensuring remote images are always blocked by default in the Spam folder, even if the sender is on the whitelist.
+
 ## [0.8.1]
 
 ### Added

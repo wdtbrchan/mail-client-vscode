@@ -87,6 +87,10 @@ export function getSharedStyles(nonce: string): string {
             overflow: hidden;
             height: 36px;
         }
+        .images-blocked-warning > div {
+            display: flex;
+            height: 100%;
+        }
         .images-blocked-warning button {
             background: transparent;
             color: var(--vscode-foreground);
@@ -197,7 +201,7 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
                 images.forEach(img => {
                     const src = img.getAttribute('src');
                     if (src && (src.startsWith('http://') || src.startsWith('https://'))) {
-                        if (!showImages) {
+                        if (!showImages && (!msg.isWhitelisted || msg.isSpam)) {
                             img.setAttribute('data-original-src', src);
                             img.removeAttribute('src');
                             img.style.border = '1px dashed #ccc';
@@ -325,7 +329,10 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
             if (hasBlockedImages) {
                 html += '<div class="images-blocked-warning" id="imagesBlockedWarning' + iframeNameUniqueSuffix + '">';
                 html += '<span>External images were blocked to protect your privacy.</span>';
+                html += '<div>';
                 html += '<button id="btnShowImages' + iframeNameUniqueSuffix + '">Show Images</button>';
+                html += '<button id="btnWhitelistImages' + iframeNameUniqueSuffix + '">Always load from ' + escapeHtml(msg.from?.address || '') + '</button>';
+                html += '</div>';
                 html += '</div>';
             }
 
@@ -348,6 +355,14 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
                    const event = new CustomEvent('requestShowImages', { detail: { message: msg } });
                    container.dispatchEvent(event);
                 });
+                
+                const btnWhitelist = document.getElementById('btnWhitelistImages' + iframeNameUniqueSuffix);
+                if (btnWhitelist) {
+                    btnWhitelist.addEventListener('click', () => {
+                        const event = new CustomEvent('requestWhitelistSender', { detail: { message: msg } });
+                        container.dispatchEvent(event);
+                    });
+                }
             }
             
             return iframe;
