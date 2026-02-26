@@ -20,7 +20,7 @@ export function registerMessageCommands(
      */
     async function openCompose(
         mode: ComposeMode,
-        args?: { accountId: string; folderPath: string; uid: number },
+        args?: { accountId: string; folderPath: string; uid: number; showImages?: boolean },
     ): Promise<void> {
         try {
             let account;
@@ -66,6 +66,7 @@ export function registerMessageCommands(
                 originalMessage,
                 originalFolderPath: args?.folderPath,
                 explorerProvider,
+                showImages: args?.showImages,
             });
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Failed to open compose';
@@ -125,6 +126,7 @@ export function registerMessageCommands(
             accountId: string;
             folderPath: string;
             uid: number;
+            showImages?: boolean;
         }) => {
             openCompose('reply', args);
         }),
@@ -133,6 +135,7 @@ export function registerMessageCommands(
             accountId: string;
             folderPath: string;
             uid: number;
+            showImages?: boolean;
         }) => {
             openCompose('replyAll', args);
         }),
@@ -141,6 +144,7 @@ export function registerMessageCommands(
             accountId: string;
             folderPath: string;
             uid: number;
+            showImages?: boolean;
         }) => {
             openCompose('forward', args);
         }),

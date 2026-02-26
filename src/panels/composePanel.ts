@@ -29,6 +29,8 @@ export interface ComposeOptions {
     originalFolderPath?: string;
     /** Explorer provider to reuse existing IMAP connection */
     explorerProvider?: import('../providers/mailExplorerProvider').MailExplorerProvider;
+    /** Whether to show external images in the original quoted text */
+    showImages?: boolean;
 }
 
 /**
@@ -211,6 +213,7 @@ export class ComposePanel {
              const om = this.options.originalMessage;
              this.panel.webview.postMessage({
                 type: 'originalMessage',
+                showImages: !!this.options.showImages,
                 message: {
                     ...om,
                     date: om.date.toISOString(),
@@ -1169,7 +1172,7 @@ export class ComposePanel {
                             'Datum: ' + dateStr + '<br>' +
                             'Předmět: ' + (om.subject || '');
                         // Render original message content indented (skipHeaders=true to avoid duplicate header)
-                        renderMessage(originalMessageContent, msg.message, false, '_orig', true, false, null);
+                        renderMessage(originalMessageContent, msg.message, !!msg.showImages, '_orig', true, false, null);
                         
                         originalMessageContent.addEventListener('requestShowImages', (e) => {
                             const message = e.detail.message;

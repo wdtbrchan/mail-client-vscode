@@ -257,6 +257,7 @@ export class MessageDetailPanel {
                     accountId: this.accountId,
                     folderPath: this.folderPath,
                     uid: this.uid,
+                    showImages: message.showImages,
                 });
                 break;
             case 'delete':
@@ -783,13 +784,13 @@ export class MessageDetailPanel {
         }
 
         document.getElementById('btnReply').addEventListener('click', () => {
-            vscode.postMessage({ type: 'reply' });
+            vscode.postMessage({ type: 'reply', showImages: currentShowImages });
         });
         document.getElementById('btnReplyAll').addEventListener('click', () => {
-            vscode.postMessage({ type: 'replyAll' });
+            vscode.postMessage({ type: 'replyAll', showImages: currentShowImages });
         });
         document.getElementById('btnForward').addEventListener('click', () => {
-            vscode.postMessage({ type: 'forward' });
+            vscode.postMessage({ type: 'forward', showImages: currentShowImages });
         });
         document.getElementById('btnInbox').addEventListener('click', () => vscode.postMessage({ type: 'inbox' }));
         document.getElementById('btnArchive').addEventListener('click', () => vscode.postMessage({ type: 'archive' }));

@@ -3,6 +3,7 @@
 ## [ upcoming ]
 
 ### Fixed
+- **Image Whitelist**: External images are now correctly loaded in reply/forward messages if they were allowed in the original message detail view.
 - **Image Whitelist**: Fixed an issue where the "External images blocked" warning was injected into the original message body when replying or forwarding.
 
 ## [0.9.0]
