@@ -410,7 +410,7 @@ export class ComposePanel {
 
         const fromAddress = account.smtpUsername || account.username;
         const fromName = account.senderName || account.name;
-        const fromDisplay = fromName ? `${fromName} <${fromAddress}>` : fromAddress;
+        const fromDisplay = fromName ? `"${fromName.replace(/"/g, '\\"')}" <${fromAddress}>` : fromAddress;
 
         // 1. Generate Raw Email
         const mailOptions = {
