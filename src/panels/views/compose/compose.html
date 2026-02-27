@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-{{NONCE}}'; img-src * data:;">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compose</title>
+    <style nonce="{{NONCE}}">
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--vscode-font-family);
+            font-size: var(--vscode-font-size);
+            color: var(--vscode-foreground);
+            background: var(--vscode-editor-background);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        {{SHARED_STYLES}}
+        {{CSS_INJECT}}
+    </style>
+</head>
+<body class="app-mode-{{MODE}} editor-mode-{{EDITOR_MODE}}">
+    <div class="account-info">
+        From: <strong>{{SENDER_NAME}}</strong>
+        ({{SENDER_EMAIL}})
+    </div>
+
+    <div class="compose-form">
+        <div class="form-row">
+            <label for="fieldTo">To:</label>
+            <input type="text" id="fieldTo" placeholder="recipient@example.com" />
+        </div>
+        <button class="toggle-cc" id="toggleCc">Show Cc/Bcc</button>
+        <div class="form-row hidden" id="rowCc">
+            <label for="fieldCc">Cc:</label>
+            <input type="text" id="fieldCc" placeholder="cc@example.com" />
+        </div>
+        <div class="form-row hidden" id="rowBcc">
+            <label for="fieldBcc">Bcc:</label>
+            <input type="text" id="fieldBcc" placeholder="bcc@example.com" />
+        </div>
+        <div class="form-row">
+            <label for="fieldSubject">Subject:</label>
+            <input type="text" id="fieldSubject" placeholder="Subject" />
+        </div>
+
+        <div class="form-row" style="align-items:start">
+             <label>Files:</label>
+             <div>
+                <button id="btnAddAttachment" class="btn-small">📎 Attach Files</button>
+                <div id="attachmentList" class="attachment-list"></div>
+             </div>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <div class="action-bar-left">
+            <button class="btn-discard" id="btnDiscard">✕ Discard</button>
+        </div>
+        <div class="action-bar-right">
+            <div class="mode-toggle">
+                <button class="mode-btn mode-btn-wysiwyg" id="switchToWysiwyg">wysiwyg</button>
+                <button class="mode-btn mode-btn-md" id="switchToMd">markdown</button>
+            </div>
+            <span class="status-text" id="statusText"></span>
+            <button class="btn-send" id="btnSend" title="Send">✉</button>
+            <button class="btn-send btn-send-archive only-reply" id="btnSendArchive" title="Send + Archive"><span>✉</span><span>⬇</span></button>
+        </div>
+    </div>
+
+    <div class="wysiwyg-toolbar-row only-wysiwyg">
+        <div class="wysiwyg-toolbar">
+            <div class="format-group">
+                <select class="format-select" id="fontSizeSelect" title="Text Size">
+                    <option value="1">very small</option>
+                    <option value="2">small</option>
+                    <option value="3" selected>normal</option>
+                    <option value="5">big</option>
+                    <option value="7">very big</option>
+                </select>
+                <div class="format-divider"></div>
+                <button class="format-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                <button class="format-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                <button class="format-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                <button class="format-btn" data-cmd="strikethrough" title="Strikethrough"><s>S</s></button>
+                <div class="format-divider"></div>
+                <button class="format-btn" data-cmd="insertUnorderedList" title="Bullet List">•</button>
+                <button class="format-btn" data-cmd="insertOrderedList" title="Numbered List">1.</button>
+                <div class="format-divider"></div>
+                <button class="format-btn" data-cmd="outdent" title="Decrease Indent">⇤</button>
+                <button class="format-btn" data-cmd="indent" title="Increase Indent">⇥</button>
+                <div class="format-divider"></div>
+                <button class="format-btn" data-cmd="formatBlock" data-val="BLOCKQUOTE" title="Quote">❞</button>
+                <div class="format-divider"></div>
+                <button class="format-btn" data-cmd="fontName" data-val="monospace" title="Monospace Font" style="font-family: monospace;">&lt;/&gt;</button>
+                <button class="format-btn" data-cmd="removeFormat" title="Clear Formatting">⌫</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-area">
+        <div class="wysiwyg-editor only-wysiwyg" contenteditable="true" id="wysiwygEditor" spellcheck="false">{{INITIAL_WYSIWYG_HTML}}</div>
+
+        <div class="preview-label only-markdown">Preview</div>
+        <div class="preview-content only-markdown" id="previewContent">
+            <p class="preview-empty">Start typing in the editor to see a preview…</p>
+        </div>
+        
+        <div id="original-message-container" class="quoted-message-container hidden">
+            <div id="original-message-header" class="quoted-message-title"></div>
+            <div id="original-message-content"></div>
+        </div>
+    </div>
+
+    <script nonce="{{NONCE}}">
+        window.vscode = acquireVsCodeApi();
+        window.composeConfig = {{COMPOSE_CONFIG}};
+        {{SHARED_SCRIPTS}}
+        {{JS_INJECT}}
+    </script>
+</body>
+</html>

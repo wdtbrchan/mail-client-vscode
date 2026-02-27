@@ -23,6 +23,20 @@ const esbuildProblemMatcherPlugin = {
     },
 };
 
+/**
+ * @type {import('esbuild').Plugin}
+ */
+const textLoaderPlugin = {
+    name: 'text-loader',
+    setup(build) {
+        build.onLoad({ filter: /views[\\/].*\.js$/ }, async (args) => {
+            const fs = require('fs');
+            const text = await fs.promises.readFile(args.path, 'utf8');
+            return { contents: text, loader: 'text' };
+        });
+    }
+};
+
 /** @type {import('esbuild').BuildOptions} */
 const buildOptions = {
     entryPoints: ['src/extension.ts'],
@@ -40,6 +54,7 @@ const buildOptions = {
     },
     plugins: [
         esbuildProblemMatcherPlugin,
+        textLoaderPlugin,
     ],
 };
 
