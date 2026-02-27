@@ -297,7 +297,7 @@ export class MessageDetailPanel {
         if (!whitelist.includes(sender)) {
             const newWhitelist = [...whitelist, sender];
             await config.update('imageWhitelist', newWhitelist, vscode.ConfigurationTarget.Global);
-            vscode.window.showInformationMessage(`Sender ${sender} added to the image whitelist.`);
+            vscode.window.showInformationMessage(`Sender ${sender} whitelisted.`);
             this.loadMessage(); // Reload message to show images
         }
     }
@@ -322,7 +322,7 @@ export class MessageDetailPanel {
             await vscode.env.openExternal(uri);
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Print open failed';
-            vscode.window.showErrorMessage(`Failed to open print dialog: ${errorMsg}`);
+            vscode.window.showErrorMessage(`Print failed: ${errorMsg}`);
         }
     }
 
@@ -346,23 +346,23 @@ export class MessageDetailPanel {
         const targetFolder = settings[action];
         
         if (!targetFolder) {
-            vscode.window.showWarningMessage(`No folder configured for ${action}. check account settings.`);
+            vscode.window.showWarningMessage(`No folder for ${action}. Check settings.`);
             return;
         }
 
         if (this.folderPath === targetFolder) {
-             vscode.window.showInformationMessage(`Message is already in ${action} folder.`);
+             vscode.window.showInformationMessage(`Already in ${action} folder.`);
              return;
         }
 
         try {
             const nextUid = MessageListPanel.getNextMessageUid(this.accountId, this.folderPath, this.uid);
-            this.panel.webview.postMessage({ type: 'loading', text: 'Přesouvání zprávy...' });
+            this.panel.webview.postMessage({ type: 'loading', text: 'Moving...' });
 
             const service = this.explorerProvider.getImapService(this.accountId);
             await service.moveMessage(this.folderPath, this.uid, targetFolder);
             
-            vscode.window.showInformationMessage(`Message moved to ${targetFolder}`);
+            vscode.window.showInformationMessage(`Moved to ${targetFolder}`);
             
             // Refresh logic similar to delete
             MessageListPanel.refreshFolder(this.accountId, this.folderPath);
@@ -394,12 +394,12 @@ export class MessageDetailPanel {
     private async moveMessageCustom(targetPath: string): Promise<void> {
         try {
             const nextUid = MessageListPanel.getNextMessageUid(this.accountId, this.folderPath, this.uid);
-            this.panel.webview.postMessage({ type: 'loading', text: 'Přesouvání zprávy...' });
+            this.panel.webview.postMessage({ type: 'loading', text: 'Moving...' });
 
             const service = this.explorerProvider.getImapService(this.accountId);
             await service.moveMessage(this.folderPath, this.uid, targetPath);
             
-            vscode.window.showInformationMessage(`Message moved to ${targetPath}`);
+            vscode.window.showInformationMessage(`Moved to ${targetPath}`);
             
             MessageListPanel.refreshFolder(this.accountId, this.folderPath);
             this.explorerProvider.refresh();
@@ -439,7 +439,7 @@ export class MessageDetailPanel {
 
         try {
             const nextUid = MessageListPanel.getNextMessageUid(this.accountId, this.folderPath, this.uid);
-            this.panel.webview.postMessage({ type: 'loading', text: 'Mazání zprávy...' });
+            this.panel.webview.postMessage({ type: 'loading', text: 'Deleting...' });
 
             const service = this.explorerProvider.getImapService(this.accountId);
             await service.deleteMessage(this.folderPath, this.uid);
@@ -480,7 +480,7 @@ export class MessageDetailPanel {
                 return;
             }
 
-            vscode.window.showInformationMessage(`Downloading ${filename}...`);
+            vscode.window.showInformationMessage(`Downloading ${filename}`);
 
             const service = this.explorerProvider.getImapService(this.accountId);
             const buffer = await service.getAttachment(this.folderPath, this.uid, filename);
@@ -956,7 +956,7 @@ export class MessageDetailPanel {
                     break;
                 case 'messageMoved':
                     headersEl.innerHTML = '';
-                    bodyEl.innerHTML = '<div class="empty-msg">Zpráva byla přesunuta do ' + escapeHtml(msg.target) + '.</div>';
+                    bodyEl.innerHTML = '<div class="empty-msg">Moved to ' + escapeHtml(msg.target) + '.</div>';
                     if (!isEmbedded) {
                         actionBar.classList.add('hidden');
                     }
@@ -965,7 +965,7 @@ export class MessageDetailPanel {
                     break;
                 case 'messageDeleted':
                     headersEl.innerHTML = '';
-                    bodyEl.innerHTML = '<div class="empty-msg">Zpráva byla smazána.</div>';
+                    bodyEl.innerHTML = '<div class="empty-msg">Message deleted.</div>';
                     if (!isEmbedded) {
                         actionBar.classList.add('hidden');
                     }

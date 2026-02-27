@@ -32,7 +32,7 @@ export function registerMessageCommands(
                 // New compose – let user pick an account if multiple
                 const accounts = accountManager.getAccounts();
                 if (accounts.length === 0) {
-                    vscode.window.showWarningMessage('No mail accounts configured.');
+                    vscode.window.showWarningMessage('No accounts configured.');
                     return;
                 }
                 if (accounts.length === 1) {

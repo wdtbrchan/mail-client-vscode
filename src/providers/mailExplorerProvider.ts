@@ -312,7 +312,7 @@ export class MailExplorerProvider implements vscode.TreeDataProvider<MailTreeIte
         }
 
         this.treeView.badge = totalUnseen > 0
-            ? { value: totalUnseen, tooltip: `${totalUnseen} nepřečtených zpráv` }
+            ? { value: totalUnseen, tooltip: `${totalUnseen} unread` }
             : undefined;
     }
 

@@ -126,7 +126,7 @@ async function autoConnect(
                 }
             }
         } catch (error) {
-            console.warn(`Failed to auto-connect account "${account.name}":`, error);
+            console.warn(`Auto-connect failed for "${account.name}":`, error);
         }
     }
 }

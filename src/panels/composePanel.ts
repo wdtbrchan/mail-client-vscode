@@ -331,7 +331,7 @@ export class ComposePanel {
                 await this.doSend(account, smtpPassword, to, cc, bcc, subject, archiveOriginal);
             }
 
-            vscode.window.showInformationMessage('Message sent successfully.');
+            vscode.window.showInformationMessage('Message sent.');
             this.panel.dispose();
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Failed to send message';
@@ -389,7 +389,7 @@ export class ComposePanel {
         if (this.options.mode !== 'compose' && this.options.originalMessage) {
             const orig = this.options.originalMessage;
             const isForward = this.options.mode === 'forward';
-            const separatorLabel = isForward ? 'Přeposlaný e‑mail' : 'Původní e‑mail';
+            const separatorLabel = isForward ? 'Forwarded' : 'Original';
             const fromDisplay = orig.from.name
                 ? `${orig.from.name} &lt;${orig.from.address}&gt;`
                 : orig.from.address;
@@ -400,10 +400,10 @@ export class ComposePanel {
             const subjectStr = this.escapeHtml(orig.subject || '');
 
             const separator = `<p style="margin-top:20px;">---------- ${separatorLabel} ----------<br>` +
-                `Od: ${fromDisplay}<br>` +
-                `Komu: ${toDisplay}<br>` +
-                `Datum: ${dateStr}<br>` +
-                `Předmět: ${subjectStr}</p>`;
+                `From: ${fromDisplay}<br>` +
+                `To: ${toDisplay}<br>` +
+                `Date: ${dateStr}<br>` +
+                `Subject: ${subjectStr}</p>`;
             const quotedBody = orig.html || `<pre>${this.escapeHtml(orig.text || '')}</pre>`;
             bodyHtml += `\n${separator}\n<div>\n${quotedBody}\n</div>`;
         }
@@ -456,8 +456,8 @@ export class ComposePanel {
                         // Refresh the Sent folder if it's currently open
                         MessageListPanel.refreshFolder(account.id, sentFolder);
                     } catch (appendErr) {
-                        console.error('Při ukládání zavádějící do odeslané pošty došlo k chybě:', appendErr);
-                        vscode.window.showWarningMessage(`E-mail byl odeslán, ale nepodařilo se jej uložit do složky odeslané pošty: "${sentFolder}".`);
+                        console.error('Error saving to Sent folder:', appendErr);
+                        vscode.window.showWarningMessage(`Sent, but failed to save to "${sentFolder}".`);
                     }
 
                     if (archiveOriginal && this.options.originalMessage && this.options.originalFolderPath) {
@@ -477,7 +477,7 @@ export class ComposePanel {
                             }
                         } catch (archiveErr) {
                              console.error('Failed to move original message to archive:', archiveErr);
-                             vscode.window.showWarningMessage(`E-mail byl odeslán, ale nepodařilo se archivovat původní zprávu.`);
+                             vscode.window.showWarningMessage(`Sent, but failed to archive original message.`);
                         }
                     }
                 } finally {
@@ -1162,15 +1162,15 @@ export class ComposePanel {
                         // Build the header
                         const om = msg.message;
                         const mode = '${this.options.mode}';
-                        const sepLabel = mode === 'forward' ? 'Přeposlaný e\u2011mail' : 'Původní e\u2011mail';
+                        const sepLabel = mode === 'forward' ? 'Forwarded' : 'Original';
                         const dateObj = new Date(om.date);
                         const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString();
                         const headerEl = document.getElementById('original-message-header');
                         headerEl.innerHTML = '---------- ' + sepLabel + ' ----------<br>' +
-                            'Od: ' + (om.fromDisplay || '') + '<br>' +
-                            'Komu: ' + (om.toDisplay || '') + '<br>' +
-                            'Datum: ' + dateStr + '<br>' +
-                            'Předmět: ' + (om.subject || '');
+                            'From: ' + (om.fromDisplay || '') + '<br>' +
+                            'To: ' + (om.toDisplay || '') + '<br>' +
+                            'Date: ' + dateStr + '<br>' +
+                            'Subject: ' + (om.subject || '');
                         // Render original message content indented (skipHeaders=true to avoid duplicate header)
                         renderMessage(originalMessageContent, msg.message, !!msg.showImages, '_orig', true, false, null);
                         

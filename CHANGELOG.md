@@ -1,5 +1,10 @@
 # Changelog
 
+## [ upcoming ]
+
+### Changed
+- **UI & Logging**: Translated Czech `showWarningMessage` and `console` statements to English and shortened them for better conciseness.
+
 ## [0.9.2]
 
 ### Fixed
