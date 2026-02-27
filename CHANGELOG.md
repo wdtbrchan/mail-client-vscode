@@ -3,7 +3,9 @@
 ## [ upcoming ]
 
 ### Changed
+- **Compose View**: Fixed image blocking in the WYSIWYG editor for replies and forwards; images now correctly respect the sender whitelist and manual unblocking from the message detail view.
 - **UI & Logging**: Translated Czech `showWarningMessage` and `console` statements to English and shortened them for better conciseness.
+
 
 ## [0.9.2]
 

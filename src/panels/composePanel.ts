@@ -211,6 +211,17 @@ export class ComposePanel {
         // Also send original message payload for display
         if (this.options.originalMessage) {
              const om = this.options.originalMessage;
+             
+             const config = vscode.workspace.getConfiguration('mailClient');
+             const whitelist: string[] = config.get('imageWhitelist') || [];
+             const isWhitelisted = whitelist.includes(om.from.address);
+             
+             const account = this.options.account;
+             const folderSettings = {
+                spam: account.spamFolder || 'Spam',
+             };
+             const isSpam = this.options.originalFolderPath === folderSettings.spam;
+
              this.panel.webview.postMessage({
                 type: 'originalMessage',
                 showImages: !!this.options.showImages,
@@ -226,6 +237,8 @@ export class ComposePanel {
                     ccDisplay: om.cc?.map(c =>
                         c.name ? `${c.name} <${c.address}>` : c.address
                     ).join(', '),
+                    isWhitelisted,
+                    isSpam,
                 }
             });
         }
@@ -1172,11 +1185,12 @@ export class ComposePanel {
                             'Date: ' + dateStr + '<br>' +
                             'Subject: ' + (om.subject || '');
                         // Render original message content indented (skipHeaders=true to avoid duplicate header)
-                        renderMessage(originalMessageContent, msg.message, !!msg.showImages, '_orig', true, false, null);
+                        // showWarning is true so user can unblock if it was blocked
+                        renderMessage(originalMessageContent, msg.message, !!msg.showImages, '_orig', true, true, null);
                         
                         originalMessageContent.addEventListener('requestShowImages', (e) => {
                             const message = e.detail.message;
-                            renderMessage(originalMessageContent, message, true, '_orig', true);
+                            renderMessage(originalMessageContent, message, true, '_orig', true, true, null);
                         });
                     }
                     break;
