@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.9.2]
 
 ### Fixed
 - **Outgoing Mail**: Properly quoted the sender's display name in the `From` header to ensure it displays correctly in recipient clients even when containing commas (RFC 5322 compliance).
