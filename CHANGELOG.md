@@ -1,14 +1,14 @@
 # Changelog
 
-## [ upcoming ]
-
-### Fixed
-- **Compose View**: Fixed image blocking in the WYSIWYG editor for replies and forwards; images now correctly respect the sender whitelist and manual unblocking from the message detail view.
-- **UI & Logging**: Translated Czech `showWarningMessage` and `console` statements to English and shortened them for better conciseness.
+## [0.9.3]
 
 ### Changed
 - **Refactoring**: Refactored `composePanel.ts` to separate HTML, CSS, and JS into dedicated template files (`src/panels/views/compose/`) for better maintainability and syntax highlighting.
 - **Build System**: Added a custom esbuild plugin to bundle view-specific scripts as raw text for webview injection.
+
+### Fixed
+- **Compose View**: Fixed image blocking in the WYSIWYG editor for replies and forwards; images now correctly respect the sender whitelist and manual unblocking from the message detail view.
+- **UI & Logging**: Translated Czech `showWarningMessage` and `console` statements to English and shortened them for better conciseness.
 
 
 ## [0.9.2]
