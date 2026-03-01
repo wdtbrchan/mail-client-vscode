@@ -248,6 +248,7 @@ export class ImapService {
                 size: source.length,
                 html: parsed.html || undefined,
                 text: parsed.text || undefined,
+                messageId: parsed.messageId || undefined,
                 attachments: (parsed.attachments || []).map(att => ({
                     filename: att.filename || 'unnamed',
                     contentType: att.contentType,

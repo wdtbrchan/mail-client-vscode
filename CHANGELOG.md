@@ -1,5 +1,13 @@
 # Changelog
 
+## [ upcoming ]
+
+### Added
+- **Account Settings**: Added support for Jira API Key / Auth Token in account configuration.
+- **Jira Integration**: Added ability to pair e-mail messages with Jira issues. Pairing is persisted based on the email subject (thread-based) to ensure all messages in a conversation share the same Jira link.
+- **Jira Integration**: Integrated a WYSIWYG comment editor in the message detail view.
+- **Jira Integration**: Issue search with up to 3 results and clickable issue keys for quick pairing.
+
 ## [0.9.3]
 
 ### Changed

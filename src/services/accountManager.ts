@@ -16,6 +16,10 @@ export class AccountManager {
         private readonly context: vscode.ExtensionContext
     ) {}
 
+    public getContext(): vscode.ExtensionContext {
+        return this.context;
+    }
+
     /**
      * Returns all stored mail accounts.
      */

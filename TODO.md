@@ -15,6 +15,7 @@
 - [x] Message searching.
 - [x] Fix sender name parsing when containing commas (unquoted).
 - [x] Fix sender name display in compose/reply panel.
+- [x] JIRA integration.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
 

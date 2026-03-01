@@ -48,6 +48,12 @@ export interface IMailAccount {
     /** Custom folder mappings */
     customFolders?: { name: string; path: string }[];
 
+    /** Jira Base URL (optional) */
+    jiraUrl?: string;
+    
+    /** Jira API Key or Personal Access Token (optional) */
+    jiraApiKey?: string;
+
     /** Email signature (HTML or plain text) */
     signature?: string;
 

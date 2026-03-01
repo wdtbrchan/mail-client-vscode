@@ -131,6 +131,8 @@ export class AccountSettingsPanel {
                 archiveFolder: data.archiveFolder || 'Archive',
                 newslettersFolder: data.newslettersFolder || 'Newsletters',
                 customFolders: data.customFolders || [],
+                jiraUrl: data.jiraUrl || undefined,
+                jiraApiKey: data.jiraApiKey || undefined,
                 signature: data.signature || undefined,
                 markdownSignature: data.markdownSignature || undefined,
             };
@@ -605,6 +607,20 @@ export class AccountSettingsPanel {
         </div>
 
         <hr class="section-divider">
+        <h2 class="section-title">Jira Integration</h2>
+
+        <div class="form-group">
+            <label for="jiraUrl">Jira Base URL</label>
+            <input type="text" id="jiraUrl" placeholder="https://your-domain.atlassian.net">
+        </div>
+        <div class="form-group">
+            <label for="jiraApiKey">Jira API Key</label>
+            <input type="password" id="jiraApiKey" placeholder="Your Jira API Key or PAT">
+        </div>
+        <div class="form-group">
+            <label></label>
+            <span class="color-description font-small">Used for pairing messages to Jira issues.</span>
+        </div>
 
         <hr class="section-divider">
         <details>
@@ -711,6 +727,8 @@ export class AccountSettingsPanel {
             spamFolder: document.getElementById('spamFolder'),
             archiveFolder: document.getElementById('archiveFolder'),
             newslettersFolder: document.getElementById('newslettersFolder'),
+            jiraUrl: document.getElementById('jiraUrl'),
+            jiraApiKey: document.getElementById('jiraApiKey'),
             signature: document.getElementById('signature'),
             markdownSignature: document.getElementById('markdownSignature'),
         };
@@ -749,6 +767,8 @@ export class AccountSettingsPanel {
                 archiveFolder: fields.archiveFolder.value,
                 newslettersFolder: fields.newslettersFolder.value,
                 customFolders: customFolders,
+                jiraUrl: fields.jiraUrl.value.trim(),
+                jiraApiKey: fields.jiraApiKey.value.trim(),
                 signature: fields.signature.innerHTML,
                 markdownSignature: fields.markdownSignature.value
             };
@@ -930,6 +950,8 @@ export class AccountSettingsPanel {
                     setFolder(fields.spamFolder, message.account.spamFolder || 'Spam');
                     setFolder(fields.archiveFolder, message.account.archiveFolder || 'Archive');
                     setFolder(fields.newslettersFolder, message.account.newslettersFolder || 'Newsletters');
+                    fields.jiraUrl.value = message.account.jiraUrl || '';
+                    fields.jiraApiKey.value = message.account.jiraApiKey || '';
                     fields.signature.innerHTML = message.account.signature || '';
                     fields.markdownSignature.value = message.account.markdownSignature || '';
 

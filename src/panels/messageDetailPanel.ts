@@ -208,6 +208,30 @@ export class MessageDetailPanel {
             const folderSettings = this.getFolderSettings();
             const isSpam = this.folderPath === (folderSettings.spam || 'Spam');
 
+            // Find JIRA pairing
+            let pairedJiraIssue: string | undefined;
+            let pairedJiraIssueSummary: string | undefined;
+            const context = this.accountManager.getContext();
+            const pairings = context.globalState.get<Record<string, any>>('mailClient.jiraPairs', {});
+            
+            let pairData = null;
+            if (message.subject) {
+                const cleanSubject = message.subject.replace(/^((Re|Fw|Fwd):\s*)+/i, '').replace(/[+\-&|!(){}[\]^~*?:\/"\\]/g, ' ').replace(/\s+/g, ' ').trim();
+                pairData = pairings[cleanSubject];
+            }
+            
+            // Fallback for older pairings
+            if (!pairData && message.messageId) {
+                pairData = pairings[message.messageId];
+            }
+
+            if (typeof pairData === 'string') {
+                pairedJiraIssue = pairData;
+            } else if (pairData) {
+                pairedJiraIssue = pairData.key;
+                pairedJiraIssueSummary = pairData.summary;
+            }
+
             this.panel.webview.postMessage({
                 type: 'message',
                 message: {
@@ -225,7 +249,9 @@ export class MessageDetailPanel {
                     folderSettings: folderSettings,
                     currentResidesIn: this.folderPath,
                     isWhitelisted: isWhitelisted,
-                    isSpam: isSpam
+                    isSpam: isSpam,
+                    pairedJiraIssue: pairedJiraIssue,
+                    pairedJiraIssueSummary: pairedJiraIssueSummary
                 },
             });
 
@@ -285,6 +311,15 @@ export class MessageDetailPanel {
             case 'whitelistSender':
                 this.whitelistSender(message.sender);
                 break;
+            case 'jiraSearch':
+                this.searchJiraIssue(message.subject);
+                break;
+            case 'jiraPair':
+                this.pairJiraIssue(message.subject, message.issueKey, message.summary);
+                break;
+            case 'jiraComment':
+                this.postJiraComment(message.issueKey, message.comment);
+                break;
             case 'back':
                 this.dispose();
                 break;
@@ -300,6 +335,125 @@ export class MessageDetailPanel {
             vscode.window.showInformationMessage(`Sender ${sender} whitelisted.`);
             this.loadMessage(); // Reload message to show images
         }
+    }
+
+    private async pairJiraIssue(subject: string, issueKey: string, summary?: string): Promise<void> {
+        if (!subject) return;
+        const cleanSubject = subject.replace(/^((Re|Fw|Fwd):\s*)+/i, '').replace(/[+\-&|!(){}[\]^~*?:\/"\\]/g, ' ').replace(/\s+/g, ' ').trim();
+        const context = this.accountManager.getContext();
+        const pairings = context.globalState.get<Record<string, any>>('mailClient.jiraPairs', {});
+        
+        if (issueKey) {
+            pairings[cleanSubject] = { key: issueKey, summary: summary || '' };
+            vscode.window.showInformationMessage(`Message paired to JIRA issue #${issueKey}`);
+        } else {
+            delete pairings[cleanSubject];
+        }
+
+        await context.globalState.update('mailClient.jiraPairs', pairings);
+    }
+
+    private async postJiraComment(issueKey: string, commentBody: string): Promise<void> {
+        const account = this.accountManager.getAccount(this.accountId);
+        if (!account || !account.jiraUrl || !account.jiraApiKey) {
+            vscode.window.showErrorMessage('Jira connection not configured.');
+            this.panel.webview.postMessage({ type: 'jiraCommentResult', success: false });
+            return;
+        }
+
+        try {
+            const url = `${account.jiraUrl.trim().replace(/\/$/, '')}/rest/api/2/issue/${encodeURIComponent(issueKey)}/comment`;
+            
+            let authHeader = account.jiraApiKey.trim();
+            if (!authHeader.startsWith('Basic') && !authHeader.startsWith('Bearer')) {
+                if (authHeader.includes(':')) {
+                    authHeader = `Basic ${Buffer.from(authHeader).toString('base64')}`;
+                } else {
+                    authHeader = `Basic ${Buffer.from(account.username + ':' + authHeader).toString('base64')}`;
+                }
+            }
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': authHeader,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ body: commentBody })
+            });
+
+            if (response.ok) {
+                vscode.window.showInformationMessage(`Comment successfully added to ${issueKey}.`);
+                this.panel.webview.postMessage({ type: 'jiraCommentResult', success: true });
+            } else {
+                const errorText = await response.text();
+                console.error('Jira API error adding comment:', errorText);
+                vscode.window.showErrorMessage('Failed to add comment to Jira.');
+                this.panel.webview.postMessage({ type: 'jiraCommentResult', success: false });
+            }
+        } catch (e) {
+            console.error('Jira Comment Error:', e);
+            vscode.window.showErrorMessage('Error connecting to Jira to add comment.');
+            this.panel.webview.postMessage({ type: 'jiraCommentResult', success: false });
+        }
+    }
+
+    private async searchJiraIssue(subject: string): Promise<void> {
+        const account = this.accountManager.getAccount(this.accountId);
+        if (!account || !account.jiraUrl || !account.jiraApiKey) {
+            this.panel.webview.postMessage({ type: 'jiraSearchResult', issueKey: undefined });
+            return;
+        }
+
+        try {
+            // Remove Re: Fwd: and characters that break JQL string literal
+            const cleanSubject = subject.replace(/^((Re|Fw|Fwd):\s*)+/i, '').replace(/[+\-&|!(){}[\]^~*?:\/"\\]/g, ' ').replace(/\s+/g, ' ').trim();
+            const jql = `text ~ "${cleanSubject}" ORDER BY created DESC`;
+            
+            const url = `${account.jiraUrl.trim().replace(/\/$/, '')}/rest/api/3/search/jql?jql=${encodeURIComponent(jql)}&maxResults=3&fields=key,summary,status,created`;
+            
+            // Allow Basic or Bearer token correctly
+            let authHeader = account.jiraApiKey.trim();
+            if (!authHeader.startsWith('Basic') && !authHeader.startsWith('Bearer')) {
+                if (authHeader.includes(':')) {
+                    authHeader = `Basic ${Buffer.from(authHeader).toString('base64')}`;
+                } else {
+                    // Default to Basic auth using the mail account username
+                    authHeader = `Basic ${Buffer.from(account.username + ':' + authHeader).toString('base64')}`;
+                }
+            }
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': authHeader,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json() as any;                
+                if (data.issues && data.issues.length > 0) {
+                    const issues = data.issues.map((issue: any) => ({
+                        key: issue.key,
+                        summary: issue.fields?.summary,
+                        statusName: issue.fields?.status?.name,
+                        created: issue.fields?.created
+                    }));
+                    this.panel.webview.postMessage({ 
+                        type: 'jiraSearchResult', 
+                        issues: issues
+                    });
+                    return;
+                }
+            } else {
+                console.error('Jira API error:', await response.text());
+            }
+        } catch (e) {
+            console.error('Jira Search Error:', e);
+        }
+
+        this.panel.webview.postMessage({ type: 'jiraSearchResult', issueKey: undefined });
     }
 
     private async printHtml(html: string): Promise<void> {
@@ -679,6 +833,39 @@ export class MessageDetailPanel {
             border: none;
             background: white;
         }
+
+        /* Jira Modal */
+        #jiraModalOverlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.5); z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .jira-modal {
+            background: var(--vscode-editorWidget-background);
+            border: 1px solid var(--vscode-widget-border);
+            border-radius: 4px;
+            padding: 20px;
+            width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .jira-modal h3 { margin: 0; font-size: 16px; font-weight: 600; color: var(--vscode-foreground); }
+        .jira-modal-body { display: flex; gap: 8px; align-items: center; }
+        .jira-modal input {
+            flex: 1; padding: 6px; font-size: 14px;
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+        }
+        .jira-modal button {
+            padding: 6px 12px; border: none; border-radius: 2px;
+            cursor: pointer; font-family: inherit; font-size: 13px;
+        }
+        .btn-primary { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
+        .btn-primary:hover { background: var(--vscode-button-hoverBackground); }
+        .btn-secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
+        .btn-secondary:hover { background: var(--vscode-button-secondaryHoverBackground); }
+        #jiraStatus { font-size: 12px; color: var(--vscode-descriptionForeground); min-height: 18px; margin-top: -4px; }
     </style>
 </head>
 <body>
@@ -696,7 +883,8 @@ export class MessageDetailPanel {
                 <button class="action-btn danger hidden" id="btnDelete" title="Delete Permanently"><span class="btn-icon">❌</span> Delete</button>
                 ${customButtonsHtml}
             </div>
-            <div style="display: flex; margin-left: auto;">
+            <div style="display: flex; margin-left: auto; align-items: center;">
+            <button class="action-btn" id="btnJiraPair" title="JIRA issue" style="border-left: 1px solid var(--vscode-widget-border);"><span class="btn-icon">🔗</span> <span id="btnJiraPairText">JIRA issue</span></button>
             <button class="action-btn icon-only" id="btnPrint" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
             <button class="action-btn icon-only" id="btnForward" title="Forward"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"></path></svg></button>
             <button class="action-btn icon-only" id="btnReply" title="Reply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6L9 12L15 18"></path></svg></button>
@@ -720,6 +908,45 @@ export class MessageDetailPanel {
         <iframe id="printIframe" sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
     </div>
 
+    <div id="jiraModalOverlay" class="hidden">
+        <div class="jira-modal">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Pair to JIRA issue</h3>
+                <button class="action-btn icon-only" id="btnJiraCloseModal" title="Close" style="padding: 4px; border:none; background:transparent; cursor:pointer; color:var(--vscode-foreground);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 13px;">Enter Issue Key to Pair:</span>
+                <div class="jira-modal-body">
+                    <input type="text" id="jiraIssueInput" placeholder="e.g. PROJ-123">
+                    <button class="btn-primary" id="btnJiraSave">Pair</button>
+                    <button class="btn-secondary hidden" id="btnJiraCommentStart">Comment</button>
+                </div>
+            </div>
+
+            <!-- Comment section -->
+            <div id="jiraCommentSection" class="hidden" style="border-top: 1px solid var(--vscode-widget-border); padding-top: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 13px;">Add Comment to Issue:</span>
+                <div id="jiraCommentEditor" contenteditable="true" style="min-height: 120px; max-height: 250px; overflow-y: auto; padding: 8px; border: 1px solid var(--vscode-input-border); background: var(--vscode-input-background); color: var(--vscode-input-foreground); border-radius: 2px; font-size: 13px; outline: none;"></div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; align-items: center;">
+                    <div id="jiraCommentStatus" style="font-size: 12px; margin-right: auto; padding-left: 4px;"></div>
+                    <button class="btn-secondary" id="btnJiraCommentCancel">Cancel</button>
+                    <button class="btn-primary" id="btnJiraCommentSend">Send</button>
+                </div>
+            </div>
+
+            <div id="jiraSearchSection" style="border-top: 1px solid var(--vscode-widget-border); padding-top: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 13px;">Search for Issue by subject:</span>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="jiraSearchQueryInput" placeholder="Search query...">
+                    <button class="btn-secondary" id="btnJiraSearchCustom">Search</button>
+                </div>
+            </div>
+
+            <div id="jiraStatus" style="margin-top: 4px; margin-bottom: 8px;"></div>
+        </div>
+    </div>
+
     <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         vscode.setState(${statePayload});
@@ -734,6 +961,7 @@ export class MessageDetailPanel {
         const loadingEl = document.getElementById('loadingIndicator');
         let currentMessage = null;
         let currentShowImages = false;
+        let lastJiraSearchResultSummary = '';
 
         document.getElementById('btnPrint').addEventListener('click', showPrintPreview);
         document.getElementById('btnClosePrint').addEventListener('click', () => {
@@ -808,6 +1036,148 @@ export class MessageDetailPanel {
             }
         });
 
+        // Jira Modal Logic
+        const jiraModal = document.getElementById('jiraModalOverlay');
+        const jiraInput = document.getElementById('jiraIssueInput');
+        const jiraStatus = document.getElementById('jiraStatus');
+        const btnJiraPairText = document.getElementById('btnJiraPairText');
+        const jiraSearchFallback = document.getElementById('jiraSearchFallback');
+        const jiraSearchQueryInput = document.getElementById('jiraSearchQueryInput');
+
+        const btnJiraCommentStart = document.getElementById('btnJiraCommentStart');
+        const jiraCommentSection = document.getElementById('jiraCommentSection');
+        const jiraSearchSection = document.getElementById('jiraSearchSection');
+        const jiraCommentEditor = document.getElementById('jiraCommentEditor');
+        const jiraCommentStatus = document.getElementById('jiraCommentStatus');
+
+        const updateCommentButtonVisibility = () => {
+             const val = jiraInput.value.trim();
+             if (val) {
+                 btnJiraCommentStart.classList.remove('hidden');
+             } else {
+                 btnJiraCommentStart.classList.add('hidden');
+             }
+        };
+
+        jiraInput.addEventListener('input', updateCommentButtonVisibility);
+
+        document.getElementById('btnJiraPair').addEventListener('click', () => {
+            jiraModal.classList.remove('hidden');
+            jiraCommentSection.classList.add('hidden');
+            jiraSearchSection.classList.remove('hidden');
+            jiraInput.value = (currentMessage && currentMessage.pairedJiraIssue) ? currentMessage.pairedJiraIssue : '';
+            jiraStatus.innerHTML = '';
+            lastJiraSearchResultSummary = '';
+            
+            updateCommentButtonVisibility();
+
+            if (currentMessage && currentMessage.pairedJiraIssueSummary) {
+                jiraSearchQueryInput.value = currentMessage.pairedJiraIssueSummary;
+            } else if (currentMessage && currentMessage.subject) {
+                const cleanSubject = currentMessage.subject.replace(/^((Re|Fw|Fwd):\\s*)+/i, '').replace(/[+\\-&|!(){}[\\]^~*?:\\/"\\\\]/g, ' ').replace(/\\s+/g, ' ').trim();
+                jiraSearchQueryInput.value = cleanSubject;
+            } else {
+                jiraSearchQueryInput.value = '';
+            }
+            jiraInput.focus();
+        });
+
+        document.getElementById('btnJiraCloseModal').addEventListener('click', () => {
+            jiraModal.classList.add('hidden');
+        });
+
+        // Comment functionality
+        document.getElementById('btnJiraCommentStart').addEventListener('click', () => {
+            jiraSearchSection.classList.add('hidden');
+            jiraCommentSection.classList.remove('hidden');
+            jiraCommentStatus.innerHTML = '';
+            if (currentMessage) {
+                let commentHtml = '<strong>From:</strong> ' + escapeHtml(currentMessage.fromDisplay) + '<br>';
+                commentHtml += '<strong>To:</strong> ' + escapeHtml(currentMessage.toDisplay) + '<br>';
+                if (currentMessage.ccDisplay) {
+                    commentHtml += '<strong>Cc:</strong> ' + escapeHtml(currentMessage.ccDisplay) + '<br>';
+                }
+                commentHtml += '<strong>Subject:</strong> ' + escapeHtml(currentMessage.subject || '(no subject)') + '<br>';
+                commentHtml += '<strong>Date:</strong> ' + formatDate(currentMessage.date) + '<br>';
+                commentHtml += '<br>';
+                let bodyContent = '';
+                if (currentMessage.text) {
+                    let lines = currentMessage.text.split(/\\r?\\n/);
+                    let outLines = [];
+                    for(let i = 0; i < lines.length; i++) {
+                        let l = lines[i].trim();
+                        // Strip common English and Czech reply headers
+                        if (
+                            l.match(/^(On|Dne)\\s.*(wrote|napsal\\(a\\)|napsal):$/i) ||
+                            l.match(/^(---|____)*\\s*(message|zpráva|zprava)\\s*(---|____)*$/i) ||
+                            l.match(/^_{10,}$/) ||
+                            (l.match(/^(From|Od):\\s/i) && i > 0 && lines[i-1].trim() === '')
+                        ) {
+                            break;
+                        }
+                        outLines.push(lines[i]);
+                    }
+                    bodyContent = escapeHtml(outLines.join('\\n').trim()).replace(/\\n/g, '<br>');
+                } else if (currentMessage.html) {
+                    // Fallback to stripping the first blockquote if only HTML is available
+                    bodyContent = currentMessage.html.split(/<blockquote/i)[0];
+                }
+                commentHtml += bodyContent;
+                jiraCommentEditor.innerHTML = commentHtml;
+            }
+        });
+
+        document.getElementById('btnJiraCommentCancel').addEventListener('click', () => {
+            jiraCommentSection.classList.add('hidden');
+            jiraSearchSection.classList.remove('hidden');
+        });
+
+        document.getElementById('btnJiraCommentSend').addEventListener('click', () => {
+            const commentText = jiraCommentEditor.innerText.trim();
+            const issueKey = jiraInput.value.trim();
+            if (!commentText || !issueKey) return;
+            jiraCommentStatus.innerHTML = '<span class="loader" style="width:12px; height:12px; border-width: 2px;"></span> Sending...';
+            vscode.postMessage({ type: 'jiraComment', issueKey: issueKey, comment: commentText });
+        });
+
+        // Search trigger functionality
+        const doSearch = () => {
+            const query = jiraSearchQueryInput.value.trim();
+            if (!query) return;
+            jiraStatus.innerHTML = '<span class="loader" style="width:12px; height:12px; border-width: 2px;"></span> Searching...';
+            vscode.postMessage({ type: 'jiraSearch', subject: query });
+        };
+        document.getElementById('btnJiraSearchCustom').addEventListener('click', doSearch);
+        jiraSearchQueryInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') doSearch();
+        });
+
+        // Save trigger functionality
+        const doSave = () => {
+            const val = jiraInput.value.trim();
+            if (currentMessage) {
+                 if (val) {
+                     const summaryToSave = lastJiraSearchResultSummary || jiraSearchQueryInput.value.trim();
+                     vscode.postMessage({ type: 'jiraPair', subject: currentMessage.subject, issueKey: val, summary: summaryToSave });
+                     btnJiraPairText.innerText = 'JIRA #' + val;
+                     currentMessage.pairedJiraIssue = val;
+                     currentMessage.pairedJiraIssueSummary = summaryToSave;
+                 } else {
+                     // Clear the pairing
+                     vscode.postMessage({ type: 'jiraPair', subject: currentMessage.subject, issueKey: '', summary: '' });
+                     btnJiraPairText.innerText = 'JIRA';
+                     currentMessage.pairedJiraIssue = '';
+                     currentMessage.pairedJiraIssueSummary = '';
+                 }
+                 updateCommentButtonVisibility();
+            }
+            jiraModal.classList.add('hidden');
+        };
+        document.getElementById('btnJiraSave').addEventListener('click', doSave);
+        jiraInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') doSave();
+        });
+
         // Show/Hide buttons based on current folder
         window.addEventListener('message', event => {
             const msg = event.data;
@@ -864,6 +1234,12 @@ export class MessageDetailPanel {
                         btnTrash.classList.remove('hidden');
                         btnDelete.classList.add('hidden');
                     }
+                }
+
+                if (msg.message.pairedJiraIssue) {
+                    btnJiraPairText.innerText = 'JIRA #' + msg.message.pairedJiraIssue;
+                } else {
+                    btnJiraPairText.innerText = 'JIRA';
                 }
 
                 customFolders.forEach((cf, i) => {
@@ -941,6 +1317,47 @@ export class MessageDetailPanel {
         window.addEventListener('message', (event) => {
             const msg = event.data;
             switch (msg.type) {
+                case 'jiraSearchResult':
+                    if (msg.issues && msg.issues.length > 0) {
+                        let infoHtml = '<div style="display:flex; flex-direction:column; gap:6px;">';
+                        msg.issues.forEach((issue, index) => {
+                            let itemHtml = '<div><strong>Found Issue:</strong> <a href="#" class="jira-issue-link" data-key="' + escapeHtml(issue.key) + '" data-summary="' + escapeHtml(issue.summary || '') + '" style="color:var(--vscode-textLink-foreground); text-decoration:none;">' + escapeHtml(issue.key) + '</a>';
+                            if (issue.summary) itemHtml += ' - ' + escapeHtml(issue.summary);
+                            if (issue.statusName) itemHtml += '<br><strong>Status:</strong> ' + escapeHtml(issue.statusName);
+                            if (issue.created) {
+                                const d = new Date(issue.created);
+                                itemHtml += ' | <strong>Created:</strong> ' + d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+                            }
+                            itemHtml += '</div>';
+                            infoHtml += itemHtml;
+                        });
+                        infoHtml += '</div>';
+                        jiraStatus.innerHTML = infoHtml;
+                        
+                        // Add click listeners to the dynamically created links
+                        const links = jiraStatus.querySelectorAll('.jira-issue-link');
+                        links.forEach(link => {
+                            link.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                jiraInput.value = link.getAttribute('data-key');
+                                lastJiraSearchResultSummary = link.getAttribute('data-summary');
+                                // highlight briefly or provide feedback? Just focusing is fine for now
+                                jiraInput.focus();
+                            });
+                        });
+                    } else {
+                        jiraStatus.innerText = 'Not found';
+                    }
+                    break;
+                case 'jiraCommentResult':
+                    if (msg.success) {
+                        jiraCommentSection.classList.add('hidden');
+                        jiraSearchSection.classList.remove('hidden');
+                        jiraCommentStatus.innerHTML = '';
+                    } else {
+                        jiraCommentStatus.innerHTML = '<span style="color:var(--vscode-errorForeground);">Failed to send comment.</span>';
+                    }
+                    break;
                 case 'loading':
                     headersEl.innerHTML = '';
                     bodyEl.innerHTML = '';
