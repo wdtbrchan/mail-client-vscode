@@ -164,7 +164,7 @@ window.addEventListener('message', (event) => {
                 originalMessageContainer.classList.remove('hidden');
                 // Build the header
                 const om = msg.message;
-                const sepLabel = appMode === 'forward' ? 'Forwarded' : 'Original';
+                const sepLabel = appMode === 'forward' ? 'Forwarded message' : 'Original message';
                 const dateObj = new Date(om.date);
                 const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString();
                 const headerEl = document.getElementById('original-message-header');

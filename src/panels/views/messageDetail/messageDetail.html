@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-{{NONCE}}'; img-src * data:;">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message</title>
+    <style nonce="{{NONCE}}">
+        /* {{SHARED_STYLES}} */
+        /* {{CSS_INJECT}} */
+    </style>
+</head>
+<body>
+    <div id="messageHeaders"></div>
+
+    <div class="action-bar {{IS_EMBEDDED_CLASS}}" id="actionBar">
+        {{BACK_BUTTON_HTML}}
+        <div id="messageButtons" class="hidden" style="display: flex; flex-wrap: wrap; flex: 1;">
+            <div style="display: flex; flex-wrap: wrap;">
+                <button class="action-btn" id="btnInbox" title="Move to Inbox"><span class="btn-icon">📥</span> Inbox</button>
+                <button class="action-btn" id="btnArchive" title="Archive"><span class="btn-icon">📂</span> Archive</button>
+                <button class="action-btn" id="btnSpam" title="Mark as Spam"><span class="btn-icon">⛔</span> Spam</button>
+                <button class="action-btn" id="btnNewsletters" title="Move to Newsletters"><span class="btn-icon">📰</span> News</button>
+                <button class="action-btn" id="btnTrash" title="Move to Trash"><span class="btn-icon">🗑</span> Trash</button>
+                <button class="action-btn danger hidden" id="btnDelete" title="Delete Permanently"><span class="btn-icon">❌</span> Delete</button>
+                {{CUSTOM_BUTTONS_HTML}}
+            </div>
+            <div style="display: flex; margin-left: auto; align-items: center;">
+            <button class="action-btn" id="btnJiraPair" title="JIRA issue" style="border-left: 1px solid var(--vscode-widget-border);"><span class="btn-icon">🔗</span> <span id="btnJiraPairText">JIRA</span></button>
+            <button class="action-btn icon-only" id="btnPrint" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
+            <button class="action-btn icon-only" id="btnForward" title="Forward"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"></path></svg></button>
+            <button class="action-btn icon-only" id="btnReply" title="Reply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6L9 12L15 18"></path></svg></button>
+            <button class="action-btn icon-only" id="btnReplyAll" title="Reply All"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6L11 12L17 18"></path><path d="M10 6L4 12L10 18"></path></svg></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageBody"></div>
+
+    <div id="loadingIndicator" class="loading"><span class="loader"></span>Loading message...</div>
+
+    <div id="printOverlay" class="hidden">
+        <div class="print-toolbar">
+            <span style="color: var(--vscode-descriptionForeground); font-size: 13px; margin-right: auto; padding-left: 8px;">
+                The preview will open in your default web browser for printing.
+            </span>
+            <button id="btnClosePrint" style="margin-right: 8px;">Close</button>
+            <button id="btnConfirmPrint"><svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> PRINT</button>
+        </div>
+        <iframe id="printIframe" sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
+    </div>
+
+    <div id="jiraModalOverlay" class="hidden">
+        <div class="jira-modal">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Pair to JIRA issue</h3>
+                <button class="action-btn icon-only" id="btnJiraCloseModal" title="Close" style="padding: 4px; border:none; background:transparent; cursor:pointer; color:var(--vscode-foreground);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 13px;">Enter Issue Key to Pair:</span>
+                <div class="jira-modal-body">
+                    <input type="text" id="jiraIssueInput" placeholder="e.g. PROJ-123">
+                    <button class="btn-primary" id="btnJiraSave">Pair</button>
+                    <button class="btn-secondary hidden" id="btnJiraCommentStart">Comment</button>
+                </div>
+            </div>
+
+            <!-- Comment section -->
+            <div id="jiraCommentSection" class="hidden" style="border-top: 1px solid var(--vscode-widget-border); padding-top: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 13px;">Add Comment to Issue:</span>
+                <div id="jiraCommentEditor" contenteditable="true" style="min-height: 120px; max-height: 250px; overflow-y: auto; padding: 8px; border: 1px solid var(--vscode-input-border); background: var(--vscode-input-background); color: var(--vscode-input-foreground); border-radius: 2px; font-size: 13px; outline: none;"></div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; align-items: center;">
+                    <div id="jiraCommentStatus" style="font-size: 12px; margin-right: auto; padding-left: 4px;"></div>
+                    <button class="btn-secondary" id="btnJiraCommentCancel">Cancel</button>
+                    <button class="btn-primary" id="btnJiraCommentSend">Send</button>
+                </div>
+            </div>
+
+            <div id="jiraSearchSection" style="border-top: 1px solid var(--vscode-widget-border); padding-top: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 13px;">Search for Issue by subject:</span>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="jiraSearchQueryInput" placeholder="Search query...">
+                    <button class="btn-secondary" id="btnJiraSearchCustom">Search</button>
+                </div>
+            </div>
+
+            <div id="jiraStatus" style="margin-top: 4px; margin-bottom: 8px;"></div>
+        </div>
+    </div>
+
+    <script nonce="{{NONCE}}">
+        const vscode = acquireVsCodeApi();
+        vscode.setState("{{STATE_PAYLOAD}}");
+        
+        // {{SHARED_SCRIPTS}}
+        
+        const customFolders = "{{CUSTOM_FOLDERS_JSON}}";
+        const isEmbedded = "{{IS_EMBEDDED}}";
+        // {{JS_INJECT}}
+    </script>
+</body>
+</html>

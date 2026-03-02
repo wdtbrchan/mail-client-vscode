@@ -409,7 +409,7 @@ export class ComposePanel {
         if (this.options.mode !== 'compose' && this.options.originalMessage) {
             const orig = this.options.originalMessage;
             const isForward = this.options.mode === 'forward';
-            const separatorLabel = isForward ? 'Forwarded' : 'Original';
+            const separatorLabel = isForward ? 'Forwarded message' : 'Original message';
             const fromDisplay = orig.from.name
                 ? `${orig.from.name} &lt;${orig.from.address}&gt;`
                 : orig.from.address;
@@ -539,16 +539,16 @@ export class ComposePanel {
 
         return composeHtml
             .replace(/\{\{NONCE\}\}/g, nonce)
-            .replace('{{SHARED_STYLES}}', sharedStyles)
-            .replace('{{CSS_INJECT}}', composeCss)
+            .replace('/* {{SHARED_STYLES}} */', sharedStyles)
+            .replace('/* {{CSS_INJECT}} */', composeCss)
             .replace('{{MODE}}', this.options.mode)
             .replace('{{EDITOR_MODE}}', this.isWysiwyg ? 'wysiwyg' : 'markdown')
             .replace('{{SENDER_NAME}}', senderName)
             .replace('{{SENDER_EMAIL}}', senderEmail)
             .replace('{{INITIAL_WYSIWYG_HTML}}', initialWysiwygHtml)
-            .replace('{{COMPOSE_CONFIG}}', JSON.stringify(composeConfig))
-            .replace('{{SHARED_SCRIPTS}}', sharedScripts)
-            .replace('{{JS_INJECT}}', composeJs);
+            .replace('"{{COMPOSE_CONFIG}}"', JSON.stringify(composeConfig))
+            .replace('// {{SHARED_SCRIPTS}}', sharedScripts)
+            .replace('// {{JS_INJECT}}', composeJs);
     }
 
     private dispose(): void {

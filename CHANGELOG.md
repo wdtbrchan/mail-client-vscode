@@ -8,6 +8,11 @@
 - **Jira Integration**: Integrated a WYSIWYG comment editor in the message detail view.
 - **Jira Integration**: Issue search with up to 3 results and clickable issue keys for quick pairing.
 
+### Changed
+- **Account Settings**: Default visibility of sections updated: "Jira Integration" is now collapsed by default and moved to the bottom, while "Folders" is now expanded by default.
+- **Jira Integration**: The "JIRA" button in the message detail view is now hidden if no API key is configured for the account.
+- **Refactoring**: Refactored `messageDetailPanel.ts` to separate HTML, CSS, and JS into dedicated template files (`src/panels/views/messageDetail/`) for better maintainability and syntax highlighting.
+
 ## [0.9.3]
 
 ### Changed

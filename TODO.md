@@ -10,6 +10,7 @@
 - [x] Support for attachments (uploading and downloading).
 - [x] Refactor message preview logic.
 - [x] Implement WYSIWYG editor for composing emails.
+- [x] Refactor message detail panel to separate HTML, CSS, and JS files.
 - [x] Implement Print functionality.
 - [x] Improve IMAP connection reliability and automatic reconnection.
 - [x] Message searching.

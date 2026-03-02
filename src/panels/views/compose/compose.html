@@ -16,8 +16,8 @@
             flex-direction: column;
             height: 100vh;
         }
-        {{SHARED_STYLES}}
-        {{CSS_INJECT}}
+        /* {{SHARED_STYLES}} */
+        /* {{CSS_INJECT}} */
     </style>
 </head>
 <body class="app-mode-{{MODE}} editor-mode-{{EDITOR_MODE}}">
@@ -115,9 +115,9 @@
 
     <script nonce="{{NONCE}}">
         window.vscode = acquireVsCodeApi();
-        window.composeConfig = {{COMPOSE_CONFIG}};
-        {{SHARED_SCRIPTS}}
-        {{JS_INJECT}}
+        window.composeConfig = "{{COMPOSE_CONFIG}}";
+        // {{SHARED_SCRIPTS}}
+        // {{JS_INJECT}}
     </script>
 </body>
 </html>

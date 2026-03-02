@@ -1,0 +1,184 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    color: var(--vscode-foreground);
+    background: var(--vscode-editor-background);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#messageHeaders {
+    flex-shrink: 0;
+}
+
+#messageBody {
+    flex: 1;
+    overflow: auto;
+}
+
+/* Action toolbar */
+.action-bar {
+    display: flex;
+    flex-wrap: wrap;       /* Allow wrapping */
+    flex-shrink: 0;
+    padding: 0;
+    border-bottom: 1px solid var(--vscode-widget-border);
+    background: var(--vscode-editorWidget-background);
+    min-height: 36px;      /* Changed from height to min-height */
+}
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 16px;
+    border: none;
+    border-bottom: 1px solid var(--vscode-widget-border); /* Add a border for wrapped rows */
+    border-right: 1px solid var(--vscode-widget-border);
+    border-radius: 0;
+    background: transparent;
+    color: var(--vscode-foreground);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9em;
+    height: 36px; /* Fixed height for each row/button */
+}
+.action-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+.btn-icon {
+    font-size: 1.6em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.action-btn.icon-only {
+    padding: 0;
+    width: 42px;
+    justify-content: center;
+    border-left: 1px solid var(--vscode-widget-border);
+    border-right: none;
+}
+.action-bar > .action-btn:last-child {
+    border-right: none;
+}
+.action-btn:hover {
+    background: #ff9800 !important;
+    color: #ffffff !important;
+}
+.action-btn.icon-only:hover {
+    transform: none;
+}
+.action-btn.danger {
+    color: var(--vscode-errorForeground);
+}
+.action-btn.danger:hover {
+    background: #e53935 !important;
+    color: #ffffff !important;
+}
+
+.loading, .error-msg {
+    text-align: center;
+    padding: 40px;
+    color: var(--vscode-descriptionForeground);
+}
+.error-msg { color: var(--vscode-errorForeground); }
+ .hidden { display: none !important; }
+
+/* Print Overlay */
+#printOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--vscode-editor-background);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+}
+.print-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: var(--vscode-editorWidget-background);
+    border-bottom: 1px solid var(--vscode-widget-border);
+}
+.print-toolbar button {
+    padding: 6px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid var(--vscode-button-border, transparent);
+    border-radius: 2px;
+    font-family: inherit;
+}
+#btnClosePrint {
+    background: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+}
+#btnClosePrint:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
+}
+#btnConfirmPrint {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+#btnConfirmPrint svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+}
+#btnConfirmPrint:hover {
+    background: var(--vscode-button-hoverBackground);
+}
+#printIframe {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white;
+}
+
+/* Jira Modal */
+#jiraModalOverlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.5); z-index: 10000;
+    display: flex; justify-content: center; align-items: center;
+}
+.jira-modal {
+    background: var(--vscode-editorWidget-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 4px;
+    padding: 20px;
+    width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    display: flex; flex-direction: column; gap: 12px;
+}
+.jira-modal h3 { margin: 0; font-size: 16px; font-weight: 600; color: var(--vscode-foreground); }
+.jira-modal-body { display: flex; gap: 8px; align-items: center; }
+.jira-modal input {
+    flex: 1; padding: 6px; font-size: 14px;
+    background: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+}
+.jira-modal button {
+    padding: 6px 12px; border: none; border-radius: 2px;
+    cursor: pointer; font-family: inherit; font-size: 13px;
+}
+.btn-primary { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
+.btn-primary:hover { background: var(--vscode-button-hoverBackground); }
+.btn-secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
+.btn-secondary:hover { background: var(--vscode-button-secondaryHoverBackground); }
+#jiraStatus { font-size: 12px; color: var(--vscode-descriptionForeground); min-height: 18px; margin-top: -4px; }

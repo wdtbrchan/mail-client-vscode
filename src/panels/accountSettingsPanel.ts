@@ -607,23 +607,7 @@ export class AccountSettingsPanel {
         </div>
 
         <hr class="section-divider">
-        <h2 class="section-title">Jira Integration</h2>
-
-        <div class="form-group">
-            <label for="jiraUrl">Jira Base URL</label>
-            <input type="text" id="jiraUrl" placeholder="https://your-domain.atlassian.net">
-        </div>
-        <div class="form-group">
-            <label for="jiraApiKey">Jira API Key</label>
-            <input type="password" id="jiraApiKey" placeholder="Your Jira API Key or PAT">
-        </div>
-        <div class="form-group">
-            <label></label>
-            <span class="color-description font-small">Used for pairing messages to Jira issues.</span>
-        </div>
-
-        <hr class="section-divider">
-        <details>
+        <details open>
             <summary class="section-title cursor-pointer display-list-item">Folders</summary>
             <div class="margin-top-16">
                 <div class="flex-row flex-gap-10 margin-bottom-8">
@@ -694,6 +678,25 @@ export class AccountSettingsPanel {
             <label class="display-block text-left font-weight-500 margin-bottom-8" style="color: var(--vscode-foreground);">Markdown Signature</label>
             <textarea id="markdownSignature" class="markdown-editor" placeholder="Type markdown signature here..."></textarea>
         </div>
+            </div>
+        </details>
+
+        <hr class="section-divider">
+        <details>
+            <summary class="section-title cursor-pointer display-list-item">Jira Integration</summary>
+            <div class="margin-top-16">
+                <div class="form-group">
+                    <label for="jiraUrl">Jira Base URL</label>
+                    <input type="text" id="jiraUrl" placeholder="https://your-domain.atlassian.net">
+                </div>
+                <div class="form-group">
+                    <label for="jiraApiKey">Jira API Key</label>
+                    <input type="password" id="jiraApiKey" placeholder="Your Jira API Key or PAT">
+                </div>
+                <div class="form-group">
+                    <label></label>
+                    <span class="color-description font-small">Used for pairing messages to Jira issues.</span>
+                </div>
             </div>
         </details>
 
