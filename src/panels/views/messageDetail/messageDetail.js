@@ -153,7 +153,8 @@ document.getElementById('btnJiraCommentStart').addEventListener('click', () => {
                 // Strip common English and Czech reply headers
                 if (
                     l.match(/^(On|Dne)\s.*(wrote|napsal\(a\)|napsal):$/i) ||
-                    l.match(/^(---|____)*\s*(message|zpráva|zprava)\s*(---|____)*$/i) ||
+                    l.match(/^(---|____)+\s*(original\s+|forwarded\s+|původní\s+|puvodni\s+|přeposlaná\s+|preposlana\s+)?(message|zpráva|zprava)\s*(---|____)+$/i) ||
+                    l.match(/^(original\s+|forwarded\s+|původní\s+|puvodni\s+|přeposlaná\s+|preposlana\s+)?(message|zpráva|zprava):\s*$/i) ||
                     l.match(/^_{10,}$/) ||
                     (l.match(/^(From|Od):\s/i) && i > 0 && lines[i-1].trim() === '')
                 ) {
@@ -165,6 +166,8 @@ document.getElementById('btnJiraCommentStart').addEventListener('click', () => {
         } else if (currentMessage.html) {
             // Fallback to stripping the first blockquote if only HTML is available
             bodyContent = currentMessage.html.split(/<blockquote/i)[0];
+            // Also split by custom separator used in our WYSIWYG Sent emails
+            bodyContent = bodyContent.split(/(?:<p[^>]*>|<div[^>]*>|<br>|\s)*(?:---|____)+\s*(?:original\s+|forwarded\s+|původní\s+|puvodni\s+|přeposlaná\s+|preposlana\s+)?(?:message|zpráva|zprava)\s*(?:---|____)+/i)[0];
         }
         commentHtml += bodyContent;
         jiraCommentEditor.innerHTML = commentHtml;

@@ -17,6 +17,7 @@
 - [x] Fix sender name parsing when containing commas (unquoted).
 - [x] Fix sender name display in compose/reply panel.
 - [x] JIRA integration.
+- [x] Fix Jira comment history extraction for Sent folder emails.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
 

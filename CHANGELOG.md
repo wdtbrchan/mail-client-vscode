@@ -1,5 +1,10 @@
 # Changelog
 
+## [ upcoming ]
+
+### Fixed
+- **Jira Integration**: Fixed an issue where the quoted email history (e.g., "Original message") was sometimes included in the Jira comment extraction, especially for HTML messages in the Sent folder.
+
 ## [0.10.0]
 
 ### Added
