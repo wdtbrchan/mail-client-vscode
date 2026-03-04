@@ -127,15 +127,25 @@ export class MessageDetailPanel {
              return existing;
         }
 
+        const config = vscode.workspace.getConfiguration('mailClient');
+        const isBottom = config.get<string>('detailPanelLocation') === 'bottom';
+
         const panel = vscode.window.createWebviewPanel(
             MessageDetailPanel.viewType,
             'Loading...',
-            vscode.ViewColumn.Beside,
+            isBottom ? vscode.ViewColumn.Active : { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false },
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
             },
         );
+
+        if (isBottom) {
+            // Delaying slightly to ensure the new panel is fully active in the editor grid
+            setTimeout(() => {
+                vscode.commands.executeCommand('workbench.action.moveEditorToBelowGroup');
+            }, 100);
+        }
 
         const instance = new MessageDetailPanel(panel, explorerProvider, accountManager, accountId, folderPath, uid);
         MessageDetailPanel.panels.set(key, instance);

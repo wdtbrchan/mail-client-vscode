@@ -198,6 +198,19 @@
           ],
           "description": "How to display the message detail when opened from the message list."
         },
+        "mailClient.detailPanelLocation": {
+          "type": "string",
+          "default": "side",
+          "enum": [
+            "side",
+            "bottom"
+          ],
+          "enumItemLabels": [
+            "Side Panel (Right)",
+            "Bottom Panel (Below)"
+          ],
+          "description": "Where to place the message detail panel when opened in Split View."
+        },
         "mailClient.messagesPerPage": {
           "type": "number",
           "default": 50,

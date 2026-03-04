@@ -4,6 +4,7 @@
 
 ### Added
 - **Message Pagination**: Added support for paginating through the message list. Users can now configure the number of messages downloaded per page via the `mailClient.messagesPerPage` setting (default is 50). Improved UI pagination controls with adaptive size and spacing.
+- **Message Detail Location**: Added a new setting `mailClient.detailPanelLocation` which allows users to choose whether the message detail panel opens in a side panel (default) or a bottom panel when using Split View mode.
 
 ## [0.10.2]
 
