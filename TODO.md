@@ -19,11 +19,11 @@
 - [x] Jira integration.
 - [x] Fix Jira comment history extraction for Sent folder emails.
 - [x] Message list pagination.
+- [x] Add hover action buttons to message list.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
 
 ## UI/UX
-- [ ] Add a draft indicator for messages.
 - [x] Improve message list appearance (implemented tiled list actions and orange hover).
 - [x] Implement multiple message display modes (within list, new window, split view).
 - [x] Style Markdown preview label as a corner badge.
@@ -31,6 +31,7 @@
 - [x] Improved message movement flow (keep window open, auto-navigate to next message).
 - [x] Added visual highlighting for the currently opened message in the list.
 - [x] Refactored Markdown/WYSIWYG mode toggle into compact, labeled buttons.
+- [ ] Add a draft indicator for messages.
 - [ ] Drag & Drop support (e.g., moving messages to folders).
 - [ ] Dark/Light mode fully integrated with VS Code themes.
 

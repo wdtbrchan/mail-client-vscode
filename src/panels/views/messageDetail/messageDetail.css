@@ -46,9 +46,13 @@ body {
     height: 36px; /* Fixed height for each row/button */
 }
 .action-btn svg {
-    width: 24px;
-    height: 24px;
-    fill: currentColor;
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 .btn-icon {
     font-size: 1.6em;
@@ -62,7 +66,7 @@ body {
     width: 42px;
     justify-content: center;
     border-left: 1px solid var(--vscode-widget-border);
-    border-right: none;
+    border-right: 1px solid var(--vscode-widget-border);
 }
 .action-bar > .action-btn:last-child {
     border-right: none;

@@ -30,6 +30,7 @@ export class MessageListPanel {
         private folderPath: string,
         private folderName: string,
     ) {
+
         this.panel = panel;
         this.panel.webview.html = this.getHtmlContent();
 
@@ -129,6 +130,20 @@ export class MessageListPanel {
         }
     }
 
+    private getFolderSettings(): Record<string, string> {
+        const account = this.accountManager.getAccount(this.accountId);
+        if (!account) return {};
+        return {
+            inbox: 'INBOX',
+            trash: account.trashFolder || 'Trash',
+            spam: account.spamFolder || 'Spam',
+            archive: account.archiveFolder || 'Archive',
+            newsletters: account.newslettersFolder || 'Newsletters',
+            sent: account.sentFolder || 'Sent',
+            drafts: account.draftsFolder || 'Drafts',
+        };
+    }
+
     private async loadMessages(): Promise<void> {
         try {
             this.panel.webview.postMessage({ type: 'loading' });
@@ -161,6 +176,8 @@ export class MessageListPanel {
                 locale: locale,
                 displayMode: displayMode,
                 activeUid: this.activeUid,
+                folderSettings: this.getFolderSettings(),
+                customFolders: this.accountManager.getAccount(this.accountId)?.customFolders || [],
             });
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Failed to load messages';
@@ -311,6 +328,99 @@ export class MessageListPanel {
                     accountId: this.accountId,
                 });
                 break;
+            case 'moveMessageFromList':
+                this.moveMessageFromList(message.uid, message.action);
+                break;
+            case 'moveCustomFromList':
+                this.moveCustomFromList(message.uid, message.target);
+                break;
+            case 'deleteFromList':
+                this.deleteFromList(message.uid);
+                break;
+        }
+    }
+
+    private async moveMessageFromList(
+        uid: number,
+        action: 'archive' | 'spam' | 'trash' | 'newsletters' | 'inbox'
+    ): Promise<void> {
+        const settings = this.getFolderSettings();
+        const targetFolder = settings[action];
+
+        if (!targetFolder) {
+            vscode.window.showWarningMessage(`No folder configured for "${action}". Check account settings.`);
+            return;
+        }
+
+        if (this.folderPath === targetFolder) {
+            vscode.window.showInformationMessage(`Already in ${action} folder.`);
+            return;
+        }
+
+        try {
+            const service = this.explorerProvider.getImapService(this.accountId);
+            await service.moveMessage(this.folderPath, uid, targetFolder);
+
+            vscode.window.showInformationMessage(`Moved to ${targetFolder}`);
+
+            // Notify webview to remove the row immediately (scroll-preserving)
+            this.panel.webview.postMessage({ type: 'removeMessage', uid });
+
+            // Remove from local cache so next/prev navigation stays correct
+            this.currentMessages = this.currentMessages.filter(m => m.uid !== uid);
+            this.totalMessages = Math.max(0, this.totalMessages - 1);
+
+            this.explorerProvider.refresh();
+
+            // Full refresh in background to sync real state
+            this.loadMessages();
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Move failed';
+            vscode.window.showErrorMessage(`Failed to move message: ${errorMsg}`);
+        }
+    }
+
+    private async deleteFromList(uid: number): Promise<void> {
+        const confirm = await vscode.window.showWarningMessage(
+            'Are you sure you want to PERMANENTLY delete this message?',
+            { modal: true },
+            'Delete Forever',
+        );
+        if (confirm !== 'Delete Forever') return;
+
+        try {
+            const service = this.explorerProvider.getImapService(this.accountId);
+            await service.deleteMessage(this.folderPath, uid);
+            vscode.window.showInformationMessage('Message permanently deleted.');
+            this.panel.webview.postMessage({ type: 'removeMessage', uid });
+            this.currentMessages = this.currentMessages.filter(m => m.uid !== uid);
+            this.totalMessages = Math.max(0, this.totalMessages - 1);
+            this.explorerProvider.refresh();
+            this.loadMessages();
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Delete failed';
+            vscode.window.showErrorMessage(`Failed to delete message: ${errorMsg}`);
+        }
+    }
+
+    private async moveCustomFromList(uid: number, targetPath: string): Promise<void> {
+        if (!targetPath) return;
+        if (this.folderPath === targetPath) {
+            vscode.window.showInformationMessage(`Already in this folder.`);
+            return;
+        }
+        try {
+            const service = this.explorerProvider.getImapService(this.accountId);
+            await service.moveMessage(this.folderPath, uid, targetPath);
+            vscode.window.showInformationMessage(`Moved to ${targetPath}`);
+            this.panel.webview.postMessage({ type: 'removeMessage', uid });
+            this.currentMessages = this.currentMessages.filter(m => m.uid !== uid);
+            this.totalMessages = Math.max(0, this.totalMessages - 1);
+            this.explorerProvider.refresh();
+            this.loadMessages();
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Move failed';
+            vscode.window.showErrorMessage(`Failed to move message: ${errorMsg}`);
         }
     }
 
@@ -524,6 +634,7 @@ export class MessageListPanel {
             display: flex;
             flex-direction: column;
             gap: 4px;
+            position: relative; /* needed for absolute actions overlay */
         }
         
         .message-header {
@@ -590,23 +701,30 @@ export class MessageListPanel {
             fill: currentColor;
         }
         
-        /* Actions */
+        /* Actions – absolute overlay inside .message-content, left of the date */
         .message-actions {
             display: flex;
             gap: 0;
-            opacity: 0; /* Hidden by default */
-            transition: opacity 0.2s;
-            margin-left: 8px;
-            height: 36px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+            position: absolute;
+            right: 52px;    /* offset left so the date stays visible */
+            top: 50%;
+            transform: translateY(-50%);
+            height: 30px;
             border: 1px solid var(--vscode-widget-border);
             border-radius: 4px;
             overflow: hidden;
             background: var(--vscode-editorWidget-background);
+            box-shadow: 0 1px 6px rgba(0,0,0,0.18);
+            z-index: 2;
         }
         
         /* Show actions on hover */
         .message-item:hover .message-actions {
             opacity: 1;
+            pointer-events: auto;
         }
         
         .action-btn {
@@ -615,7 +733,7 @@ export class MessageListPanel {
             border-right: 1px solid var(--vscode-widget-border);
             color: var(--vscode-foreground);
             cursor: pointer;
-            width: 36px;
+            width: 30px;
             height: 100%;
             border-radius: 0;
             display: flex;
@@ -623,6 +741,8 @@ export class MessageListPanel {
             justify-content: center;
             transition: none;
             padding: 0;
+            white-space: nowrap;
+            font-size: 0.78em;
         }
         .action-btn:last-child {
             border-right: none;
@@ -631,7 +751,8 @@ export class MessageListPanel {
         .action-btn svg {
             width: 18px;
             height: 18px;
-            fill: currentColor;
+            fill: none; /* Keep SVG stroke-based outline style */
+            stroke: currentColor;
         }
         
         .action-btn:hover {
@@ -674,9 +795,31 @@ export class MessageListPanel {
             100% { transform: rotate(360deg); }
         }
         
-        /* Hide actions if display mode is 'split' */
-        body.mode-split .message-actions {
+        /* Hide reply-group (Reply/Forward) if display mode is 'split' – move buttons always visible */
+        body.mode-split .reply-group {
             display: none !important;
+        }
+
+        /* Move action buttons */
+        .action-btn.btn-inbox    { --btn-color: #4caf50; }
+        .action-btn.btn-archive  { --btn-color: #2196f3; }
+        .action-btn.btn-newsletters { --btn-color: #9c27b0; }
+        .action-btn.btn-spam     { --btn-color: #ff9800; }
+        .action-btn.btn-trash    { --btn-color: #f44336; }
+        .action-btn.btn-delete   { --btn-color: #c62828; }
+
+        .action-btn:hover {
+            background-color: var(--btn-color, #ff9800) !important;
+            color: #ffffff !important;
+        }
+
+        /* Separator between move-group and reply-group */
+        .action-btn.btn-separator {
+            width: 1px;
+            background: var(--vscode-widget-border) !important;
+            cursor: default;
+            padding: 0;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -788,6 +931,24 @@ export class MessageListPanel {
         // Thick Arrow Right (>) for Forward (5px stroke)
         const ICON_FORWARD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"></path></svg>';
 
+        // Inbox: arrow into tray
+        const ICON_INBOX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>';
+
+        // Archive: box with down arrow
+        const ICON_ARCHIVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>';
+
+        // Newsletters: newspaper / lines
+        const ICON_NEWSLETTERS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>';
+
+        // Spam: warning triangle with exclamation
+        const ICON_SPAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
+        // Trash: bin
+        const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+
+        // Delete permanently: X over bin
+        const ICON_DELETE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="14" y2="15"/><line x1="14" y1="11" x2="10" y2="15"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+
         function renderMessages(messages) {
             if (messages.length === 0) {
                 contentEl.innerHTML = '<div class="empty-msg">No messages in this folder.</div>';
@@ -821,14 +982,29 @@ export class MessageListPanel {
                 }
                 
                 html += '    </div>'; // End Bottom Row
-                html += '  </div>'; // End Content
-                
-                // Actions Right
+
+                // Actions overlay (positioned absolutely inside .message-content, left of date)
                 html += '  <div class="message-actions">';
-                html += '    <button class="action-btn" data-action="forward" data-uid="' + msg.uid + '" title="Forward">' + ICON_FORWARD + '</button>';
-                html += '    <button class="action-btn" data-action="reply" data-uid="' + msg.uid + '" title="Reply">' + ICON_REPLY + '</button>';
-                html += '    <button class="action-btn" data-action="replyAll" data-uid="' + msg.uid + '" title="Reply All">' + ICON_REPLY_ALL + '</button>';
+                // Move-to-folder buttons
+                html += '    <button class="action-btn btn-inbox move-btn" data-action="inbox" data-uid="' + msg.uid + '" title="Move to Inbox">' + ICON_INBOX + '</button>';
+                html += '    <button class="action-btn btn-archive move-btn" data-action="archive" data-uid="' + msg.uid + '" title="Archive">' + ICON_ARCHIVE + '</button>';
+                html += '    <button class="action-btn btn-newsletters move-btn" data-action="newsletters" data-uid="' + msg.uid + '" title="Move to Newsletters">' + ICON_NEWSLETTERS + '</button>';
+                html += '    <button class="action-btn btn-spam move-btn" data-action="spam" data-uid="' + msg.uid + '" title="Move to Spam">' + ICON_SPAM + '</button>';
+                html += '    <button class="action-btn btn-trash move-btn" data-action="trash" data-uid="' + msg.uid + '" title="Move to Trash">' + ICON_TRASH + '</button>';
+                html += '    <button class="action-btn btn-delete delete-btn" data-uid="' + msg.uid + '" title="Delete Permanently" style="display:none;">' + ICON_DELETE + '</button>';
+                // Custom folder buttons
+                for (const cf of (currentCustomFolders || [])) {
+                    html += '    <button class="action-btn move-btn" data-action="custom" data-target="' + escapeHtml(cf.path) + '" data-uid="' + msg.uid + '" title="Move to ' + escapeHtml(cf.name) + '">📂</button>';
+                }
+                html += '    <div class="reply-group" style="display:contents;">';
+                html += '      <button class="action-btn btn-separator" aria-hidden="true"></button>';
+                html += '      <button class="action-btn" data-action="forward" data-uid="' + msg.uid + '" title="Forward">' + ICON_FORWARD + '</button>';
+                html += '      <button class="action-btn" data-action="reply" data-uid="' + msg.uid + '" title="Reply">' + ICON_REPLY + '</button>';
+                html += '      <button class="action-btn" data-action="replyAll" data-uid="' + msg.uid + '" title="Reply All">' + ICON_REPLY_ALL + '</button>';
+                html += '    </div>';
                 html += '  </div>';
+
+                html += '  </div>'; // End Content
 
                 html += '</div>'; // End Item
             }
@@ -846,12 +1022,59 @@ export class MessageListPanel {
             });
 
             contentEl.querySelectorAll('.action-btn').forEach(btn => {
+                if (btn.classList.contains('btn-separator')) return;
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    vscode.postMessage({ type: btn.dataset.action, uid: parseInt(btn.dataset.uid) });
+                    const action = btn.dataset.action;
+                    if (btn.classList.contains('delete-btn')) {
+                        vscode.postMessage({ type: 'deleteFromList', uid: parseInt(btn.dataset.uid) });
+                    } else if (action === 'custom') {
+                        vscode.postMessage({ type: 'moveCustomFromList', uid: parseInt(btn.dataset.uid), target: btn.dataset.target });
+                    } else if (btn.classList.contains('move-btn')) {
+                        vscode.postMessage({ type: 'moveMessageFromList', uid: parseInt(btn.dataset.uid), action: action });
+                    } else {
+                        vscode.postMessage({ type: action, uid: parseInt(btn.dataset.uid) });
+                    }
                 });
             });
         }
+
+        // Apply folder settings visibility to move buttons
+        function applyFolderSettings(folderPath, folderSettings) {
+            if (!folderSettings) return;
+            const actionMap = {
+                inbox: folderSettings.inbox || 'INBOX',
+                archive: folderSettings.archive || 'Archive',
+                newsletters: folderSettings.newsletters || 'Newsletters',
+                spam: folderSettings.spam || 'Spam',
+                trash: folderSettings.trash || 'Trash',
+            };
+            const normalizedCurrent = folderPath ? folderPath.toUpperCase() : '';
+            Object.entries(actionMap).forEach(([action, targetPath]) => {
+                const normalizedTarget = targetPath ? targetPath.toUpperCase() : '';
+                const isCurrentFolder = normalizedCurrent === normalizedTarget ||
+                    (action === 'inbox' && normalizedCurrent === 'INBOX');
+                const selector = '.move-btn[data-action="' + action + '"]';
+                contentEl.querySelectorAll(selector).forEach(btn => {
+                    btn.style.display = isCurrentFolder ? 'none' : '';
+                });
+            });
+            // Custom folder buttons: hide if current path matches
+            contentEl.querySelectorAll('.move-btn[data-action="custom"]').forEach(btn => {
+                btn.style.display = btn.dataset.target === folderPath ? 'none' : '';
+            });
+            // Show Delete Permanently button only in Trash
+            const trashPath = (folderSettings.trash || 'Trash').toUpperCase();
+            const inTrash = normalizedCurrent === trashPath;
+            contentEl.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.style.display = inTrash ? '' : 'none';
+            });
+        }
+
+        let currentFolderPath = '';
+        let currentFolderSettings = {};
+        let currentCustomFolders = [];
+
 
         window.addEventListener('message', (event) => {
             const msg = event.data;
@@ -859,7 +1082,7 @@ export class MessageListPanel {
                 case 'loading':
                     contentEl.innerHTML = '<div class="loading"><span class="loader"></span>Loading messages...</div>';
                     break;
-                case 'messages':
+                case 'messages': {
                     let titleText = msg.folderPath;
                     if (searchInput.value.trim()) {
                         titleText += ' (Search results)';
@@ -867,6 +1090,9 @@ export class MessageListPanel {
                     titleEl.textContent = titleText;
                     if (msg.locale) { currentLocale = msg.locale; }
                     if (msg.displayMode) { document.body.className = 'mode-' + msg.displayMode; }
+                    if (msg.folderPath) { currentFolderPath = msg.folderPath; }
+                    if (msg.folderSettings) { currentFolderSettings = msg.folderSettings; }
+                    if (msg.customFolders) { currentCustomFolders = msg.customFolders; }
                     
                     const paginationEl = document.getElementById('paginationContainer');
                     const pageInfoEl = document.getElementById('pageInfo');
@@ -892,12 +1118,19 @@ export class MessageListPanel {
                         paginationEl.style.display = 'none';
                     }
 
+                    // Preserve scroll position
+                    const savedScroll = contentEl.scrollTop;
                     renderMessages(msg.messages);
+                    contentEl.scrollTop = savedScroll;
+
+                    applyFolderSettings(currentFolderPath, currentFolderSettings);
+
                     if (msg.activeUid !== undefined) {
                         const item = document.querySelector('.message-item[data-uid="' + msg.activeUid + '"]');
                         if (item) item.classList.add('active');
                     }
                     break;
+                }
                 case 'setActive':
                     document.querySelectorAll('.message-item').forEach(el => el.classList.remove('active'));
                     if (msg.uid !== undefined) {
@@ -905,6 +1138,16 @@ export class MessageListPanel {
                         if (activeItem) activeItem.classList.add('active');
                     }
                     break;
+                case 'removeMessage': {
+                    // Remove row immediately without losing scroll position
+                    const row = document.querySelector('.message-item[data-uid="' + msg.uid + '"]');
+                    if (row) {
+                        row.style.transition = 'opacity 0.15s';
+                        row.style.opacity = '0';
+                        setTimeout(() => row.remove(), 150);
+                    }
+                    break;
+                }
                 case 'error':
                     contentEl.innerHTML = '<div class="error-msg">Error: ' + escapeHtml(msg.message) + '</div>';
                     break;

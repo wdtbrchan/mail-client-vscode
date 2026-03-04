@@ -1,5 +1,13 @@
 # Changelog
 
+## [ upcoming ]
+
+### Added
+- **Message List Actions**: Added hover action buttons to the message list for quick folder management.
+
+### Changed
+- **UI Design**: Updated action buttons in both message list and message detail views to a modern icon-only design using large outline SVG icons. Removed text labels from the detail view to reduce UI clutter (info now available via tooltips).
+
 ## [0.12.0]
 
 ### Changed
@@ -225,4 +233,3 @@
 - **Compose Message**: Write emails in markdown with live preview, send via SMTP.
 - Improved email parsing with `mailparser` for better body extraction.
 - Fixed date localization in message detail view.
-
