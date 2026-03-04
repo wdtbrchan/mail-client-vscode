@@ -2,6 +2,8 @@
 
 ## [ upcoming ]
 
+## [0.13.1]
+
 ### Changed
 - **UI Design**: Increased font size and tučnost for message subjects in the list to make them more dominant and distinct from the sender's display name.
 - **UI Design**: Replaced the colored emoji folder icon (`📂`) with a modern, monochrome SVG outline icon for custom folders in the message list to maintain visual consistency with other action buttons.
