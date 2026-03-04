@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.13.0]
 
 ### Added
 - **Message List Actions**: Added hover action buttons to the message list for quick folder management.
