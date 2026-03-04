@@ -5,6 +5,7 @@
 ### Changed
 - **Jira Integration**: The "Pair to JIRA issue" modal now remains open after successful pairing and displays a "Saved" message, allowing the user to immediately add a comment without reopening the modal.
 - **Jira Integration**: The "Comment" button in the pairing modal is now only visible if the entered issue key matches the currently paired issue.
+- **Jira Integration**: Improved robustness of stripping the original message from Jira comments, correctly handling quoted text and varied separator formats.
 
 ## [0.11.0]
 

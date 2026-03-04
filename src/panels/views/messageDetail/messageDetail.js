@@ -147,17 +147,20 @@ document.getElementById('btnJiraCommentStart').addEventListener('click', () => {
         commentHtml += '<br>';
         let bodyContent = '';
         if (currentMessage.text) {
-            let lines = currentMessage.text.split(/\r?\n/);
+            let bodyText = currentMessage.text;
+            // Split globally to robustly strip out original message separators even if quoted
+            bodyText = bodyText.split(/(?:^|\n)[ \t>]*[-_]{2,}[ \t]*(?:original|forwarded|původní|puvodni|přeposlaná|preposlana)?[ \t]*(?:message|zpráva|zprava)[ \t]*[-_]{2,}/i)[0];
+            
+            let lines = bodyText.split(/\r?\n/);
             let outLines = [];
             for(let i = 0; i < lines.length; i++) {
                 let l = lines[i].trim();
                 // Strip common English and Czech reply headers
                 if (
-                    l.match(/^(On|Dne)\s.*(wrote|napsal\(a\)|napsal):$/i) ||
-                    l.match(/^(---|____)+\s*(original\s+|forwarded\s+|původní\s+|puvodni\s+|přeposlaná\s+|preposlana\s+)?(message|zpráva|zprava)\s*(---|____)+$/i) ||
-                    l.match(/^(original\s+|forwarded\s+|původní\s+|puvodni\s+|přeposlaná\s+|preposlana\s+)?(message|zpráva|zprava):\s*$/i) ||
-                    l.match(/^_{10,}$/) ||
-                    (l.match(/^(From|Od):\s/i) && i > 0 && lines[i-1].trim() === '')
+                    l.match(/^(>|\s)*(On|Dne)\s.*(wrote|napsal\(a\)|napsal):$/i) ||
+                    l.match(/^(>|\s)*(original|forwarded|původní|puvodni|přeposlaná|preposlana)?[ \t]*(message|zpráva|zprava):\s*$/i) ||
+                    l.match(/^(>|\s)*_{10,}$/) ||
+                    (l.match(/^(>|\s)*(From|Od):\s/i) && i > 0 && lines[i-1].trim() === '')
                 ) {
                     break;
                 }
@@ -168,7 +171,7 @@ document.getElementById('btnJiraCommentStart').addEventListener('click', () => {
             // Fallback to stripping the first blockquote if only HTML is available
             bodyContent = currentMessage.html.split(/<blockquote/i)[0];
             // Also split by custom separator used in our WYSIWYG Sent emails
-            bodyContent = bodyContent.split(/(?:<p[^>]*>|<div[^>]*>|<br>|\s)*(?:---|____)+\s*(?:original\s+|forwarded\s+|původní\s+|puvodni\s+|přeposlaná\s+|preposlana\s+)?(?:message|zpráva|zprava)\s*(?:---|____)+/i)[0];
+            bodyContent = bodyContent.split(/(?:<p[^>]*>|<div[^>]*>|<br>|\s)*[-_]{2,}[ \t]*(?:original|forwarded|původní|puvodni|přeposlaná|preposlana)?[ \t]*(?:message|zpráva|zprava)[ \t]*[-_]{2,}/i)[0];
         }
         commentHtml += bodyContent;
         jiraCommentEditor.innerHTML = commentHtml;
