@@ -645,8 +645,8 @@ export class MessageListPanel {
         
         .message-from {
             font-weight: 600;
-            font-size: 1.05em;
-            color: var(--vscode-foreground);
+            font-size: 0.95em;
+            color: var(--vscode-descriptionForeground);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -667,17 +667,22 @@ export class MessageListPanel {
         }
         
         .message-subject {
-            color: var(--vscode-descriptionForeground);
+            color: var(--vscode-foreground);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            font-size: 0.95em;
+            font-size: 1.1em;
+            font-weight: 500;
+            letter-spacing: 0.2px;
             flex: 1;
         }
         
         .message-item.unread .message-subject {
+            font-weight: 700;
+        }
+        
+        .message-item.unread .message-from {
             color: var(--vscode-foreground);
-            font-weight: 500;
         }
 
         /* Badges */
@@ -949,6 +954,9 @@ export class MessageListPanel {
         // Delete permanently: X over bin
         const ICON_DELETE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="14" y2="15"/><line x1="14" y1="11" x2="10" y2="15"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
 
+        // Custom Folder: folder outline
+        const ICON_CUSTOM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+
         function renderMessages(messages) {
             if (messages.length === 0) {
                 contentEl.innerHTML = '<div class="empty-msg">No messages in this folder.</div>';
@@ -994,7 +1002,7 @@ export class MessageListPanel {
                 html += '    <button class="action-btn btn-delete delete-btn" data-uid="' + msg.uid + '" title="Delete Permanently" style="display:none;">' + ICON_DELETE + '</button>';
                 // Custom folder buttons
                 for (const cf of (currentCustomFolders || [])) {
-                    html += '    <button class="action-btn move-btn" data-action="custom" data-target="' + escapeHtml(cf.path) + '" data-uid="' + msg.uid + '" title="Move to ' + escapeHtml(cf.name) + '">📂</button>';
+                    html += '    <button class="action-btn move-btn" data-action="custom" data-target="' + escapeHtml(cf.path) + '" data-uid="' + msg.uid + '" title="Move to ' + escapeHtml(cf.name) + '">' + ICON_CUSTOM + '</button>';
                 }
                 html += '    <div class="reply-group" style="display:contents;">';
                 html += '      <button class="action-btn btn-separator" aria-hidden="true"></button>';

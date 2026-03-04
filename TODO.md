@@ -31,6 +31,8 @@
 - [x] Improved message movement flow (keep window open, auto-navigate to next message).
 - [x] Added visual highlighting for the currently opened message in the list.
 - [x] Refactored Markdown/WYSIWYG mode toggle into compact, labeled buttons.
+- [x] Increased font size and visibility for message subject in the list.
+- [x] Replaced colored emoji for custom folders with monochrome SVG icon in the list.
 - [ ] Add a draft indicator for messages.
 - [ ] Drag & Drop support (e.g., moving messages to folders).
 - [ ] Dark/Light mode fully integrated with VS Code themes.
