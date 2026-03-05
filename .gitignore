@@ -2,7 +2,7 @@ node_modules/
 dist/
 *.vsix
 .vscode-test/
-.agent/
+.agents/
 .env
 .vscode/
 .vscodeignore
