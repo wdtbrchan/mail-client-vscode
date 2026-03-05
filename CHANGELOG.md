@@ -1,5 +1,10 @@
 # Changelog
 
+## [ upcoming ]
+
+### Changed
+- **UI Design**: Removed extra margins and padding from the message detail body to allow content to fill the entire width of the panel.
+
 ## [0.13.2]
 
 ### Changed

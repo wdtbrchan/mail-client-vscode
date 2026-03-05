@@ -61,9 +61,9 @@ export function getSharedStyles(nonce: string): string {
 
         /* Message body iframe */
         .message-body-iframe {
-            width: calc(100% - 32px);
-            min-width: calc(100% - 32px);
-            margin: 16px;
+            width: 100%;
+            min-width: 100%;
+            margin: 0;
             border: none;
             display: block;
             background-color: #ffffff;
@@ -388,10 +388,10 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
                          iframe.style.height = event.data.height + 'px';
                          if (event.data.width) {
                              const containerWidth = iframe.parentElement ? iframe.parentElement.clientWidth : window.innerWidth;
-                             if (event.data.width > (containerWidth - 32)) {
+                             if (event.data.width > containerWidth) {
                                  iframe.style.width = event.data.width + 'px';
                              } else {
-                                 iframe.style.width = 'calc(100% - 32px)';
+                                 iframe.style.width = '100%';
                              }
                          }
                      }
@@ -404,7 +404,7 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
 
             window.addEventListener('resize', () => {
                 document.querySelectorAll('.message-body-iframe').forEach(iframe => {
-                    iframe.style.width = 'calc(100% - 32px)';
+                    iframe.style.width = '100%';
                 });
             });
             window.resizeHandlerInstalled = true;
