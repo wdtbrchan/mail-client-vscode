@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.13.2]
 
 ### Changed
 - **Documentation**: Added a screenshot of the application to the `README.md` for better visual representation.
