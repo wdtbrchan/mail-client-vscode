@@ -2,6 +2,9 @@
 
 ## [ upcoming ]
 
+### Changed
+- **Documentation**: Added a screenshot of the application to the `README.md` for better visual representation.
+
 ## [0.13.1]
 
 ### Changed

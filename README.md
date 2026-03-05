@@ -5,10 +5,13 @@
 # Mail Client
 A simple and efficient IMAP email client directly within your VS Code (or any other compatible editor like Cursor or Antigravity). In Markdown mode, you can leverage AI autocomplete to assist with writing your email text.
 
+![Screenshot](docs/screenshot.jpg)
+
+
 ## Features
 
 - **Account Management:** Add, edit, and remove IMAP accounts through a user-friendly interface.
-- **Email Browsing & Search:** Access folders from the sidebar, browse messages, and search within folders using IMAP search features. Supports **Message Pagination** with configurable page size.
+- **Email Browsing & Search:** Access folders from the sidebar, browse messages, and search within folders using IMAP search features.
 - **Compose Interface:** WYSIWYG rich text editor with Markdown fallback mode.
 - **Basic Operations:** Reply to messages, forward, and delete emails.
 - **Attachments:** Support for uploading and downloading email attachments.
