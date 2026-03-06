@@ -1,5 +1,8 @@
 # Changelog
 
+## [ upcoming ]
+- **Message List**: In the "Sent" folder, the recipient list (To, Cc, Bcc) is now displayed instead of the sender's display name to improve folder scanability.
+
 ## [0.13.6]
 - **IMAP Service**: Added a configurable keepalive (NOOP) mechanism to prevent connection drops due to inactivity. The interval can be customized via the `mailClient.keepaliveInterval` setting (default 60s).
 - **Attachments (Remote SSH)**: Added ability to attach files from the local machine when connected via Remote SSH. Uses the browser's native file picker (`<input type="file">`) which always accesses the local filesystem, bypassing VS Code's remote-only file dialog limitation.

@@ -38,6 +38,8 @@ export interface IMailMessage {
     to: IMailAddress[];
     /** CC addresses */
     cc?: IMailAddress[];
+    /** BCC addresses */
+    bcc?: IMailAddress[];
     /** Whether the message has attachments */
     hasAttachments: boolean;
     /** Whether the message has been read */

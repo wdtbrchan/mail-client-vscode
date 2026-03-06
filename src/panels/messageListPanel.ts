@@ -168,6 +168,8 @@ export class MessageListPanel {
                     date: m.date.toISOString(),
                     fromDisplay: m.from.name || m.from.address,
                     toDisplay: m.to.map(t => t.name || t.address).join(', '),
+                    ccDisplay: m.cc ? m.cc.map(t => t.name || t.address).join(', ') : '',
+                    bccDisplay: m.bcc ? m.bcc.map(t => t.name || t.address).join(', ') : '',
                 })),
                 total: this.totalMessages,
                 page: this.currentPage,
@@ -975,7 +977,19 @@ export class MessageListPanel {
                 
                 // Top Row: From + Date
                 html += '    <div class="message-header">';
-                html += '      <span class="message-from">' + escapeHtml(msg.fromDisplay) + '</span>';
+                
+                if (currentFolderPath && currentFolderSettings && currentFolderPath === currentFolderSettings.sent) {
+                    let displayParts = [];
+                    if (msg.toDisplay) displayParts.push('To: ' + escapeHtml(msg.toDisplay));
+                    if (msg.ccDisplay) displayParts.push('Cc: ' + escapeHtml(msg.ccDisplay));
+                    if (msg.bccDisplay) displayParts.push('Bcc: ' + escapeHtml(msg.bccDisplay));
+                    
+                    let displayStr = displayParts.length > 0 ? displayParts.join(' | ') : escapeHtml(msg.fromDisplay);
+                    html += '      <span class="message-from">' + displayStr + '</span>';
+                } else {
+                    html += '      <span class="message-from">' + escapeHtml(msg.fromDisplay) + '</span>';
+                }
+                
                 html += '      <span class="message-date">' + formatDate(msg.date) + '</span>';
                 html += '    </div>';
                 
