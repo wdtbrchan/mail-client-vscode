@@ -32,17 +32,50 @@ if (isWysiwyg && wysiwygEditor) {
 
 // Attachments
 const btnAddAttachment = document.getElementById('btnAddAttachment');
+const btnAddLocalAttachment = document.getElementById('btnAddLocalAttachment');
 const btnAddRemoteAttachment = document.getElementById('btnAddRemoteAttachment');
+const localFileInput = document.getElementById('localFileInput');
 
 if (config.isRemote) {
-    btnAddRemoteAttachment.classList.remove('hidden');
+    // Remote mode: hide the standard attach button, show local (via file input) + remote buttons
     btnAddAttachment.classList.add('hidden');
+    btnAddLocalAttachment.classList.remove('hidden');
+    btnAddRemoteAttachment.classList.remove('hidden');
 } else {
     btnAddAttachment.innerHTML = '📎 Attach Files';
 }
 
 btnAddAttachment.addEventListener('click', () => {
     vscode.postMessage({ type: 'pickAttachments' });
+});
+
+// Local attach via hidden <input type="file"> (always opens local file picker in webview)
+btnAddLocalAttachment.addEventListener('click', () => {
+    localFileInput.click();
+});
+
+localFileInput.addEventListener('change', () => {
+    const files = localFileInput.files;
+    if (!files || files.length === 0) return;
+
+    let pending = files.length;
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        reader.onload = () => {
+            // Send base64 content to extension
+            const base64 = reader.result.split(',')[1] || '';
+            vscode.postMessage({
+                type: 'addLocalFile',
+                fileName: file.name,
+                base64: base64
+            });
+            pending--;
+        };
+        reader.readAsDataURL(file);
+    }
+    // Reset input so the same file can be selected again
+    localFileInput.value = '';
 });
 
 btnAddRemoteAttachment.addEventListener('click', () => {

@@ -48,7 +48,9 @@
         <div class="form-row" style="align-items:start">
              <label>Files:</label>
              <div>
+                <input type="file" id="localFileInput" multiple style="display:none" />
                 <button id="btnAddAttachment" class="btn-small">📎 Attach Local Files</button>
+                <button id="btnAddLocalAttachment" class="btn-small hidden">📎 Attach Local Files</button>
                 <button id="btnAddRemoteAttachment" class="btn-small hidden">☁ Attach Remote Files</button>
                 <div id="attachmentList" class="attachment-list"></div>
              </div>

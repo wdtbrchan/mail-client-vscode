@@ -21,6 +21,7 @@
 - [x] Fix Jira comment history extraction for Sent folder emails.
 - [x] Message list pagination.
 - [x] Add hover action buttons to message list.
+- [x] Support for local file attachments in Remote SSH environments.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
 

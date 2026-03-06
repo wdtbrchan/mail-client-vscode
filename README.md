@@ -14,7 +14,7 @@ A simple and efficient IMAP email client directly within your VS Code (or any ot
 - **Email Browsing & Search:** Access folders from the sidebar, browse messages, and search within folders using IMAP search features.
 - **Compose Interface:** WYSIWYG rich text editor with Markdown fallback mode.
 - **Basic Operations:** Reply to messages, forward, and delete emails.
-- **Attachments:** Support for uploading and downloading email attachments.
+- **Attachments:** Support for uploading and downloading email attachments. Added support for local file selection even when connected to Remote SSH.
 - **Folder Management:** Map special folders and create custom folder buttons.
 - **Image Whitelist:** Whitelist trusted senders to automatically load remote images in future emails.
 - **Organize Messages:** Archive, Spam, Trash, and Inbox actions with context-aware buttons.

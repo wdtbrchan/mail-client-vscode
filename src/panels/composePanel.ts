@@ -280,6 +280,9 @@ export class ComposePanel {
             case 'removeAttachment':
                 this.removeAttachment(message.path);
                 break;
+            case 'addLocalFile':
+                this.addLocalFileAttachment(message.fileName, message.base64);
+                break;
             case 'switchToMarkdown':
                 await this.switchToMarkdownMode();
                 break;
@@ -335,6 +338,34 @@ export class ComposePanel {
     private removeAttachment(uriStringToRemove: string): void {
         this.attachments = this.attachments.filter(p => p.toString() !== uriStringToRemove);
         this.updateAttachments();
+    }
+
+    /**
+     * Handles a local file sent from the webview via <input type="file">.
+     * Saves the base64-decoded content to a temp file and adds it as attachment.
+     */
+    private async addLocalFileAttachment(fileName: string, base64: string): Promise<void> {
+        try {
+            const tmpDir = path.join(os.tmpdir(), 'mail-client-local-attachments');
+            if (!fs.existsSync(tmpDir)) {
+                fs.mkdirSync(tmpDir, { recursive: true });
+            }
+
+            // Use timestamp prefix to avoid collisions
+            const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const tempPath = path.join(tmpDir, `${Date.now()}-${safeName}`);
+            const buffer = Buffer.from(base64, 'base64');
+            fs.writeFileSync(tempPath, buffer);
+
+            const uri = vscode.Uri.file(tempPath);
+            if (!this.attachments.some(a => a.toString() === uri.toString())) {
+                this.attachments.push(uri);
+            }
+            this.updateAttachments();
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : 'Failed to add local file';
+            vscode.window.showErrorMessage(`Failed to attach local file: ${msg}`);
+        }
     }
 
     private updateAttachments(): void {
@@ -641,6 +672,18 @@ export class ComposePanel {
                         }
                     }
                     fs.unlinkSync(this.tempFile);
+                }
+            } catch {
+                // Ignore cleanup errors
+            }
+        }
+
+        // Clean up local attachment temp files
+        for (const att of this.attachments) {
+            try {
+                const attPath = att.fsPath;
+                if (attPath && attPath.includes('mail-client-local-attachments') && fs.existsSync(attPath)) {
+                    fs.unlinkSync(attPath);
                 }
             } catch {
                 // Ignore cleanup errors
