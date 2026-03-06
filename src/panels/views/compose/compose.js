@@ -36,7 +36,7 @@ const btnAddRemoteAttachment = document.getElementById('btnAddRemoteAttachment')
 
 if (config.isRemote) {
     btnAddRemoteAttachment.classList.remove('hidden');
-    btnAddAttachment.innerHTML = '📎 Attach Local Files';
+    btnAddAttachment.classList.add('hidden');
 } else {
     btnAddAttachment.innerHTML = '📎 Attach Files';
 }

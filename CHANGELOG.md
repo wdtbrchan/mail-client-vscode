@@ -1,5 +1,8 @@
 # Changelog
-
+ 
+## [ upcoming ]
+- **Attachments**: Hidden the "Attach Local Files" button when connected to a remote host, as VS Code only supports remote file selection in this environment.
+ 
 ## [0.13.4]
 - **Attachments**: Added "Show Local" button to the attachment picker in remote environments.
 - **Attachments**: Added a dedicated "Attach Remote Files" button when connected to a remote host (SSH/WSL) for direct access to the remote file system.
