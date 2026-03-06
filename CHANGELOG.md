@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.13.8]
 - **Outgoing Mail**: Stripped markdown formatting from the plain text part of emails sent in Markdown compose mode to prevent raw markdown syntax from appearing in the text-only version of messages.
 
 ## [0.13.7]
