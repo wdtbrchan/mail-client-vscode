@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.13.4]
 - **Attachments**: Added "Show Local" button to the attachment picker in remote environments.
 - **Attachments**: Added a dedicated "Attach Remote Files" button when connected to a remote host (SSH/WSL) for direct access to the remote file system.
 - **Attachments**: Refactored attachment loading to use `vscode.workspace.fs`, enabling seamless attachment handling from both local and remote sources.
