@@ -31,8 +31,22 @@ if (isWysiwyg && wysiwygEditor) {
 }
 
 // Attachments
-document.getElementById('btnAddAttachment').addEventListener('click', () => {
+const btnAddAttachment = document.getElementById('btnAddAttachment');
+const btnAddRemoteAttachment = document.getElementById('btnAddRemoteAttachment');
+
+if (config.isRemote) {
+    btnAddRemoteAttachment.classList.remove('hidden');
+    btnAddAttachment.innerHTML = '📎 Attach Local Files';
+} else {
+    btnAddAttachment.innerHTML = '📎 Attach Files';
+}
+
+btnAddAttachment.addEventListener('click', () => {
     vscode.postMessage({ type: 'pickAttachments' });
+});
+
+btnAddRemoteAttachment.addEventListener('click', () => {
+    vscode.postMessage({ type: 'pickRemoteAttachments' });
 });
 
 // Toggle Cc/Bcc

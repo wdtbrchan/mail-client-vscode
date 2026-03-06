@@ -55,7 +55,7 @@ export class ComposePanel {
     private disposables: vscode.Disposable[] = [];
     private currentMarkdown = '';
     private wysiwygHtml = '';
-    private attachments: string[] = [];
+    private attachments: vscode.Uri[] = [];
 
     private constructor(
         panel: vscode.WebviewPanel,
@@ -274,6 +274,9 @@ export class ComposePanel {
             case 'pickAttachments':
                 this.pickAttachments();
                 break;
+            case 'pickRemoteAttachments':
+                this.pickRemoteAttachments();
+                break;
             case 'removeAttachment':
                 this.removeAttachment(message.path);
                 break;
@@ -295,31 +298,55 @@ export class ComposePanel {
             canSelectFolders: false,
             canSelectMany: true,
             openLabel: 'Attach',
-            title: 'Attach Files'
+            title: 'Attach Files',
+            defaultUri: vscode.Uri.file(os.homedir()),
+            ...({ allowUIResources: true } as any)
         });
 
         if (uris && uris.length > 0) {
             for (const uri of uris) {
-                if (!this.attachments.includes(uri.fsPath)) {
-                    this.attachments.push(uri.fsPath);
+                if (!this.attachments.some(a => a.toString() === uri.toString())) {
+                    this.attachments.push(uri);
                 }
             }
             this.updateAttachments();
         }
     }
 
-    private removeAttachment(pathToRemove: string): void {
-        this.attachments = this.attachments.filter(p => p !== pathToRemove);
+    private async pickRemoteAttachments(): Promise<void> {
+        const uris = await vscode.window.showOpenDialog({
+            canSelectFiles: true,
+            canSelectFolders: false,
+            canSelectMany: true,
+            openLabel: 'Attach',
+            title: 'Attach Remote Files'
+        });
+
+        if (uris && uris.length > 0) {
+            for (const uri of uris) {
+                if (!this.attachments.some(a => a.toString() === uri.toString())) {
+                    this.attachments.push(uri);
+                }
+            }
+            this.updateAttachments();
+        }
+    }
+
+    private removeAttachment(uriStringToRemove: string): void {
+        this.attachments = this.attachments.filter(p => p.toString() !== uriStringToRemove);
         this.updateAttachments();
     }
 
     private updateAttachments(): void {
         this.panel.webview.postMessage({
             type: 'updateAttachments',
-            attachments: this.attachments.map(p => ({
-                path: p,
-                name: path.basename(p)
-            }))
+            attachments: this.attachments.map(p => {
+                const name = path.posix.basename(p.path) || path.win32.basename(p.fsPath) || 'attachment';
+                return {
+                    path: p.toString(),
+                    name: name
+                };
+            })
         });
     }
 
@@ -482,9 +509,13 @@ export class ComposePanel {
             subject,
             html: bodyHtml,
             text: bodyText,
-            attachments: this.attachments.map(p => ({
-                path: p,
-                filename: path.basename(p)
+            attachments: await Promise.all(this.attachments.map(async u => {
+                const content = await vscode.workspace.fs.readFile(u);
+                const name = path.posix.basename(u.path) || path.win32.basename(u.fsPath) || 'attachment';
+                return {
+                    filename: name,
+                    content: Buffer.from(content)
+                };
             }))
         };
         const composer = new MailComposer(mailOptions);
@@ -575,7 +606,8 @@ export class ComposePanel {
 
         const composeConfig = {
             isWysiwyg: this.isWysiwyg,
-            mode: this.options.mode
+            mode: this.options.mode,
+            isRemote: !!vscode.env.remoteName
         };
 
         return composeHtml
