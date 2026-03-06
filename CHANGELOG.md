@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.13.7]
 - **Message List**: In the "Sent" folder, the recipient list (To, Cc, Bcc) is now displayed instead of the sender's display name to improve folder scanability.
 
 ## [0.13.6]
