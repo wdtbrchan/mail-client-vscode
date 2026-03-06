@@ -1,5 +1,6 @@
 import { ImapFlow, MailboxObject } from 'imapflow';
 import { simpleParser } from 'mailparser';
+import * as vscode from 'vscode';
 import { IMailAccount } from '../types/account';
 import { IMailFolder } from '../types/folder';
 import { IMailMessage, IMailMessageDetail, IMailAddress, IMailAttachment } from '../types/message';
@@ -15,6 +16,7 @@ export class ImapService {
     private password?: string;
     public hasConnectionError = false;
     public lastConnectionError?: string;
+    private keepaliveTimer: NodeJS.Timeout | null = null;
 
     get connected(): boolean {
         return this._connected && (this.client?.usable ?? false);
@@ -44,11 +46,13 @@ export class ImapService {
             this._connected = false;
             this.hasConnectionError = true;
             this.lastConnectionError = err instanceof Error ? err.message : String(err);
+            this.clearKeepalive();
         });
 
         this.client.on('close', () => {
             console.log(`IMAP Connection closed for ${account.username}`);
             this._connected = false;
+            this.clearKeepalive();
         });
 
         try {
@@ -56,6 +60,7 @@ export class ImapService {
             this._connected = true;
             this.hasConnectionError = false;
             this.lastConnectionError = undefined;
+            this.setupKeepalive();
         } catch (error) {
             this.hasConnectionError = true;
             this.lastConnectionError = error instanceof Error ? error.message : String(error);
@@ -67,6 +72,7 @@ export class ImapService {
      * Disconnects from the IMAP server.
      */
     async disconnect(): Promise<void> {
+        this.clearKeepalive();
         if (this.client) {
             try {
                 await this.client.logout();
@@ -399,6 +405,31 @@ export class ImapService {
     }
 
     // ---- Private helpers ----
+
+    private setupKeepalive() {
+        this.clearKeepalive();
+        const config = vscode.workspace.getConfiguration('mailClient');
+        const intervalSec = config.get<number>('keepaliveInterval', 60);
+
+        if (intervalSec > 0) {
+            this.keepaliveTimer = setInterval(async () => {
+                if (this.client && this.connected) {
+                    try {
+                        await this.client.noop();
+                    } catch (err) {
+                        console.error(`Keepalive error for ${this.account?.username}:`, err);
+                    }
+                }
+            }, intervalSec * 1000);
+        }
+    }
+
+    private clearKeepalive() {
+        if (this.keepaliveTimer) {
+            clearInterval(this.keepaliveTimer);
+            this.keepaliveTimer = null;
+        }
+    }
 
     private async ensureConnected(): Promise<void> {
         if (!this.client || !this.connected) {

@@ -224,6 +224,12 @@
           "minimum": 0,
           "description": "Auto-refresh interval in seconds (0 = disabled)."
         },
+        "mailClient.keepaliveInterval": {
+          "type": "number",
+          "default": 60,
+          "minimum": 0,
+          "description": "Keepalive (NOOP) interval in seconds to prevent connection drops (0 = disabled)."
+        },
         "mailClient.imageWhitelist": {
           "type": "array",
           "items": {

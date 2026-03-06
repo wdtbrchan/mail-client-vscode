@@ -13,6 +13,7 @@
 - [x] Refactor message detail panel to separate HTML, CSS, and JS files.
 - [x] Implement Print functionality.
 - [x] Improve IMAP connection reliability and automatic reconnection.
+- [x] Implement configurable IMAP keepalive (NOOP) to prevent connection drops.
 - [x] Message searching.
 - [x] Fix sender name parsing when containing commas (unquoted).
 - [x] Fix sender name display in compose/reply panel.
