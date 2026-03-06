@@ -462,19 +462,11 @@ export class ComposePanel {
         if (this.isWysiwyg) {
             bodyHtml = this.wysiwygHtml;
             // Generate plain text from WYSIWYG html (basic stripping)
-            bodyText = bodyHtml
-                .replace(/<br\s*\/?>/gi, '\n')
-                .replace(/<\/div>/gi, '\n')
-                .replace(/<\/p>/gi, '\n\n')
-                .replace(/<[^>]+>/g, '')
-                .replace(/&nbsp;/g, ' ')
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"');
+            bodyText = this.htmlToPlainText(bodyHtml);
         } else {
             bodyHtml = await marked.parse(this.currentMarkdown);
-            bodyText = this.currentMarkdown;
+            // Generate plain text from Markdown html (basic stripping)
+            bodyText = this.htmlToPlainText(bodyHtml);
         }
 
         // For reply/forward, append quoted original message in both Markdown and WYSIWYG modes
@@ -513,16 +505,7 @@ export class ComposePanel {
             let quotedBodyText = orig.text || '';
             if (!quotedBodyText && orig.html) {
                 // Fallback to html stripped if original text is missing
-                quotedBodyText = orig.html
-                    .replace(/<br\s*\/?>/gi, '\n')
-                    .replace(/<\/div>/gi, '\n')
-                    .replace(/<\/p>/gi, '\n\n')
-                    .replace(/<[^>]+>/g, '')
-                    .replace(/&nbsp;/g, ' ')
-                    .replace(/&amp;/g, '&')
-                    .replace(/&lt;/g, '<')
-                    .replace(/&gt;/g, '>')
-                    .replace(/&quot;/g, '"');
+                quotedBodyText = this.htmlToPlainText(orig.html);
             }
             bodyText += `${separatorText}${quotedBodyText.trim()}`;
         }
@@ -618,6 +601,19 @@ export class ComposePanel {
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
+    }
+
+    private htmlToPlainText(html: string): string {
+        return html
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<\/div>/gi, '\n')
+            .replace(/<\/p>/gi, '\n\n')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"');
     }
 
     private getHtmlContent(): string {
