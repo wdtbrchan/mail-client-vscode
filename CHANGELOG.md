@@ -1,6 +1,6 @@
 # Changelog
  
-## [ upcoming ]
+## [0.13.5]
 - **IMAP Service**: Added a configurable keepalive (NOOP) mechanism to prevent connection drops due to inactivity. The interval can be customized via the `mailClient.keepaliveInterval` setting (default 60s).
 - **Attachments**: Hidden the "Attach Local Files" button when connected to a remote host, as VS Code only supports remote file selection in this environment.
  
