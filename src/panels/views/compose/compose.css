@@ -100,14 +100,16 @@ body.editor-mode-markdown .mode-btn-md {
 .preview-content p { margin: 6px 0; }
 .preview-content ul, .preview-content ol { margin: 6px 0; padding-left: 24px; }
 .preview-content code {
-    background: #f0f0f0;
+    background: #ffffff;
+    color: #000000;
     padding: 2px 5px;
     border-radius: 3px;
     font-family: var(--vscode-editor-font-family);
     font-size: 0.9em;
 }
 .preview-content pre {
-    background: #f0f0f0;
+    background: #ffffff;
+    color: #000000;
     padding: 10px;
     border-radius: 4px;
     overflow-x: auto;
@@ -115,6 +117,7 @@ body.editor-mode-markdown .mode-btn-md {
 }
 .preview-content pre code {
     background: none;
+    color: inherit;
     padding: 0;
 }
 .preview-content blockquote {
