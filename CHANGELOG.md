@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.13.9]
+- **Markdown Preview**: Fixed background and font colors for code blocks (`<pre>` and `<code>`) in the markdown preview to consistently use a white background and black text, matching the final output.
+
 ## [0.13.8]
 - **Outgoing Mail**: Stripped markdown formatting from the plain text part of emails sent in Markdown compose mode to prevent raw markdown syntax from appearing in the text-only version of messages.
 
