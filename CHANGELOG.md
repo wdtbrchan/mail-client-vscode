@@ -1,4 +1,7 @@
 # Changelog
+ 
+## [ upcoming ]
+- **Unread Count**: Restricted the Activity Bar unread count badge to only sum messages from the "Inbox" folder, preventing unread messages in other folders (like Junk or Sent) from affecting the total badge count.
 
 ## [0.13.9]
 - **Markdown Preview**: Fixed background and font colors for code blocks (`<pre>` and `<code>`) in the markdown preview to consistently use a white background and black text, matching the final output.

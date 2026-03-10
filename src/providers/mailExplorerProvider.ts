@@ -319,7 +319,12 @@ export class MailExplorerProvider implements vscode.TreeDataProvider<MailTreeIte
     private countUnseen(folders: IMailFolder[]): number {
         let count = 0;
         for (const folder of folders) {
-            count += folder.unseenMessages ?? 0;
+            // Count unread messages ONLY for Inbox folder
+            // Identifying Inbox by special-use flag or name fallback
+            if (folder.specialUse === '\\Inbox' || folder.path.toUpperCase() === 'INBOX') {
+                count += folder.unseenMessages ?? 0;
+            }
+
             if (folder.children) {
                 count += this.countUnseen(folder.children);
             }

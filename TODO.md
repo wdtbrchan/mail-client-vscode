@@ -23,7 +23,7 @@
 - [x] Add hover action buttons to message list.
 - [x] Support for local file attachments in Remote SSH environments.
 - [x] Display recipients (To, Cc, Bcc) instead of sender in the Sent folder message list.
-- [x] Correctly strip markdown tags from the plain text version of emails.
+- [x] Limit Activity Bar unread count to Inbox messages only.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
 
