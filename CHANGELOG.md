@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.15.0]
 - **Address Book**: Added a new "Address Book" feature with contact management and autocomplete functionality.
 - **Contacts**: New `mailClient.contacts` configuration setting for storing email addresses with display names.
 - **Message Detail**: Added an inline `[+]` button next to unknown email addresses to quickly add them to the contacts list.
