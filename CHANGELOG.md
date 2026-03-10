@@ -1,7 +1,10 @@
 # Changelog
- 
+
+## [upcoming]
+- **Message Move**: Added an "Undo" option to the move notification, allowing users to quickly revert moving messages between folders. The returned message is actively selected in the list upon undo.
+
+
 ## [0.13.10]
-- **Message Move**: Added an "Undo" option to the move notification, allowing users to quickly revert moving messages between folders.
 - **Unread Count**: Added the unread message count to the folder tab title (e.g., `INBOX (3)`). The count is automatically updated when messages are marked as read or folders are refreshed.
 - **Performance**: Optimized unread count synchronization when marking messages as read in the detail view by updating the local folder cache directly, avoiding unnecessary IMAP `list` calls.
 - **Unread Count**: Restricted the Activity Bar unread count badge to only sum messages from the "Inbox" folder, preventing unread messages in other folders (like Junk or Sent) from affecting the total badge count.

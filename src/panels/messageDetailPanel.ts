@@ -540,9 +540,9 @@ export class MessageDetailPanel {
             const originalFolderPath = this.folderPath;
             vscode.window.showInformationMessage(`Moved to ${targetFolder}`, ...actions).then(selection => {
                 if (selection === undoLabel && newUid) {
-                    service.moveMessage(targetFolder, newUid, originalFolderPath).then(() => {
+                    service.moveMessage(targetFolder, newUid, originalFolderPath).then((restoredUid) => {
                         vscode.window.showInformationMessage(`Moved back to ${originalFolderPath}`);
-                        MessageListPanel.refreshFolder(this.accountId, originalFolderPath);
+                        MessageListPanel.refreshFolder(this.accountId, originalFolderPath, restoredUid);
                         this.explorerProvider.refresh();
                     }).catch(err => {
                         vscode.window.showErrorMessage(`Failed to undo move: ${err.message}`);
@@ -590,9 +590,9 @@ export class MessageDetailPanel {
             const originalFolderPath = this.folderPath;
             vscode.window.showInformationMessage(`Moved to ${targetPath}`, ...actions).then(selection => {
                 if (selection === undoLabel && newUid) {
-                    service.moveMessage(targetPath, newUid, originalFolderPath).then(() => {
+                    service.moveMessage(targetPath, newUid, originalFolderPath).then((restoredUid) => {
                         vscode.window.showInformationMessage(`Moved back to ${originalFolderPath}`);
-                        MessageListPanel.refreshFolder(this.accountId, originalFolderPath);
+                        MessageListPanel.refreshFolder(this.accountId, originalFolderPath, restoredUid);
                         this.explorerProvider.refresh();
                     }).catch(err => {
                         vscode.window.showErrorMessage(`Failed to undo move: ${err.message}`);

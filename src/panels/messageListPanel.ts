@@ -123,10 +123,13 @@ export class MessageListPanel {
     /**
      * Refreshes the message list for a specific folder (if a panel is open for it).
      */
-    static refreshFolder(accountId: string, folderPath: string): void {
+    static refreshFolder(accountId: string, folderPath: string, activeUid?: number): void {
         const key = `${accountId}:${folderPath}`;
         const panel = MessageListPanel.panels.get(key);
         if (panel) {
+            if (activeUid !== undefined) {
+                panel.activeUid = activeUid;
+            }
             panel.loadMessages();
         }
     }
@@ -383,8 +386,11 @@ export class MessageListPanel {
             const actions = newUid ? [undoLabel] : [];
             vscode.window.showInformationMessage(`Moved to ${targetFolder}`, ...actions).then(selection => {
                 if (selection === undoLabel && newUid) {
-                    service.moveMessage(targetFolder, newUid, this.folderPath).then(() => {
+                    service.moveMessage(targetFolder, newUid, this.folderPath).then((restoredUid) => {
                         vscode.window.showInformationMessage(`Moved back to ${this.folderName}`);
+                        if (restoredUid) {
+                            this.activeUid = restoredUid;
+                        }
                         this.loadMessages();
                         this.explorerProvider.refresh();
                     }).catch(err => {
@@ -447,8 +453,11 @@ export class MessageListPanel {
             const actions = newUid ? [undoLabel] : [];
             vscode.window.showInformationMessage(`Moved to ${targetPath}`, ...actions).then(selection => {
                 if (selection === undoLabel && newUid) {
-                    service.moveMessage(targetPath, newUid, this.folderPath).then(() => {
+                    service.moveMessage(targetPath, newUid, this.folderPath).then((restoredUid) => {
                         vscode.window.showInformationMessage(`Moved back to ${this.folderName}`);
+                        if (restoredUid) {
+                            this.activeUid = restoredUid;
+                        }
                         this.loadMessages();
                         this.explorerProvider.refresh();
                     }).catch(err => {
