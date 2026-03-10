@@ -533,9 +533,22 @@ export class MessageDetailPanel {
             this.panel.webview.postMessage({ type: 'loading', text: 'Moving...' });
 
             const service = this.explorerProvider.getImapService(this.accountId);
-            await service.moveMessage(this.folderPath, this.uid, targetFolder);
+            const newUid = await service.moveMessage(this.folderPath, this.uid, targetFolder);
             
-            vscode.window.showInformationMessage(`Moved to ${targetFolder}`);
+            const undoLabel = `Undo`;
+            const actions = newUid ? [undoLabel] : [];
+            const originalFolderPath = this.folderPath;
+            vscode.window.showInformationMessage(`Moved to ${targetFolder}`, ...actions).then(selection => {
+                if (selection === undoLabel && newUid) {
+                    service.moveMessage(targetFolder, newUid, originalFolderPath).then(() => {
+                        vscode.window.showInformationMessage(`Moved back to ${originalFolderPath}`);
+                        MessageListPanel.refreshFolder(this.accountId, originalFolderPath);
+                        this.explorerProvider.refresh();
+                    }).catch(err => {
+                        vscode.window.showErrorMessage(`Failed to undo move: ${err.message}`);
+                    });
+                }
+            });
             
             // Refresh logic similar to delete
             MessageListPanel.refreshFolder(this.accountId, this.folderPath);
@@ -570,9 +583,22 @@ export class MessageDetailPanel {
             this.panel.webview.postMessage({ type: 'loading', text: 'Moving...' });
 
             const service = this.explorerProvider.getImapService(this.accountId);
-            await service.moveMessage(this.folderPath, this.uid, targetPath);
+            const newUid = await service.moveMessage(this.folderPath, this.uid, targetPath);
             
-            vscode.window.showInformationMessage(`Moved to ${targetPath}`);
+            const undoLabel = `Undo`;
+            const actions = newUid ? [undoLabel] : [];
+            const originalFolderPath = this.folderPath;
+            vscode.window.showInformationMessage(`Moved to ${targetPath}`, ...actions).then(selection => {
+                if (selection === undoLabel && newUid) {
+                    service.moveMessage(targetPath, newUid, originalFolderPath).then(() => {
+                        vscode.window.showInformationMessage(`Moved back to ${originalFolderPath}`);
+                        MessageListPanel.refreshFolder(this.accountId, originalFolderPath);
+                        this.explorerProvider.refresh();
+                    }).catch(err => {
+                        vscode.window.showErrorMessage(`Failed to undo move: ${err.message}`);
+                    });
+                }
+            });
             
             MessageListPanel.refreshFolder(this.accountId, this.folderPath);
             this.explorerProvider.refresh();

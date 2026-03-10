@@ -377,9 +377,21 @@ export class MessageListPanel {
 
         try {
             const service = this.explorerProvider.getImapService(this.accountId);
-            await service.moveMessage(this.folderPath, uid, targetFolder);
+            const newUid = await service.moveMessage(this.folderPath, uid, targetFolder);
 
-            vscode.window.showInformationMessage(`Moved to ${targetFolder}`);
+            const undoLabel = `Undo`;
+            const actions = newUid ? [undoLabel] : [];
+            vscode.window.showInformationMessage(`Moved to ${targetFolder}`, ...actions).then(selection => {
+                if (selection === undoLabel && newUid) {
+                    service.moveMessage(targetFolder, newUid, this.folderPath).then(() => {
+                        vscode.window.showInformationMessage(`Moved back to ${this.folderName}`);
+                        this.loadMessages();
+                        this.explorerProvider.refresh();
+                    }).catch(err => {
+                        vscode.window.showErrorMessage(`Failed to undo move: ${err.message}`);
+                    });
+                }
+            });
 
             // Notify webview to remove the row immediately (scroll-preserving)
             this.panel.webview.postMessage({ type: 'removeMessage', uid });
@@ -429,8 +441,21 @@ export class MessageListPanel {
         }
         try {
             const service = this.explorerProvider.getImapService(this.accountId);
-            await service.moveMessage(this.folderPath, uid, targetPath);
-            vscode.window.showInformationMessage(`Moved to ${targetPath}`);
+            const newUid = await service.moveMessage(this.folderPath, uid, targetPath);
+            
+            const undoLabel = `Undo`;
+            const actions = newUid ? [undoLabel] : [];
+            vscode.window.showInformationMessage(`Moved to ${targetPath}`, ...actions).then(selection => {
+                if (selection === undoLabel && newUid) {
+                    service.moveMessage(targetPath, newUid, this.folderPath).then(() => {
+                        vscode.window.showInformationMessage(`Moved back to ${this.folderName}`);
+                        this.loadMessages();
+                        this.explorerProvider.refresh();
+                    }).catch(err => {
+                        vscode.window.showErrorMessage(`Failed to undo move: ${err.message}`);
+                    });
+                }
+            });
             this.panel.webview.postMessage({ type: 'removeMessage', uid });
             this.currentMessages = this.currentMessages.filter(m => m.uid !== uid);
             this.totalMessages = Math.max(0, this.totalMessages - 1);

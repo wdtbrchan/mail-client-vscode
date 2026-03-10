@@ -331,11 +331,15 @@ export class ImapService {
     /**
      * Moves a message to another folder.
      */
-    async moveMessage(folderPath: string, uid: number, targetFolder: string): Promise<void> {
+    async moveMessage(folderPath: string, uid: number, targetFolder: string): Promise<number | undefined> {
         await this.ensureConnected();
         const lock = await this.client!.getMailboxLock(folderPath);
         try {
-            await this.client!.messageMove(String(uid), targetFolder, { uid: true });
+            const res = await this.client!.messageMove(String(uid), targetFolder, { uid: true });
+            if (res && res.uidMap) {
+                return res.uidMap.get(uid);
+            }
+            return undefined;
         } finally {
             lock.release();
         }
