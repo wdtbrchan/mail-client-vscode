@@ -1,8 +1,7 @@
 # Changelog
 
 ## [upcoming]
-- **Message Move**: Added an "Undo" option to the move notification, allowing users to quickly revert moving messages between folders. The returned message is actively selected in the list upon undo.
-
+- **Message Move**: Added an "Undo" option to the move notification, allowing users to quickly revert moving messages between folders.
 
 ## [0.13.10]
 - **Unread Count**: Added the unread message count to the folder tab title (e.g., `INBOX (3)`). The count is automatically updated when messages are marked as read or folders are refreshed.
