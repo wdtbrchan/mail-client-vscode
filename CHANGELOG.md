@@ -1,6 +1,6 @@
 # Changelog
 
-## [upcoming]
+## [0.14.0]
 - **Message Move**: Added an "Undo" option to the move notification, allowing users to quickly revert moving messages between folders.
 
 ## [0.13.10]
