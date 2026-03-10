@@ -29,16 +29,25 @@
     <div class="compose-form">
         <div class="form-row">
             <label for="fieldTo">To:</label>
-            <input type="text" id="fieldTo" placeholder="recipient@example.com" />
+            <div class="autocomplete-container" style="flex:1; position:relative; display:flex;">
+                <input type="text" id="fieldTo" placeholder="recipient@example.com" autocomplete="off" style="flex:1;" />
+                <div class="autocomplete-list hidden" id="autocompleteTo"></div>
+            </div>
         </div>
         <button class="toggle-cc" id="toggleCc">Show Cc/Bcc</button>
         <div class="form-row hidden" id="rowCc">
             <label for="fieldCc">Cc:</label>
-            <input type="text" id="fieldCc" placeholder="cc@example.com" />
+            <div class="autocomplete-container" style="flex:1; position:relative; display:flex;">
+                <input type="text" id="fieldCc" placeholder="cc@example.com" autocomplete="off" style="flex:1;" />
+                <div class="autocomplete-list hidden" id="autocompleteCc"></div>
+            </div>
         </div>
         <div class="form-row hidden" id="rowBcc">
             <label for="fieldBcc">Bcc:</label>
-            <input type="text" id="fieldBcc" placeholder="bcc@example.com" />
+            <div class="autocomplete-container" style="flex:1; position:relative; display:flex;">
+                <input type="text" id="fieldBcc" placeholder="bcc@example.com" autocomplete="off" style="flex:1;" />
+                <div class="autocomplete-list hidden" id="autocompleteBcc"></div>
+            </div>
         </div>
         <div class="form-row">
             <label for="fieldSubject">Subject:</label>

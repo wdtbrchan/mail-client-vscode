@@ -634,7 +634,8 @@ export class ComposePanel {
         const composeConfig = {
             isWysiwyg: this.isWysiwyg,
             mode: this.options.mode,
-            isRemote: !!vscode.env.remoteName
+            isRemote: !!vscode.env.remoteName,
+            contacts: config.get<string[]>('contacts') || []
         };
 
         return composeHtml

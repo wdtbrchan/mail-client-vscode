@@ -237,6 +237,14 @@
           },
           "default": [],
           "description": "List of sender email addresses that will automatically load remote images."
+        },
+        "mailClient.contacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "List of email contacts. Format: 'Name <email@domain.com>' or 'email@domain.com'."
         }
       }
     },

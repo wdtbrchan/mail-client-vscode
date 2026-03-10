@@ -93,6 +93,121 @@ document.getElementById('toggleCc').addEventListener('click', () => {
     btn.textContent = isHidden ? 'Hide Cc/Bcc' : 'Show Cc/Bcc';
 });
 
+// Autocomplete functionality
+function setupAutocomplete(input, list) {
+    let currentFocus = -1;
+    const contacts = config.contacts || [];
+
+    input.addEventListener('input', function() {
+        const val = this.value;
+        const cursor = this.selectionStart;
+        
+        // Find current address being typed (comma separated)
+        const addresses = val.split(',');
+        let currentPartIndex = 0;
+        let cumulativeLen = 0;
+        
+        for (let i = 0; i < addresses.length; i++) {
+            cumulativeLen += addresses[i].length + 1; // +1 for comma
+            if (cursor <= cumulativeLen) {
+                currentPartIndex = i;
+                break;
+            }
+        }
+        
+        const currentTyped = addresses[currentPartIndex].trim();
+        
+        closeAllLists();
+        if (!currentTyped || currentTyped.length < 2) return false;
+        
+        currentFocus = -1;
+        list.classList.remove('hidden');
+        list.innerHTML = '';
+        
+        const matches = contacts.filter(c => c.toLowerCase().includes(currentTyped.toLowerCase()));
+        
+        if (matches.length === 0) {
+            list.classList.add('hidden');
+            return;
+        }
+        
+        matches.forEach(match => {
+            const b = document.createElement('div');
+            b.className = 'autocomplete-item';
+            
+            // Highlight matching part
+            const regex = new RegExp("(" + currentTyped.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ")", "gi");
+            b.innerHTML = typeof escapeHtml === 'function' 
+                ? escapeHtml(match).replace(regex, "<strong>$1</strong>")
+                : match.replace(regex, "<strong>$1</strong>");
+            
+            b.addEventListener('click', function() {
+                addresses[currentPartIndex] = ' ' + match;
+                input.value = addresses.join(',').trim() + ', ';
+                closeAllLists();
+                input.focus();
+            });
+            list.appendChild(b);
+        });
+    });
+
+    input.addEventListener('keydown', function(e) {
+        if (list.classList.contains('hidden')) return;
+        const items = list.getElementsByClassName('autocomplete-item');
+        if (e.keyCode === 40) { // Down
+            currentFocus++;
+            addActive(items);
+            e.preventDefault();
+        } else if (e.keyCode === 38) { // Up
+            currentFocus--;
+            addActive(items);
+            e.preventDefault();
+        } else if (e.keyCode === 13 || e.keyCode === 9) { // Enter or Tab
+            if (currentFocus > -1) {
+                items[currentFocus].click();
+                e.preventDefault();
+            } else if (items.length > 0) {
+                items[0].click();
+                e.preventDefault();
+            }
+        }
+    });
+
+    function addActive(x) {
+        if (!x) return false;
+        removeActive(x);
+        if (currentFocus >= x.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = (x.length - 1);
+        x[currentFocus].classList.add('active');
+        x[currentFocus].scrollIntoView({ block: 'nearest' });
+    }
+    
+    function removeActive(x) {
+        for (let i = 0; i < x.length; i++) {
+            x[i].classList.remove('active');
+        }
+    }
+    
+    function closeAllLists(elmnt) {
+        if (elmnt !== input && elmnt !== list) {
+            list.classList.add('hidden');
+            list.innerHTML = '';
+        }
+    }
+    
+    document.addEventListener('click', function (e) {
+        closeAllLists(e.target);
+    });
+}
+
+const autocompleteTo = document.getElementById('autocompleteTo');
+const autocompleteCc = document.getElementById('autocompleteCc');
+const autocompleteBcc = document.getElementById('autocompleteBcc');
+
+if (fieldTo && autocompleteTo) setupAutocomplete(fieldTo, autocompleteTo);
+if (fieldCc && autocompleteCc) setupAutocomplete(fieldCc, autocompleteCc);
+if (fieldBcc && autocompleteBcc) setupAutocomplete(fieldBcc, autocompleteBcc);
+
 // WYSIWYG toolbar format buttons
 document.querySelectorAll('.format-btn').forEach(btn => {
     btn.addEventListener('click', () => {

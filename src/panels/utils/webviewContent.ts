@@ -156,6 +156,25 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
             return div.innerHTML;
         }
 
+        function renderAddress(addrObj, contacts) {
+            if (!addrObj || !addrObj.address) return '';
+            const displayStr = addrObj.name ? addrObj.name + ' <' + addrObj.address + '>' : addrObj.address;
+            const safeDisplay = escapeHtml(displayStr);
+            let inContacts = false;
+            if (contacts && contacts.length > 0) {
+                 inContacts = contacts.some(c => c === displayStr || c.includes('<' + addrObj.address + '>') || c === addrObj.address);
+            }
+            if (!inContacts) {
+                 return '<span>' + safeDisplay + ' <a href="#" class="add-contact-link" data-contact="' + escapeHtml(displayStr) + '" title="Add to contacts" style="text-decoration:none; color:var(--vscode-textLink-foreground);">[+]</a></span>';
+            }
+            return '<span>' + safeDisplay + '</span>';
+        }
+
+        function renderAddresses(addrArray, contacts) {
+            if (!addrArray || !addrArray.length) return '';
+            return addrArray.map(a => renderAddress(a, contacts)).join(', ');
+        }
+
         // Returns { html, hasBlockedImages }
         function renderMessageContent(msg, showImages) {
              // Prepare iframe content first to determine if we have blocked images
@@ -307,10 +326,10 @@ export function getSharedScripts(nonce: string, userLocale: string): string {
             if (!skipHeaders) {
             html += '<div class="message-headers">';
             html += '<div class="header-subject">' + escapeHtml(msg.subject) + '</div>';
-            html += '<div class="header-row"><span class="header-label">From:</span><span class="header-value">' + escapeHtml(msg.fromDisplay) + '</span></div>';
-            html += '<div class="header-row"><span class="header-label">To:</span><span class="header-value">' + escapeHtml(msg.toDisplay) + '</span></div>';
-            if (msg.ccDisplay) {
-                html += '<div class="header-row"><span class="header-label">CC:</span><span class="header-value">' + escapeHtml(msg.ccDisplay) + '</span></div>';
+            html += '<div class="header-row"><span class="header-label">From:</span><span class="header-value">' + renderAddresses([msg.from], msg.contacts) + '</span></div>';
+            html += '<div class="header-row"><span class="header-label">To:</span><span class="header-value">' + renderAddresses(msg.to, msg.contacts) + '</span></div>';
+            if (msg.cc && msg.cc.length > 0) {
+                html += '<div class="header-row"><span class="header-label">CC:</span><span class="header-value">' + renderAddresses(msg.cc, msg.contacts) + '</span></div>';
             }
             html += '<div class="header-date">' + formatDate(msg.date) + '</div>';
             html += '</div>';

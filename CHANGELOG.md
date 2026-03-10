@@ -1,5 +1,11 @@
 # Changelog
 
+## [ upcoming ]
+- **Address Book**: Added a new "Address Book" feature with contact management and autocomplete functionality.
+- **Contacts**: New `mailClient.contacts` configuration setting for storing email addresses with display names.
+- **Message Detail**: Added an inline `[+]` button next to unknown email addresses to quickly add them to the contacts list.
+- **Compose**: Implemented email address autocomplete for `To`, `Cc`, and `Bcc` fields using the contact list, with support for multiple comma-separated addresses and keyboard navigation.
+
 ## [0.14.0]
 - **Message Move**: Added an "Undo" option to the move notification, allowing users to quickly revert moving messages between folders.
 

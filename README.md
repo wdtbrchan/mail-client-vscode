@@ -18,6 +18,7 @@ A simple and efficient IMAP email client directly within your VS Code (or any ot
 - **Folder Management:** Map special folders and create custom folder buttons.
 - **Image Whitelist:** Whitelist trusted senders to automatically load remote images in future emails.
 - **Organize Messages:** Archive, Spam, Trash, and Inbox actions with context-aware buttons.
+- **Address Book:** Manage your email contacts and use autocomplete in the `To`, `Cc`, and `Bcc` fields. Add unknown contacts easily with a single click.
 - **Jira Integration:** Pair emails with Jira issues and post comments directly from the message detail view.
 - **Print Support:** Capability to print messages via the native OS prompt directly from the UI.
 - **Customizable Layout:** Choose between Side or Bottom panel for viewing message details in Split View.

@@ -370,6 +370,18 @@ function renderMessageView(msg, showImages = false) {
            downloadAttachment(filename);
         });
     });
+
+    // Contact buttons
+    document.querySelectorAll('.add-contact-link').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const contact = this.dataset.contact;
+            if (contact) {
+                vscode.postMessage({ type: 'addContact', contact: contact });
+                this.style.display = 'none';
+            }
+        });
+    });
 }
 
 window.addEventListener('message', (event) => {
@@ -428,6 +440,16 @@ window.addEventListener('message', (event) => {
             loadingEl.classList.remove('hidden');
             const loadingText = msg.text || 'Loading message...';
             loadingEl.innerHTML = '<span class="loader"></span>' + escapeHtml(loadingText);
+            break;
+        case 'contactAdded':
+            if (currentMessage) {
+                 if (!currentMessage.contacts) currentMessage.contacts = [];
+                 if (msg.contacts) {
+                     currentMessage.contacts = msg.contacts;
+                 } else {
+                     currentMessage.contacts.push(msg.contact);
+                 }
+            }
             break;
         case 'messageMoved':
             headersEl.innerHTML = '';
