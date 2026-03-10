@@ -21,6 +21,7 @@ export class MessageListPanel {
     public activeUid?: number;
     private currentPage: number = 1;
     private totalMessages: number = 0;
+    private lastUnreadCount?: number;
 
     private constructor(
         panel: vscode.WebviewPanel,
@@ -144,6 +145,15 @@ export class MessageListPanel {
         };
     }
 
+    private updateTitle(unseen?: number) {
+        if (unseen !== undefined) {
+            this.lastUnreadCount = unseen;
+        }
+        
+        const count = this.lastUnreadCount || 0;
+        this.panel.title = count > 0 ? `${this.folderName} (${count})` : this.folderName;
+    }
+
     private async loadMessages(): Promise<void> {
         try {
             this.panel.webview.postMessage({ type: 'loading' });
@@ -157,6 +167,9 @@ export class MessageListPanel {
 
             this.currentMessages = result.messages;
             this.totalMessages = result.total;
+
+            const folderInfo = this.explorerProvider.getFolderInfo(this.accountId, this.folderPath);
+            this.updateTitle(folderInfo?.unseenMessages);
 
             const locale = config.get<string>('locale') || undefined;
             const displayMode = config.get<string>('messageDisplayMode', 'split');
@@ -238,7 +251,10 @@ export class MessageListPanel {
 
         const onBack = () => {
             this.embeddedDetailPanel = undefined;
-            this.panel.title = this.folderName;
+            
+            const folderInfo = this.explorerProvider.getFolderInfo(this.accountId, this.folderPath);
+            this.updateTitle(folderInfo?.unseenMessages);
+            
             this.panel.webview.html = this.getHtmlContent();
             this.loadMessages(); // Re-fetch or re-render list
         };

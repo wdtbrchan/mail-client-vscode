@@ -276,9 +276,10 @@ export class MessageDetailPanel {
             // Mark as seen if not already
             if (!message.seen) {
                 await service.markMessageSeen(this.folderPath, this.uid);
-                // Refresh to update unread counts
+                // Update local cache and fire tree update without full network reload
+                this.explorerProvider.decrementUnread(this.accountId, this.folderPath);
+                // Refresh to update unread counts on the message list panel
                 MessageListPanel.refreshFolder(this.accountId, this.folderPath);
-                this.explorerProvider.refresh();
             }
 
             // Sync the active message selection in the list view

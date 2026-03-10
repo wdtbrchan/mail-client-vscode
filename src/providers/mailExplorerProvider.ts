@@ -169,6 +169,40 @@ export class MailExplorerProvider implements vscode.TreeDataProvider<MailTreeIte
     }
 
     /**
+     * Gets folder information from cache without triggering a refresh.
+     */
+    public getFolderInfo(accountId: string, folderPath: string): IMailFolder | undefined {
+        const folders = this.folderCache.get(accountId);
+        if (!folders) return undefined;
+
+        const findFolder = (list: IMailFolder[], path: string): IMailFolder | undefined => {
+            for (const f of list) {
+                if (f.path === path) return f;
+                if (f.children) {
+                    const found = findFolder(f.children, path);
+                    if (found) return found;
+                }
+            }
+            return undefined;
+        };
+
+        return findFolder(folders, folderPath);
+    }
+
+    /**
+     * Decrements the unread count in local cache and updates the UI.
+     * Use this when reading a message to avoid a full IMAP folder reload.
+     */
+    public decrementUnread(accountId: string, folderPath: string): void {
+        const folder = this.getFolderInfo(accountId, folderPath);
+        if (folder && folder.unseenMessages && folder.unseenMessages > 0) {
+            folder.unseenMessages--;
+            this.updateBadge(); // Update activity bar badge
+            this._onDidChangeTreeData.fire(undefined); // Refresh tree view without clearing cache
+        }
+    }
+
+    /**
      * Returns the IMAP service for a given account.
      * Creates one if it doesn't exist yet.
      */
