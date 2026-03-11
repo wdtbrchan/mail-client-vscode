@@ -70,8 +70,8 @@ body.editor-mode-markdown .mode-btn-md {
     left: 0;
     right: 0;
     z-index: 99;
-    background: var(--vscode-editorWidget-background);
-    border: 1px solid var(--vscode-widget-border);
+    background: var(--vscode-editorSuggestWidget-background);
+    border: 1px solid var(--vscode-focusBorder);
     max-height: 150px;
     overflow-y: auto;
     border-radius: 3px;

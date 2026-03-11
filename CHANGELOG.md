@@ -1,5 +1,11 @@
 # Changelog
 
+## [ upcoming ]
+- **Compose**: Improved address book autocomplete to correctly handle commas within quoted names.
+- **Compose**: Names containing commas are now automatically quoted when selected from the autocomplete list.
+- **Compose**: Automatically strip trailing commas from `To`, `Cc`, and `Bcc` fields before sending an email.
+- **UI Design**: Improved visibility of the address autocomplete dropdown with a standard VS Code focus border and slightly different background.
+
 ## [0.15.0]
 - **Address Book**: Added a new "Address Book" feature with contact management and autocomplete functionality.
 - **Contacts**: New `mailClient.contacts` configuration setting for storing email addresses with display names.

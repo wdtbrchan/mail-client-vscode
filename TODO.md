@@ -24,6 +24,8 @@
 - [x] Support for local file attachments in Remote SSH environments.
 - [x] Display recipients (To, Cc, Bcc) instead of sender in the Sent folder message list.
 - [x] Limit Activity Bar unread count to Inbox messages only.
+- [x] Improved address book autocomplete (handling commas in quotes, auto-quoting names with commas).
+- [x] Automatically strip trailing commas from recipient fields before sending.
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
 

@@ -102,8 +102,21 @@ function setupAutocomplete(input, list) {
         const val = this.value;
         const cursor = this.selectionStart;
         
-        // Find current address being typed (comma separated)
-        const addresses = val.split(',');
+        // Find current address being typed (comma separated), ignoring commas in quotes
+        const addresses = [];
+        let _current = '';
+        let _inQuotes = false;
+        for (let i = 0; i < val.length; i++) {
+            if (val[i] === '"') _inQuotes = !_inQuotes;
+            if (val[i] === ',' && !_inQuotes) {
+                addresses.push(_current);
+                _current = '';
+            } else {
+                _current += val[i];
+            }
+        }
+        addresses.push(_current);
+        
         let currentPartIndex = 0;
         let cumulativeLen = 0;
         
@@ -142,7 +155,21 @@ function setupAutocomplete(input, list) {
                 : match.replace(regex, "<strong>$1</strong>");
             
             b.addEventListener('click', function() {
-                addresses[currentPartIndex] = ' ' + match;
+                let formattedMatch = match;
+                // Quote name if it contains a comma
+                if (formattedMatch.includes(',') && !formattedMatch.startsWith('"')) {
+                    const matchPattern = /^(.*?)(\s*<.*>)$/;
+                    const matchResult = formattedMatch.match(matchPattern);
+                    if (matchResult && matchResult[1]) {
+                        const namePart = matchResult[1].trim();
+                        const emailPart = matchResult[2];
+                        if (namePart.includes(',')) {
+                            formattedMatch = `"${namePart}"${emailPart}`;
+                        }
+                    }
+                }
+
+                addresses[currentPartIndex] = ' ' + formattedMatch;
                 input.value = addresses.join(',').trim() + ', ';
                 closeAllLists();
                 input.focus();
@@ -263,12 +290,14 @@ document.getElementById('switchToWysiwyg').addEventListener('click', () => {
 
 
 // Send
+const cleanAddresses = (val) => val ? val.replace(/,\s*$/, '').trim() : '';
+
 document.getElementById('btnSend').addEventListener('click', () => {
     const sendMsg = {
         type: 'send',
-        to: fieldTo.value,
-        cc: fieldCc.value,
-        bcc: fieldBcc.value,
+        to: cleanAddresses(fieldTo.value),
+        cc: cleanAddresses(fieldCc.value),
+        bcc: cleanAddresses(fieldBcc.value),
         subject: fieldSubject.value,
     };
     if (isWysiwyg && wysiwygEditor) {
@@ -281,9 +310,9 @@ if (btnSendArchive) {
     btnSendArchive.addEventListener('click', () => {
         const sendMsg = {
             type: 'sendAndArchive',
-            to: fieldTo.value,
-            cc: fieldCc.value,
-            bcc: fieldBcc.value,
+            to: cleanAddresses(fieldTo.value),
+            cc: cleanAddresses(fieldCc.value),
+            bcc: cleanAddresses(fieldBcc.value),
             subject: fieldSubject.value,
         };
         if (isWysiwyg && wysiwygEditor) {
