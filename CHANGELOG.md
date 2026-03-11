@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.15.1]
 - **Compose**: Improved address book autocomplete to correctly handle commas within quoted names.
 - **Compose**: Names containing commas are now automatically quoted when selected from the autocomplete list.
 - **Compose**: Automatically strip trailing commas from `To`, `Cc`, and `Bcc` fields before sending an email.
