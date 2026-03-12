@@ -439,6 +439,14 @@ export class ImapService {
 
     private async ensureConnected(): Promise<void> {
         if (!this.client || !this.connected) {
+            if (this.account && this.password) {
+                try {
+                    await this.connect(this.account, this.password);
+                    return; // Reconnected successfully
+                } catch (e) {
+                    console.error('Auto-reconnect failed:', e);
+                }
+            }
             throw new Error('Not connected to IMAP server. Please refresh connection manually.');
         }
     }

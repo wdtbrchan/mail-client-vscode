@@ -1,5 +1,8 @@
 # Changelog
 
+## [ upcoming ]
+- **IMAP Service**: Added an automatic reconnection attempt when opening a message if the connection was lost.
+
 ## [0.15.1]
 - **Compose**: Improved address book autocomplete to correctly handle commas within quoted names.
 - **Compose**: Names containing commas are now automatically quoted when selected from the autocomplete list.

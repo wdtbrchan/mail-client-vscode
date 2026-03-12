@@ -22,7 +22,7 @@ A simple and efficient IMAP email client directly within your VS Code (or any ot
 - **Jira Integration:** Pair emails with Jira issues and post comments directly from the message detail view.
 - **Print Support:** Capability to print messages via the native OS prompt directly from the UI.
 - **Customizable Layout:** Choose between Side or Bottom panel for viewing message details in Split View.
-- **Connection Reliability:** Configurable keepalive mechanism using IMAP `NOOP` commands to prevent session timeouts.
+- **Connection Reliability:** Configurable keepalive mechanism using IMAP `NOOP` commands and automatic reconnection attempts to prevent and resolve session timeouts.
 
 ## Requirements
 
