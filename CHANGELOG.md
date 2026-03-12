@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.15.2]
 - **IMAP Service**: Added an automatic reconnection attempt when opening a message if the connection was lost.
 
 ## [0.15.1]
