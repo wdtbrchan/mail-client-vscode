@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.16.0]
 - **Message Detail**: Added support for displaying calendar invites (ICS files). The detail view now shows meeting summary, time, location, organizer, and attendees directly above the message body.
 
 ## [0.15.2]
