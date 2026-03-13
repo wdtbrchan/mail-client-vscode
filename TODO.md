@@ -26,6 +26,7 @@
 - [x] Limit Activity Bar unread count to Inbox messages only.
 - [x] Improved address book autocomplete (handling commas in quotes, auto-quoting names with commas).
 - [x] Automatically strip trailing commas from recipient fields before sending.
+- [x] Add support for displaying calendar invites (ICS).
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
 

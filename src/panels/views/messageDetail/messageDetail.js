@@ -3,6 +3,7 @@ const headersEl = document.getElementById('messageHeaders');
 const bodyEl = document.getElementById('messageBody');
 const actionBar = document.getElementById('actionBar');
 const loadingEl = document.getElementById('loadingIndicator');
+const calendarInviteSection = document.getElementById('calendarInviteSection');
 let currentMessage = null;
 let currentShowImages = false;
 let lastJiraSearchResultSummary = '';
@@ -338,7 +339,10 @@ function renderMessageView(msg, showImages = false) {
      }
      renderMessage(bodyEl, msg, showImages, '_main', false, true, warningEl);
      
-     // Extract headers + attachments from bodyEl and move to headersEl
+    // Render calendar invite if present
+    renderCalendarInvite(msg);
+
+    // Extract headers + attachments from bodyEl and move to headersEl
      headersEl.innerHTML = '';
      const headers = bodyEl.querySelector('.message-headers');
      const attachments = bodyEl.querySelector('.attachments');
@@ -431,6 +435,7 @@ window.addEventListener('message', (event) => {
         case 'loading':
             headersEl.innerHTML = '';
             bodyEl.innerHTML = '';
+            calendarInviteSection.classList.add('hidden');
             if (!isEmbedded) {
                 actionBar.classList.add('hidden');
             }
@@ -495,4 +500,101 @@ window.addEventListener('message', (event) => {
 
 function downloadAttachment(filename) {
     vscode.postMessage({ type: 'downloadAttachment', filename: filename });
+}
+
+// ---- Calendar Invite Logic ----
+
+function renderCalendarInvite(msg) {
+    if (!msg.calendarInvite || !msg.calendarInvite.uid) {
+        calendarInviteSection.classList.add('hidden');
+        return;
+    }
+
+    const invite = msg.calendarInvite;
+
+    // Method label
+    const methodEl = document.getElementById('calendarMethod');
+    const methodLabels = { REQUEST: 'Meeting Invitation', CANCEL: 'Meeting Cancelled', REPLY: 'Meeting Response', PUBLISH: 'Event' };
+    methodEl.textContent = methodLabels[invite.method] || invite.method || 'Calendar Event';
+
+    // Summary
+    const summaryEl = document.getElementById('calendarSummary');
+    summaryEl.textContent = invite.summary || '(no title)';
+
+    // Date/time
+    const startRow = document.getElementById('calendarStartRow');
+    const datetimeEl = document.getElementById('calendarDatetime');
+    if (invite.start) {
+        let dtStr = formatCalendarDate(invite.start);
+        if (invite.end) {
+            const endStr = formatCalendarDate(invite.end);
+            // Only show end date if different from start date
+            const startDay = invite.start.slice(0, 10);
+            const endDay = invite.end.slice(0, 10);
+            if (startDay === endDay) {
+                // Same day: show time range
+                const endTime = formatCalendarTime(invite.end);
+                if (endTime) dtStr += ' – ' + endTime;
+            } else {
+                dtStr += ' – ' + endStr;
+            }
+        }
+        datetimeEl.textContent = dtStr;
+        startRow.classList.remove('hidden');
+    } else {
+        startRow.classList.add('hidden');
+    }
+
+    // Location
+    const locationRow = document.getElementById('calendarLocationRow');
+    const locationEl = document.getElementById('calendarLocation');
+    if (invite.location) {
+        locationEl.textContent = invite.location;
+        locationRow.classList.remove('hidden');
+    } else {
+        locationRow.classList.add('hidden');
+    }
+
+    // Organizer
+    const organizerRow = document.getElementById('calendarOrganizerRow');
+    const organizerEl = document.getElementById('calendarOrganizer');
+    if (invite.organizer) {
+        organizerEl.textContent = invite.organizer;
+        organizerRow.classList.remove('hidden');
+    } else {
+        organizerRow.classList.add('hidden');
+    }
+
+    // Attendees
+    const attendeesRow = document.getElementById('calendarAttendeesRow');
+    const attendeesEl = document.getElementById('calendarAttendees');
+    if (invite.attendees && invite.attendees.length > 0) {
+        attendeesEl.textContent = invite.attendees.join(', ');
+        attendeesRow.classList.remove('hidden');
+    } else {
+        attendeesRow.classList.add('hidden');
+    }
+
+    calendarInviteSection.classList.remove('hidden');
+}
+
+function formatCalendarDate(iso) {
+    try {
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        // Date-only (no T)
+        if (!iso.includes('T')) {
+            return d.toLocaleDateString(userLocale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        return d.toLocaleString(userLocale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch { return iso; }
+}
+
+function formatCalendarTime(iso) {
+    try {
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        if (!iso.includes('T')) return '';
+        return d.toLocaleTimeString(userLocale, { hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
 }

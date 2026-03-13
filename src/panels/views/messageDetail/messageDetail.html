@@ -35,6 +35,36 @@
         </div>
     </div>
 
+    <div id="calendarInviteSection" class="hidden">
+        <div class="calendar-invite-card">
+            <div class="calendar-invite-header">
+                <span class="calendar-invite-icon">📅</span>
+                <div class="calendar-invite-title-area">
+                    <div class="calendar-invite-method" id="calendarMethod"></div>
+                    <div class="calendar-invite-summary" id="calendarSummary"></div>
+                </div>
+            </div>
+            <div class="calendar-invite-details">
+                <div class="calendar-detail-row hidden" id="calendarStartRow">
+                    <span class="calendar-detail-label">When:</span>
+                    <span class="calendar-detail-value" id="calendarDatetime"></span>
+                </div>
+                <div class="calendar-detail-row hidden" id="calendarLocationRow">
+                    <span class="calendar-detail-label">Where:</span>
+                    <span class="calendar-detail-value" id="calendarLocation"></span>
+                </div>
+                <div class="calendar-detail-row hidden" id="calendarOrganizerRow">
+                    <span class="calendar-detail-label">Organizer:</span>
+                    <span class="calendar-detail-value" id="calendarOrganizer"></span>
+                </div>
+                <div class="calendar-detail-row hidden" id="calendarAttendeesRow">
+                    <span class="calendar-detail-label">Attendees:</span>
+                    <span class="calendar-detail-value" id="calendarAttendees"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="messageBody"></div>
 
     <div id="loadingIndicator" class="loading"><span class="loader"></span>Loading message...</div>

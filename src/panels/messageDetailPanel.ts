@@ -271,7 +271,7 @@ export class MessageDetailPanel {
                     pairedJiraIssue: pairedJiraIssue,
                     pairedJiraIssueSummary: pairedJiraIssueSummary,
                     hasJira: !!this.accountManager.getAccount(this.accountId)?.jiraApiKey,
-                    contacts: contacts
+                    contacts: contacts,
                 },
             });
 

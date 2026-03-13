@@ -1,5 +1,8 @@
 # Changelog
 
+## [ upcoming ]
+- **Message Detail**: Added support for displaying calendar invites (ICS files). The detail view now shows meeting summary, time, location, organizer, and attendees directly above the message body.
+
 ## [0.15.2]
 - **IMAP Service**: Added an automatic reconnection attempt when opening a message if the connection was lost.
 
@@ -189,6 +192,7 @@
 ## [0.4.2]
 
 ### Added
+- **Calendar Support**: View calendar invite (ICS) details directly in the email, including time, location, and attendees.
 - **Connection Reliability**: Implemented automatic IMAP reconnection and robust connection state monitoring to prevent "Connection not available" errors.
 - **Forced Refresh**: The refresh button in Mail Explorer now forces a complete reconnection to resolve any stuck connections.
 - **Loading Indicators**: Integrated visual loading spinners to improve user feedback.

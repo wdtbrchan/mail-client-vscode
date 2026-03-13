@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { IMailAccount } from '../types/account';
 import { IMailFolder } from '../types/folder';
 import { IMailMessage, IMailMessageDetail, IMailAddress, IMailAttachment } from '../types/message';
+import { parseIcs } from '../utils/icsParser';
 
 /**
  * Handles IMAP communication for a single mail account.
@@ -250,6 +251,22 @@ export class ImapService {
                 }
             }
 
+            // Parse ICS calendar invite if present
+            const icsAttachment = parsed.attachments?.find(att =>
+                att.contentType === 'text/calendar' ||
+                att.contentType === 'application/ics' ||
+                att.contentType === 'application/octet-stream' && (att.filename?.endsWith('.ics') ?? false)
+            );
+            let calendarInvite = undefined;
+            if (icsAttachment) {
+                try {
+                    const icsText = icsAttachment.content.toString('utf8');
+                    calendarInvite = parseIcs(icsText);
+                } catch (e) {
+                    console.error('Failed to parse ICS attachment:', e);
+                }
+            }
+
             return {
                 uid: uid,
                 date: parsed.date || new Date(),
@@ -272,6 +289,7 @@ export class ImapService {
                 })),
                 spfValid,
                 dkimValid,
+                calendarInvite,
             };
         } finally {
             lock.release();

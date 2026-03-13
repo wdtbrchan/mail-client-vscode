@@ -23,6 +23,30 @@ export interface IMailAttachment {
 }
 
 /**
+ * Represents a parsed calendar invite from an ICS attachment.
+ */
+export interface ICalendarInvite {
+    /** Unique identifier of the calendar event */
+    uid: string;
+    /** Calendar method: REQUEST, CANCEL, REPLY, etc. */
+    method?: string;
+    /** Event summary / title */
+    summary?: string;
+    /** Event start date/time (ISO 8601 string) */
+    start?: string;
+    /** Event end date/time (ISO 8601 string) */
+    end?: string;
+    /** Event location */
+    location?: string;
+    /** Organizer email / CN */
+    organizer?: string;
+    /** List of attendee emails / CNs */
+    attendees?: string[];
+    /** Event description */
+    description?: string;
+}
+
+/**
  * Represents a mail message header (used in message list).
  */
 export interface IMailMessage {
@@ -64,4 +88,6 @@ export interface IMailMessageDetail extends IMailMessage {
     spfValid?: boolean;
     /** Whether DKIM check passed */
     dkimValid?: boolean;
+    /** Parsed calendar invite from ICS attachment (if present) */
+    calendarInvite?: ICalendarInvite;
 }
