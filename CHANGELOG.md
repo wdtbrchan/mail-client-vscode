@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.16.3]
 - **Message List**: The message list now auto-refreshes on each timer tick alongside the folder tree.
 - **IMAP**: Fixed reconnect spam — after a failed reconnect, further attempts are deferred to the next auto-refresh tick.
 
