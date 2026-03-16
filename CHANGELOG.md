@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.16.2]
 - **Codebase**: Refactored `accountSettingsPanel.ts` — extracted inline HTML, CSS, and JS into separate files under `src/panels/views/accountSettings/`.
 
 ## [0.16.1]
