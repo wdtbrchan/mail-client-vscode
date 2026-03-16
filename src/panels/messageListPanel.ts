@@ -121,6 +121,15 @@ export class MessageListPanel {
     }
 
     /**
+     * Refreshes all open message list panels (used by auto-refresh timer).
+     */
+    static refreshAll(): void {
+        for (const panel of MessageListPanel.panels.values()) {
+            panel.loadMessages();
+        }
+    }
+
+    /**
      * Refreshes the message list for a specific folder (if a panel is open for it).
      */
     static refreshFolder(accountId: string, folderPath: string, activeUid?: number, autoOpen?: boolean): void {

@@ -94,7 +94,20 @@ export class MailExplorerProvider implements vscode.TreeDataProvider<MailTreeIte
         this.stopAutoRefresh();
         const interval = vscode.workspace.getConfiguration('mailClient').get<number>('refreshInterval', 60);
         if (interval > 0) {
-            this.refreshTimer = setInterval(() => this.refresh(), interval * 1000);
+            this.refreshTimer = setInterval(async () => {
+                // Allow one reconnect attempt per tick by clearing the error flag.
+                // If reconnect fails, hasConnectionError is set again and the next
+                // attempt is deferred to the following tick.
+                for (const service of this.imapServices.values()) {
+                    if (service.hasConnectionError) {
+                        service.hasConnectionError = false;
+                        service.lastConnectionError = undefined;
+                    }
+                }
+                await this.refresh();
+                const { MessageListPanel } = await import('../panels/messageListPanel');
+                MessageListPanel.refreshAll();
+            }, interval * 1000);
         }
     }
 

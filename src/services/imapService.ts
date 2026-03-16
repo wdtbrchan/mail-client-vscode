@@ -457,7 +457,10 @@ export class ImapService {
 
     private async ensureConnected(): Promise<void> {
         if (!this.client || !this.connected) {
-            if (this.account && this.password) {
+            // Only attempt reconnect if no prior error this refresh cycle.
+            // hasConnectionError is cleared by the auto-refresh timer on each tick,
+            // so a failed reconnect won't be retried until the next refresh.
+            if (!this.hasConnectionError && this.account && this.password) {
                 try {
                     await this.connect(this.account, this.password);
                     return; // Reconnected successfully

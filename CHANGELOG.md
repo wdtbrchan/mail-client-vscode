@@ -1,5 +1,9 @@
 # Changelog
 
+## [ upcoming ]
+- **Message List**: The message list now auto-refreshes on each timer tick alongside the folder tree.
+- **IMAP**: Fixed reconnect spam — after a failed reconnect, further attempts are deferred to the next auto-refresh tick.
+
 ## [0.16.2]
 - **Codebase**: Refactored `accountSettingsPanel.ts` — extracted inline HTML, CSS, and JS into separate files under `src/panels/views/accountSettings/`.
 
