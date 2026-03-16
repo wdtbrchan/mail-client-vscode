@@ -341,6 +341,9 @@ export class MessageDetailPanel {
             case 'jiraComment':
                 this.postJiraComment(message.issueKey, message.comment);
                 break;
+            case 'jiraOpen':
+                this.openJiraIssue(message.issueKey);
+                break;
             case 'addContact':
                 this.addContact(message.contact);
                 break;
@@ -375,6 +378,16 @@ export class MessageDetailPanel {
                 contacts: newContacts
             });
         }
+    }
+
+    private openJiraIssue(issueKey: string): void {
+        const account = this.accountManager.getAccount(this.accountId);
+        if (!account?.jiraUrl) {
+            vscode.window.showErrorMessage('Jira connection not configured.');
+            return;
+        }
+        const url = `${account.jiraUrl.trim().replace(/\/$/, '')}/browse/${encodeURIComponent(issueKey)}`;
+        vscode.env.openExternal(vscode.Uri.parse(url));
     }
 
     private async pairJiraIssue(subject: string, issueKey: string, summary?: string): Promise<void> {

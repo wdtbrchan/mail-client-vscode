@@ -90,6 +90,7 @@ const jiraSearchFallback = document.getElementById('jiraSearchFallback');
 const jiraSearchQueryInput = document.getElementById('jiraSearchQueryInput');
 
 const btnJiraCommentStart = document.getElementById('btnJiraCommentStart');
+const btnJiraOpen = document.getElementById('btnJiraOpen');
 const jiraCommentSection = document.getElementById('jiraCommentSection');
 const jiraSearchSection = document.getElementById('jiraSearchSection');
 const jiraCommentEditor = document.getElementById('jiraCommentEditor');
@@ -100,8 +101,10 @@ const updateCommentButtonVisibility = () => {
      const isPaired = currentMessage && currentMessage.pairedJiraIssue && currentMessage.pairedJiraIssue === val;
      if (isPaired) {
          btnJiraCommentStart.classList.remove('hidden');
+         btnJiraOpen.classList.remove('hidden');
      } else {
          btnJiraCommentStart.classList.add('hidden');
+         btnJiraOpen.classList.add('hidden');
      }
 };
 
@@ -130,6 +133,13 @@ document.getElementById('btnJiraPair').addEventListener('click', () => {
 
 document.getElementById('btnJiraCloseModal').addEventListener('click', () => {
     jiraModal.classList.add('hidden');
+});
+
+// Open Jira issue in browser
+document.getElementById('btnJiraOpen').addEventListener('click', () => {
+    const issueKey = jiraInput.value.trim();
+    if (!issueKey) return;
+    vscode.postMessage({ type: 'jiraOpen', issueKey: issueKey });
 });
 
 // Comment functionality
