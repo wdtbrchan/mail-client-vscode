@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.16.1]
 - **Jira**: Added "Open" button to open the paired Jira issue directly in the browser. Widened the Jira modal dialog slightly for better fit.
 
 ## [0.16.0]
