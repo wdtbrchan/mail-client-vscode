@@ -1,5 +1,8 @@
 # Changelog
 
+## [ upcoming ]
+- **Codebase**: Refactored `accountSettingsPanel.ts` — extracted inline HTML, CSS, and JS into separate files under `src/panels/views/accountSettings/`.
+
 ## [0.16.1]
 - **Jira**: Added "Open" button to open the paired Jira issue directly in the browser. Widened the Jira modal dialog slightly for better fit.
 
