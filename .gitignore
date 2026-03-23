@@ -3,6 +3,7 @@ dist/
 *.vsix
 .vscode-test/
 .agents/
+.claude/
 .env
 .vscode/
 .vscodeignore
