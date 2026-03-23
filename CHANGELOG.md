@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.16.4]
+- **IMAP**: Message detail and message list now automatically attempt to reconnect if the connection is lost when loading. If reconnection fails, an error is shown once without retrying.
+
 ## [0.16.3]
 - **Message List**: The message list now auto-refreshes on each timer tick alongside the folder tree.
 - **IMAP**: Fixed reconnect spam — after a failed reconnect, further attempts are deferred to the next auto-refresh tick.
