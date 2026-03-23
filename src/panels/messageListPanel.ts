@@ -170,14 +170,25 @@ export class MessageListPanel {
     }
 
     private async loadMessages(): Promise<void> {
-        try {
-            this.panel.webview.postMessage({ type: 'loading' });
+        this.panel.webview.postMessage({ type: 'loading' });
 
+        const service = this.explorerProvider.getImapService(this.accountId);
+
+        if (!service.connected) {
+            try {
+                await service.forceReconnect();
+            } catch (e) {
+                const errorMsg = e instanceof Error ? e.message : 'Reconnection failed';
+                this.panel.webview.postMessage({ type: 'error', message: `Cannot connect to IMAP server: ${errorMsg}` });
+                return;
+            }
+        }
+
+        try {
             const config = vscode.workspace.getConfiguration('mailClient');
             const limit = config.get<number>('messagesPerPage', 50);
             const offset = (this.currentPage - 1) * limit;
 
-            const service = this.explorerProvider.getImapService(this.accountId);
             const result = await service.getMessages(this.folderPath, limit, offset, this.currentSearchQuery);
 
             this.currentMessages = result.messages;

@@ -455,6 +455,20 @@ export class ImapService {
         }
     }
 
+    /**
+     * Forces a reconnect attempt regardless of hasConnectionError state.
+     * Use this for user-initiated actions (opening a message, loading a folder).
+     * Throws if credentials are unavailable or reconnect fails.
+     */
+    async forceReconnect(): Promise<void> {
+        if (!this.account || !this.password) {
+            throw new Error('No credentials available for reconnection.');
+        }
+        this.hasConnectionError = false;
+        this.lastConnectionError = undefined;
+        await this.connect(this.account, this.password);
+    }
+
     private async ensureConnected(): Promise<void> {
         if (!this.client || !this.connected) {
             // Only attempt reconnect if no prior error this refresh cycle.

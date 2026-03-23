@@ -210,11 +210,22 @@ export class MessageDetailPanel {
     }
 
     private async loadMessage(): Promise<void> {
-        try {
-            this.panel.webview.html = this.getHtmlContent();
-            this.panel.webview.postMessage({ type: 'loading' });
+        this.panel.webview.html = this.getHtmlContent();
+        this.panel.webview.postMessage({ type: 'loading' });
 
-            const service = this.explorerProvider.getImapService(this.accountId);
+        const service = this.explorerProvider.getImapService(this.accountId);
+
+        if (!service.connected) {
+            try {
+                await service.forceReconnect();
+            } catch (e) {
+                const errorMsg = e instanceof Error ? e.message : 'Reconnection failed';
+                this.panel.webview.postMessage({ type: 'error', message: `Cannot connect to IMAP server: ${errorMsg}` });
+                return;
+            }
+        }
+
+        try {
             const message = await service.getMessage(this.folderPath, this.uid);
 
             this.panel.title = message.subject || '(no subject)';
