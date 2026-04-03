@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.17.0]
 - **Message Detail**: Added "View Source" feature for displaying the raw MIME source of an email.
 - **Compose**: Improved "Reply All" behavior by omitting routing email addresses (e.g., from `Resent-From`, `Delivered-To` headers) from the recipient list.
 - **Compose**: Original recipients in the `To` field are now correctly moved to the `Cc` field when using "Reply All" (except for the original sender).
