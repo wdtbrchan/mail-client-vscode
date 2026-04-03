@@ -191,18 +191,30 @@ export class ComposePanel {
         let cc = '';
         let subject = msg.subject || '';
 
+        const excludeAddresses = new Set<string>();
+        this.accountManager.getAccounts().forEach(a => excludeAddresses.add(a.username.toLowerCase()));
+        if (msg.routedAddresses) {
+            msg.routedAddresses.forEach(a => excludeAddresses.add(a.toLowerCase()));
+        }
+        const isExcluded = (addr: string) => excludeAddresses.has(addr.toLowerCase());
+
         if (mode === 'reply') {
             to = msg.from.address;
             subject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
         } else if (mode === 'replyAll') {
             to = msg.from.address;
-            const allTo = msg.to
-                .filter(a => a.address !== this.options.account.username)
+            
+            const allCc = (msg.cc || [])
+                .filter(a => !isExcluded(a.address))
                 .map(a => a.address);
-            if (allTo.length > 0) {
-                to += ', ' + allTo.join(', ');
-            }
-            cc = (msg.cc || []).map(a => a.address).join(', ');
+
+            const toRecipientsInCc = msg.to
+                .filter(a => !isExcluded(a.address) && a.address.toLowerCase() !== msg.from.address.toLowerCase())
+                .map(a => a.address);
+
+            const combinedCc = [...new Set([...allCc, ...toRecipientsInCc])];
+            
+            cc = combinedCc.join(', ');
             subject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
         } else if (mode === 'forward') {
             subject = subject.startsWith('Fwd:') ? subject : `Fwd: ${subject}`;

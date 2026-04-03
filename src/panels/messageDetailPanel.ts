@@ -358,6 +358,9 @@ export class MessageDetailPanel {
             case 'addContact':
                 this.addContact(message.contact);
                 break;
+            case 'viewSource':
+                this.viewSource();
+                break;
             case 'back':
                 this.dispose();
                 break;
@@ -372,6 +375,22 @@ export class MessageDetailPanel {
             await config.update('imageWhitelist', newWhitelist, vscode.ConfigurationTarget.Global);
             vscode.window.showInformationMessage(`Sender ${sender} whitelisted.`);
             this.loadMessage(); // Reload message to show images
+        }
+    }
+
+    private async viewSource(): Promise<void> {
+        try {
+            const service = this.explorerProvider.getImapService(this.accountId);
+            const source = await service.getMessageSource(this.folderPath, this.uid);
+            
+            const document = await vscode.workspace.openTextDocument({
+                content: source,
+                language: 'email'
+            });
+            await vscode.window.showTextDocument(document, vscode.ViewColumn.Beside);
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Failed to retrieve message source';
+            vscode.window.showErrorMessage(`View source failed: ${errorMsg}`);
         }
     }
 

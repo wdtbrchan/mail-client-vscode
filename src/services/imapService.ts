@@ -197,6 +197,30 @@ export class ImapService {
     }
 
     /**
+     * Fetches the raw message source.
+     * @param folderPath - IMAP folder path
+     * @param uid - Message UID
+     */
+    async getMessageSource(folderPath: string, uid: number): Promise<string> {
+        await this.ensureConnected();
+
+        const lock = await this.client!.getMailboxLock(folderPath);
+        try {
+            const downloadResult = await this.client!.download(String(uid), undefined, { uid: true });
+            if (!downloadResult) {
+                throw new Error(`Failed to download message source UID ${uid}`);
+            }
+            const chunks: Buffer[] = [];
+            for await (const chunk of downloadResult.content) {
+                chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+            }
+            return Buffer.concat(chunks).toString('utf-8');
+        } finally {
+            lock.release();
+        }
+    }
+
+    /**
      * Fetches a complete message including body content.
      * @param folderPath - IMAP folder path
      * @param uid - Message UID
@@ -251,6 +275,30 @@ export class ImapService {
                 }
             }
 
+            const routedAddresses: string[] = [];
+            const extractRoutingAddress = (headerName: string) => {
+                const val = parsed.headers.get(headerName) as any;
+                if (!val) return;
+                const processStr = (str: string) => {
+                    const match = str.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+)/);
+                    if (match && match[1]) {
+                        routedAddresses.push(match[1].toLowerCase());
+                    }
+                };
+                if (typeof val === 'string') {
+                    processStr(val);
+                } else if (Array.isArray(val)) {
+                    val.forEach(v => processStr(typeof v === 'string' ? v : (v && v.value ? v.value : '')));
+                } else if (val && val.value) {
+                    processStr(val.value);
+                }
+            };
+            extractRoutingAddress('delivered-to');
+            extractRoutingAddress('x-original-to');
+            extractRoutingAddress('x-forwarded-to');
+            extractRoutingAddress('envelope-to');
+            extractRoutingAddress('resent-from');
+
             // Parse ICS calendar invite if present
             const icsAttachment = parsed.attachments?.find(att =>
                 att.contentType === 'text/calendar' ||
@@ -290,6 +338,7 @@ export class ImapService {
                 spfValid,
                 dkimValid,
                 calendarInvite,
+                routedAddresses,
             };
         } finally {
             lock.release();

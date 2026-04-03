@@ -72,6 +72,14 @@ document.getElementById('btnNewsletters').addEventListener('click', () => vscode
 document.getElementById('btnTrash').addEventListener('click', () => vscode.postMessage({ type: 'trash' }));
 document.getElementById('btnDelete').addEventListener('click', () => vscode.postMessage({ type: 'delete' }));
 
+const viewSourceLink = document.getElementById('linkViewSource');
+if (viewSourceLink) {
+    viewSourceLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        vscode.postMessage({ type: 'viewSource' });
+    });
+}
+
 customFolders.forEach((cf, i) => {
     const btn = document.getElementById('btnCustom_' + i);
     if (btn) {

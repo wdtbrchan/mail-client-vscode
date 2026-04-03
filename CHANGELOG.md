@@ -1,5 +1,10 @@
 # Changelog
 
+## [ upcoming ]
+- **Message Detail**: Added "View Source" feature for displaying the raw MIME source of an email.
+- **Compose**: Improved "Reply All" behavior by omitting routing email addresses (e.g., from `Resent-From`, `Delivered-To` headers) from the recipient list.
+- **Compose**: Original recipients in the `To` field are now correctly moved to the `Cc` field when using "Reply All" (except for the original sender).
+
 ## [0.16.4]
 - **IMAP**: Message detail and message list now automatically attempt to reconnect if the connection is lost when loading. If reconnection fails, an error is shown once without retrying.
 

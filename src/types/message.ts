@@ -90,4 +90,6 @@ export interface IMailMessageDetail extends IMailMessage {
     dkimValid?: boolean;
     /** Parsed calendar invite from ICS attachment (if present) */
     calendarInvite?: ICalendarInvite;
+    /** Addresses from routing headers like Delivered-To, X-Original-To, Envelope-To, X-Forwarded-To */
+    routedAddresses?: string[];
 }
