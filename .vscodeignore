@@ -1,0 +1,14 @@
+.vscode/**
+src/**
+node_modules/**
+.agents/**
+.claude/**
+tsconfig.json
+esbuild.js
+**/*.map
+**/*.ts
+*.vsix
+.gitignore
+TODO.md
+build_extension.ps1
+mail-client-vscode.code-workspace

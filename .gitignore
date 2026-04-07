@@ -6,5 +6,4 @@ dist/
 .claude/
 .env
 .vscode/
-.vscodeignore
 *.code-workspace
