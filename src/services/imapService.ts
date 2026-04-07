@@ -279,18 +279,35 @@ export class ImapService {
             const extractRoutingAddress = (headerName: string) => {
                 const val = parsed.headers.get(headerName) as any;
                 if (!val) return;
-                const processStr = (str: string) => {
+                const processStr = (str: any) => {
+                    if (typeof str !== 'string') return;
                     const match = str.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+)/);
                     if (match && match[1]) {
                         routedAddresses.push(match[1].toLowerCase());
                     }
                 };
-                if (typeof val === 'string') {
-                    processStr(val);
-                } else if (Array.isArray(val)) {
-                    val.forEach(v => processStr(typeof v === 'string' ? v : (v && v.value ? v.value : '')));
-                } else if (val && val.value) {
-                    processStr(val.value);
+                const processObj = (v: any) => {
+                    if (typeof v === 'string') {
+                        processStr(v);
+                    } else if (v && v.value) {
+                        if (Array.isArray(v.value)) {
+                            v.value.forEach((item: any) => {
+                                if (item && typeof item.address === 'string') {
+                                    processStr(item.address);
+                                }
+                            });
+                        } else {
+                            processStr(v.value);
+                        }
+                    } else if (v && typeof v.address === 'string') {
+                        processStr(v.address);
+                    }
+                };
+
+                if (Array.isArray(val)) {
+                    val.forEach(processObj);
+                } else {
+                    processObj(val);
                 }
             };
             extractRoutingAddress('delivered-to');

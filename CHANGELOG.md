@@ -1,5 +1,8 @@
 # Changelog
 
+## [ upcoming ]
+- **Message Parsing**: Fixed `str.match is not a function` error that occasionally prevented message details from opening due to complex routing headers formats.
+
 ## [0.17.0]
 - **Message Detail**: Added "View Source" feature for displaying the raw MIME source of an email.
 - **Compose**: Improved "Reply All" behavior by omitting routing email addresses (e.g., from `Resent-From`, `Delivered-To` headers) from the recipient list.
