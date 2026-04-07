@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.17.1]
 - **Message Parsing**: Fixed `str.match is not a function` error that occasionally prevented message details from opening due to complex routing headers formats.
 - **Webview Security**: Fixed Content Security Policy (CSP) violations caused by the presence of a nonce in `style-src` while still using inline styles. Inline styles are now permitted across all panels while maintaining session nonces for scripts.
 
