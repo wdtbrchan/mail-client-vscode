@@ -43,6 +43,7 @@
 - [x] Added unread message count to folder tab titles (e.g., INBOX (3)).
 - [ ] Add a draft indicator for messages.
 - [ ] Drag & Drop support (e.g., moving messages to folders).
+- [x] Resolved Webview CSP violations (style-src 'unsafe-inline' and nonce-based policy).
 - [ ] Dark/Light mode fully integrated with VS Code themes.
 
 ## Others
