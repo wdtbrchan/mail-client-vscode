@@ -3,6 +3,7 @@ body.editor-mode-markdown .only-wysiwyg { display: none !important; }
 body.editor-mode-wysiwyg .only-markdown { display: none !important; }
 
 body:not(.app-mode-reply):not(.app-mode-replyAll):not(.app-mode-forward) .only-reply { display: none !important; }
+body:not(.original-inbox) #btnSendArchive { display: none !important; }
 
 body.editor-mode-wysiwyg .mode-btn-wysiwyg {
     background: var(--vscode-button-background);

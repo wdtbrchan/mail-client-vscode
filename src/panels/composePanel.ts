@@ -643,6 +643,8 @@ export class ComposePanel {
         const senderName = this.escapeHtml(this.options.account.senderName || this.options.account.name);
         const senderEmail = this.escapeHtml(this.options.account.smtpUsername || this.options.account.username);
 
+        const originalFolderIsInbox = (this.options.originalFolderPath || '').toUpperCase() === 'INBOX';
+
         const composeConfig = {
             isWysiwyg: this.isWysiwyg,
             mode: this.options.mode,
@@ -656,6 +658,7 @@ export class ComposePanel {
             .replace('/* {{CSS_INJECT}} */', composeCss)
             .replace('{{MODE}}', this.options.mode)
             .replace('{{EDITOR_MODE}}', this.isWysiwyg ? 'wysiwyg' : 'markdown')
+            .replace('{{INBOX_CLASS}}', originalFolderIsInbox ? ' original-inbox' : '')
             .replace('{{SENDER_NAME}}', senderName)
             .replace('{{SENDER_EMAIL}}', senderEmail)
             .replace('{{INITIAL_WYSIWYG_HTML}}', initialWysiwygHtml)
