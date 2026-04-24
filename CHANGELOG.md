@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.18.0]
 - **Compose**: "Send and Archive" button is now only shown when replying/forwarding from the Inbox; other folders show only "Send".
 
 ## [0.17.2]
