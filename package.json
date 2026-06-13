@@ -21,7 +21,9 @@
     "email",
     "imap"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onUri"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -124,6 +126,11 @@
         "title": "New Message",
         "category": "Mail Client",
         "icon": "$(edit)"
+      },
+      {
+        "command": "mailClient.openByMessageId",
+        "title": "Open Message by Message-ID",
+        "category": "Mail Client"
       }
     ],
     "configuration": {
@@ -245,6 +252,22 @@
           },
           "default": [],
           "description": "List of email contacts. Format: 'Name <email@domain.com>' or 'email@domain.com'."
+        },
+        "mailClient.linkScheme": {
+          "type": "string",
+          "default": "",
+          "description": "URI scheme used for 'Copy message link' (e.g. 'vscode', 'cursor', 'vscodium', 'vscode-insiders'). Leave empty to auto-detect the running editor. Set this only if you keep notes across different editors and want links pinned to a specific one."
+        },
+        "mailClient.captureFile": {
+          "type": "string",
+          "default": "",
+          "description": "Target file for the 'Capture to file' action. Absolute path, or relative to the first workspace folder. If empty, you are prompted to pick a file on first capture."
+        },
+        "mailClient.captureTemplate": {
+          "type": "string",
+          "editPresentation": "multilineText",
+          "default": "* TODO {subject}\n  :PROPERTIES:\n  :MSGID: {msgid}\n  :FROM: {from}\n  :DATE: {date}\n  :LINK: {link}\n  :END:",
+          "description": "Template appended to the capture file. Placeholders: {subject}, {msgid}, {from}, {date}, {link} (vscode:// open link), {body} (first 200 chars of the plain-text body)."
         }
       }
     },

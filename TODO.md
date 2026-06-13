@@ -27,6 +27,7 @@
 - [x] Improved address book autocomplete (handling commas in quotes, auto-quoting names with commas).
 - [x] Automatically strip trailing commas from recipient fields before sending.
 - [x] Add support for displaying calendar invites (ICS).
+- [x] Cross-plugin integration: open email by Message-ID (URI handler + command), copy message link, capture to file (org-mode TODO).
 - [ ] Message filtering and sorting.
 - [ ] Offline mode (message caching).
 

@@ -118,6 +118,32 @@ export function registerMessageCommands(
             );
         }),
 
+        vscode.commands.registerCommand('mailClient.openByMessageId', async (args: string | { msgid: string }) => {
+            const msgid = typeof args === 'string' ? args : args?.msgid;
+            if (!msgid) {
+                vscode.window.showWarningMessage('No Message-ID provided.');
+                return;
+            }
+
+            const found = await vscode.window.withProgress(
+                { location: vscode.ProgressLocation.Notification, title: `Searching for message ${msgid}...` },
+                () => explorerProvider.findMessageByMessageId(msgid),
+            );
+
+            if (!found) {
+                vscode.window.showWarningMessage(`No message found with Message-ID ${msgid}.`);
+                return;
+            }
+
+            MessageDetailPanel.show(
+                explorerProvider,
+                accountManager,
+                found.accountId,
+                found.folderPath,
+                found.uid,
+            );
+        }),
+
         vscode.commands.registerCommand('mailClient.compose', (args?: { accountId: string }) => {
             openCompose('compose', args as any);
         }),

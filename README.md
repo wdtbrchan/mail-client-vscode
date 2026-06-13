@@ -20,6 +20,7 @@ A simple and efficient IMAP email client directly within your VS Code (or any ot
 - **Organize Messages:** Archive, Spam, Trash, and Inbox actions with context-aware buttons.
 - **Address Book:** Manage your email contacts and use autocomplete in the `To`, `Cc`, and `Bcc` fields. Add unknown contacts easily with a single click.
 - **Jira Integration:** Pair emails with Jira issues, post comments, and open issues directly in the browser from the message detail view.
+- **Notes & Org Integration:** Copy a stable link to an email or capture it as a task (org-mode TODO by default) into a configurable file. Links reopen the exact email later via a URI handler — works with org-mode link extensions and across editors (Cursor, VSCodium, …).
 - **Print Support:** Capability to print messages via the native OS prompt directly from the UI.
 - **Customizable Layout:** Choose between Side or Bottom panel for viewing message details in Split View.
 - **Calendar Support:** View calendar invite (ICS) details directly in the email, including time, location, and attendees.

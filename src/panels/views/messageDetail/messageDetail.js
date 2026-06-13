@@ -65,6 +65,8 @@ document.getElementById('btnReplyAll').addEventListener('click', () => {
 document.getElementById('btnForward').addEventListener('click', () => {
     vscode.postMessage({ type: 'forward', showImages: currentShowImages });
 });
+document.getElementById('btnCopyLink').addEventListener('click', () => vscode.postMessage({ type: 'copyLink' }));
+document.getElementById('btnCapture').addEventListener('click', () => vscode.postMessage({ type: 'capture' }));
 document.getElementById('btnInbox').addEventListener('click', () => vscode.postMessage({ type: 'inbox' }));
 document.getElementById('btnArchive').addEventListener('click', () => vscode.postMessage({ type: 'archive' }));
 document.getElementById('btnSpam').addEventListener('click', () => vscode.postMessage({ type: 'spam' }));

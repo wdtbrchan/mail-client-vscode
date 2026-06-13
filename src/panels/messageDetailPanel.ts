@@ -20,11 +20,21 @@ import messageDetailJs from './views/messageDetail/messageDetail.js';
  */
 export class MessageDetailPanel {
     public static readonly viewType = 'mailClient.messageDetail';
+    /** Fallback org-mode TODO template used when none is configured. */
+    private static readonly DEFAULT_CAPTURE_TEMPLATE =
+        '* TODO {subject}\n' +
+        '  :PROPERTIES:\n' +
+        '  :MSGID: {msgid}\n' +
+        '  :FROM: {from}\n' +
+        '  :DATE: {date}\n' +
+        '  :LINK: {link}\n' +
+        '  :END:';
     private static panels = new Map<string, MessageDetailPanel>();
     private static splitPanel: MessageDetailPanel | undefined;
 
     private readonly panel: vscode.WebviewPanel;
     private disposables: vscode.Disposable[] = [];
+    private currentMessage?: IMailMessageDetail;
 
     private constructor(
         panel: vscode.WebviewPanel,
@@ -227,6 +237,7 @@ export class MessageDetailPanel {
 
         try {
             const message = await service.getMessage(this.folderPath, this.uid);
+            this.currentMessage = message;
 
             this.panel.title = message.subject || '(no subject)';
 
@@ -355,6 +366,12 @@ export class MessageDetailPanel {
             case 'jiraOpen':
                 this.openJiraIssue(message.issueKey);
                 break;
+            case 'copyLink':
+                this.copyMessageLink();
+                break;
+            case 'capture':
+                this.captureToFile();
+                break;
             case 'addContact':
                 this.addContact(message.contact);
                 break;
@@ -418,6 +435,118 @@ export class MessageDetailPanel {
         }
         const url = `${account.jiraUrl.trim().replace(/\/$/, '')}/browse/${encodeURIComponent(issueKey)}`;
         vscode.env.openExternal(vscode.Uri.parse(url));
+    }
+
+    /**
+     * Builds an editor URI link that opens this message by its Message-ID.
+     * The scheme defaults to the running editor (vscode.env.uriScheme), so it
+     * works in forks (Cursor, VSCodium, Insiders, ...) without configuration.
+     * A non-empty `mailClient.linkScheme` setting overrides the auto-detection.
+     */
+    private buildMessageLink(messageId: string): string {
+        const id = messageId.trim().replace(/^<|>$/g, '');
+        const configured = vscode.workspace.getConfiguration('mailClient').get<string>('linkScheme', '').trim();
+        const scheme = configured || vscode.env.uriScheme;
+        return `${scheme}://wdtbrchan.mail-client-vscode/open?msgid=${encodeURIComponent(id)}`;
+    }
+
+    /**
+     * Copies a stable vscode:// link to this message to the clipboard.
+     * The link can be pasted into notes (e.g. org-mode) to reopen the email later.
+     */
+    private async copyMessageLink(): Promise<void> {
+        const messageId = this.currentMessage?.messageId;
+        if (!messageId) {
+            vscode.window.showWarningMessage('This message has no Message-ID; cannot create a link.');
+            return;
+        }
+        await vscode.env.clipboard.writeText(this.buildMessageLink(messageId));
+        vscode.window.showInformationMessage('Message link copied to clipboard.');
+    }
+
+    /**
+     * Appends a templated entry (e.g. an org-mode TODO) referencing this message
+     * to a user-configured capture file. Prompts for the file on first use.
+     */
+    private async captureToFile(): Promise<void> {
+        const message = this.currentMessage;
+        if (!message) {
+            return;
+        }
+
+        const config = vscode.workspace.getConfiguration('mailClient');
+        let captureFile = config.get<string>('captureFile', '').trim();
+
+        if (!captureFile) {
+            const picked = await vscode.window.showSaveDialog({
+                title: 'Select capture file',
+                saveLabel: 'Use this file',
+                filters: { 'Org / Markdown': ['org', 'md', 'txt'] },
+            });
+            if (!picked) {
+                return;
+            }
+            captureFile = picked.fsPath;
+            await config.update('captureFile', captureFile, vscode.ConfigurationTarget.Global);
+        }
+
+        // Resolve relative paths against the first workspace folder.
+        let targetUri: vscode.Uri;
+        if (path.isAbsolute(captureFile)) {
+            targetUri = vscode.Uri.file(captureFile);
+        } else {
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri;
+            if (!root) {
+                vscode.window.showErrorMessage('Capture file path is relative but no workspace folder is open.');
+                return;
+            }
+            targetUri = vscode.Uri.joinPath(root, captureFile);
+        }
+
+        const messageId = (message.messageId || '').replace(/^<|>$/g, '');
+        const template = config.get<string>('captureTemplate', '') || MessageDetailPanel.DEFAULT_CAPTURE_TEMPLATE;
+        const locale = config.get<string>('locale') || undefined;
+        const fromDisplay = message.from.name
+            ? `${message.from.name} <${message.from.address}>`
+            : message.from.address;
+        const bodyPreview = (message.text || '')
+            .replace(/\r?\n/g, ' ')
+            .trim()
+            .slice(0, 200);
+
+        const entry = template
+            .replace(/\{subject\}/g, message.subject || '(no subject)')
+            .replace(/\{msgid\}/g, messageId)
+            .replace(/\{from\}/g, fromDisplay)
+            .replace(/\{date\}/g, message.date.toLocaleString(locale))
+            .replace(/\{link\}/g, messageId ? this.buildMessageLink(messageId) : '')
+            .replace(/\{body\}/g, bodyPreview);
+
+        try {
+            let existing = '';
+            try {
+                const bytes = await vscode.workspace.fs.readFile(targetUri);
+                existing = Buffer.from(bytes).toString('utf-8');
+            } catch {
+                // File does not exist yet; it will be created.
+            }
+
+            const separator = existing.length > 0 && !existing.endsWith('\n') ? '\n' : '';
+            const content = `${existing}${separator}${entry}\n`;
+            await vscode.workspace.fs.writeFile(targetUri, Buffer.from(content, 'utf-8'));
+
+            const action = await vscode.window.showInformationMessage(
+                `Captured to ${path.basename(targetUri.fsPath)}.`,
+                'Open file',
+            );
+            if (action === 'Open file') {
+                const doc = await vscode.workspace.openTextDocument(targetUri);
+                await vscode.window.showTextDocument(doc);
+            }
+        } catch (e) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            vscode.window.showErrorMessage(`Capture failed: ${errorMsg}`);
+        }
     }
 
     private async pairJiraIssue(subject: string, issueKey: string, summary?: string): Promise<void> {

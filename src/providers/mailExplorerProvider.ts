@@ -229,6 +229,43 @@ export class MailExplorerProvider implements vscode.TreeDataProvider<MailTreeIte
     }
 
     /**
+     * Searches every configured account for a message with the given Message-ID.
+     * Ensures each account is connected before searching its folders.
+     * @returns The account, folder and UID of the first match, or undefined.
+     */
+    async findMessageByMessageId(
+        messageId: string,
+    ): Promise<{ accountId: string; folderPath: string; uid: number } | undefined> {
+        for (const account of this.accountManager.getAccounts()) {
+            const service = this.getImapService(account.id);
+
+            if (!service.connected) {
+                try {
+                    const password = await this.accountManager.getPassword(account.id);
+                    if (!password) {
+                        continue;
+                    }
+                    await service.connect(account, password);
+                } catch (e) {
+                    console.warn(`Cannot connect "${account.name}" for Message-ID search:`, e);
+                    continue;
+                }
+            }
+
+            try {
+                const found = await service.findByMessageId(messageId);
+                if (found) {
+                    return { accountId: account.id, ...found };
+                }
+            } catch (e) {
+                console.error(`Message-ID search failed for "${account.name}":`, e);
+            }
+        }
+
+        return undefined;
+    }
+
+    /**
      * Connects to an account's IMAP server.
      */
     async connectAccount(account: IMailAccount, password: string): Promise<void> {

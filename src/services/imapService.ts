@@ -443,6 +443,57 @@ export class ImapService {
     }
 
     /**
+     * Searches for a message by its Message-ID header across all folders.
+     * Uses IMAP "SEARCH HEADER Message-ID" which is part of base IMAP4rev1.
+     * Folders are scanned with INBOX and Sent prioritized for a quick early exit.
+     * @param messageId - The Message-ID to look for (with or without angle brackets).
+     * @returns The folder path and UID of the first match, or undefined if not found.
+     */
+    async findByMessageId(messageId: string): Promise<{ folderPath: string; uid: number } | undefined> {
+        await this.ensureConnected();
+
+        // Normalize: try both the bracketed and unbracketed forms, since org links
+        // may pass the id without the surrounding < >.
+        const stripped = messageId.trim().replace(/^<|>$/g, '');
+        const candidates = [stripped, `<${stripped}>`];
+
+        const allPaths = await this.listFolderPaths();
+        // Prioritize the most likely locations to minimize round-trips.
+        const priority = ['INBOX'];
+        const sentPath = await this.getSentFolderPath();
+        if (sentPath) {
+            priority.push(sentPath);
+        }
+        const orderedPaths = [
+            ...priority.filter(p => allPaths.includes(p)),
+            ...allPaths.filter(p => !priority.includes(p)),
+        ];
+
+        for (const folderPath of orderedPaths) {
+            const lock = await this.client!.getMailboxLock(folderPath);
+            try {
+                for (const candidate of candidates) {
+                    const result = await this.client!.search(
+                        { header: { 'message-id': candidate } },
+                        { uid: true },
+                    );
+                    if (result && result.length > 0) {
+                        // Prefer the highest UID (newest) if multiple match.
+                        const uid = Math.max(...result);
+                        return { folderPath, uid };
+                    }
+                }
+            } catch (e) {
+                console.error(`Message-ID search failed in folder "${folderPath}":`, e);
+            } finally {
+                lock.release();
+            }
+        }
+
+        return undefined;
+    }
+
+    /**
      * Lists all folder paths as a flat array.
      */
     async listFolderPaths(): Promise<string[]> {

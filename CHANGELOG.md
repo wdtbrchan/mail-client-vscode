@@ -1,5 +1,10 @@
 # Changelog
 
+## [ upcoming ]
+- **Cross-plugin integration**: Added a `vscode://wdtbrchan.mail-client-vscode/open?msgid=<id>` URI handler and a `mailClient.openByMessageId` command that locate an email by its `Message-ID` (via IMAP `SEARCH HEADER Message-ID` across all folders of all accounts) and open it. Enables org-mode link extensions (e.g. org-vscode `registerLinkType`) to link directly to specific emails.
+- **Message Detail**: Added a "Copy message link" button that copies a stable editor link to the message for pasting into notes. The URI scheme auto-detects the running editor (works in Cursor, VSCodium, Insiders, etc.); override with the optional `mailClient.linkScheme` setting.
+- **Message Detail**: Added a "Capture to file" button that appends a configurable template (org-mode TODO by default) referencing the message to a file, via new `mailClient.captureFile` and `mailClient.captureTemplate` settings.
+
 ## [0.18.0]
 - **Compose**: "Send and Archive" button is now only shown when replying/forwarding from the Inbox; other folders show only "Send".
 

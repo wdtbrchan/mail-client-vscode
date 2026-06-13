@@ -28,6 +28,23 @@ export function activate(context: vscode.ExtensionContext): void {
     registerAccountCommands(context, accountManager, explorerProvider);
     registerMessageCommands(context, explorerProvider, accountManager);
 
+    // Handle vscode:// URIs, e.g. vscode://wdtbrchan.mail-client-vscode/open?msgid=<id>
+    // Used by org-mode link extensions (e.g. org-vscode registerLinkType) to open
+    // a specific email by its Message-ID.
+    context.subscriptions.push(
+        vscode.window.registerUriHandler({
+            handleUri(uri: vscode.Uri) {
+                if (uri.path === '/open') {
+                    const params = new URLSearchParams(uri.query);
+                    const msgid = params.get('msgid');
+                    if (msgid) {
+                        vscode.commands.executeCommand('mailClient.openByMessageId', msgid);
+                    }
+                }
+            },
+        }),
+    );
+
     // Open extension settings command
     context.subscriptions.push(
         vscode.commands.registerCommand('mailClient.openSettings', () => {
