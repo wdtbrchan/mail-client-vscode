@@ -11,4 +11,7 @@ esbuild.js
 .gitignore
 TODO.md
 build_extension.ps1
+release_extension.ps1
+.release.env
+.release.env.example
 mail-client-vscode.code-workspace
