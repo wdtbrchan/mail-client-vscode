@@ -20,11 +20,23 @@ mechanism**. Without it, affected users cannot connect at all.
 - Persist only a long-lived **refresh token** in `SecretStorage`; obtain
   short-lived access tokens on demand and refresh transparently.
 
+## Security principle: no secrets in the extension
+
+Both providers are configured as **public desktop/native clients secured by
+PKCE**. **No client secret** is ever embedded, configured, or stored — neither in
+the source, the VSIX, nor user settings. Only a `client_id` is needed, which is a
+*public* identifier (Microsoft and Google explicitly treat desktop/installed
+clients as unable to keep secrets). For Google we use the "Desktop app" client
+type and perform the token exchange with PKCE only (no `client_secret` in the
+request). Refresh tokens are persisted in VS Code `SecretStorage`.
+
 ## Non-goals
 
-- Shipping pre-registered client IDs. The extension cannot embed Anthropic/author
-  credentials for Microsoft/Google. The user (or distributor) registers their own
-  OAuth app and configures the client ID via settings. See *Setup* below.
+- Shipping pre-registered client IDs. The extension cannot embed the author's
+  registered `client_id`s. The user (or distributor) registers their own OAuth app
+  and configures the (public) client ID via settings. See *Setup* below. Because
+  client IDs are not secrets, they may optionally be shipped as package.json
+  defaults if a maintainer registers shared apps.
 - Migrating existing Basic accounts automatically (user switches auth type
   manually in account settings).
 
@@ -75,8 +87,7 @@ independent of the Basic-auth password slots.
 - `mailClient.oauth.microsoftTenant` – tenant (`common`, `organizations`,
   `consumers`, or a tenant ID). Default `common`.
 - `mailClient.oauth.googleClientId` – Google Cloud OAuth client ID (Desktop app).
-- `mailClient.oauth.googleClientSecret` – Google "desktop app" secret (not
-  confidential for installed apps, but required by Google's token endpoint).
+  No client secret setting exists – the Google token exchange uses PKCE only.
 
 ## Provider endpoints & scopes
 
@@ -91,7 +102,7 @@ independent of the Basic-auth password slots.
   (`access_type=offline`, `prompt=consent` to force a refresh token)
 - Token: `https://oauth2.googleapis.com/token`
 - Scopes: `openid email https://mail.google.com/`
-- Desktop client (client secret required), PKCE.
+- Desktop (public) client, **PKCE only, no client secret**.
 
 ## Setup (end user / distributor)
 
@@ -106,8 +117,11 @@ independent of the Basic-auth password slots.
 **Google (Google Cloud Console)**
 1. Enable the Gmail API.
 2. OAuth consent screen → add scope `https://mail.google.com/`.
-3. Credentials → Create OAuth client ID → *Desktop app*. Copy client ID +
-   secret into the matching settings.
+3. Credentials → Create OAuth client ID → *Desktop app*. Copy **only the client
+   ID** into `mailClient.oauth.googleClientId`. The client secret is **not** used
+   (PKCE-only token exchange) and must not be stored in the extension. Add test
+   users / publish the consent screen as needed (the `https://mail.google.com/`
+   scope is restricted and requires verification for public distribution).
 
 ## Default host/port presets
 
@@ -127,6 +141,10 @@ independent of the Basic-auth password slots.
 
 ## Future work
 
+- Optionally adopt `@azure/msal-node` (`PublicClientApplication`) for the
+  Microsoft path. MSAL handles the token cache, silent refresh and MFA/conditional-
+  access edge cases more robustly than the hand-rolled flow, storing its cache via
+  a `SecretStorage`-backed `ICachePlugin`. Still a public client, still no secret.
 - Optionally use VS Code's built-in `microsoft` authentication provider to avoid
   Azure registration (blocked today by missing Outlook scope consent on the
   first-party app).

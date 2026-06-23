@@ -21,10 +21,12 @@ interface IProviderConfig {
     scopes: string;
     /** Loopback redirect host – provider-specific to match registered URI. */
     redirectHost: string;
-    /** Whether the token endpoint requires a client_secret (Google desktop apps). */
-    needsClientSecret: boolean;
+    /**
+     * OAuth client id. This is a *public* identifier of a desktop/native (public)
+     * client, NOT a secret. No client secret is ever used or stored – both
+     * providers are configured as public clients secured by PKCE.
+     */
     clientId: string;
-    clientSecret?: string;
     /** Extra params appended to the authorize URL. */
     extraAuthParams?: Record<string, string>;
 }
@@ -131,9 +133,6 @@ export class OAuthService {
             refresh_token: refreshToken,
             scope: config.scopes,
         };
-        if (config.needsClientSecret && config.clientSecret) {
-            body.client_secret = config.clientSecret;
-        }
 
         const token = await this.postToken(config.tokenUrl, body);
         const expiresAt = Date.now() + (token.expires_in ?? 3600) * 1000;
@@ -179,9 +178,6 @@ export class OAuthService {
                     redirect_uri: redirectUri,
                     code_verifier: verifier,
                 };
-                if (config.needsClientSecret && config.clientSecret) {
-                    body.client_secret = config.clientSecret;
-                }
 
                 const token = await this.postToken(config.tokenUrl, body);
                 if (!token.refresh_token) {
@@ -331,14 +327,12 @@ export class OAuthService {
                     'https://outlook.office.com/IMAP.AccessAsUser.All ' +
                     'https://outlook.office.com/SMTP.Send',
                 redirectHost: 'localhost',
-                needsClientSecret: false,
                 clientId,
             };
         }
 
-        // Google
+        // Google – public "Desktop app" client, PKCE only, no client secret.
         const clientId = (cfg.get<string>('googleClientId') || '').trim();
-        const clientSecret = (cfg.get<string>('googleClientSecret') || '').trim();
         if (!clientId) {
             throw new Error(
                 'Google OAuth client ID is not set. Configure "mailClient.oauth.googleClientId".',
@@ -349,9 +343,7 @@ export class OAuthService {
             tokenUrl: 'https://oauth2.googleapis.com/token',
             scopes: 'openid email https://mail.google.com/',
             redirectHost: '127.0.0.1',
-            needsClientSecret: true,
             clientId,
-            clientSecret,
             extraAuthParams: { access_type: 'offline', prompt: 'consent' },
         };
     }

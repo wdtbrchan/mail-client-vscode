@@ -282,12 +282,7 @@
         "mailClient.oauth.googleClientId": {
           "type": "string",
           "default": "",
-          "description": "Google Cloud OAuth client ID (Desktop app type) for Gmail OAuth2 sign-in. Enable the Gmail API and add the scope https://mail.google.com/."
-        },
-        "mailClient.oauth.googleClientSecret": {
-          "type": "string",
-          "default": "",
-          "description": "Google OAuth client secret for the Desktop app client. Required by Google's token endpoint (not confidential for installed apps)."
+          "description": "Google Cloud OAuth client ID (Desktop app type) for Gmail OAuth2 sign-in. Enable the Gmail API and add the scope https://mail.google.com/. This is a public client ID (not a secret); no client secret is used."
         }
       }
     },
