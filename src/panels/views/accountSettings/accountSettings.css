@@ -149,6 +149,10 @@ button {
     margin-top: 4px;
     grid-column: 2;
 }
+/* Auth-type toggling: OAuth-only rows hidden by default, Basic rows hidden in OAuth mode. */
+.oauth-only { display: none; }
+body.auth-oauth .oauth-only { display: grid; }
+body.auth-oauth .basic-only { display: none; }
 .section-divider {
     border: none;
     border-top: 1px solid var(--vscode-widget-border);

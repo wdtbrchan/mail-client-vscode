@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { AccountManager } from '../services/accountManager';
 import { ImapService } from '../services/imapService';
 import { SmtpService } from '../services/smtpService';
+import { OAuthService, OAuthProvider } from '../services/oauthService';
 import { IMailAccount } from '../types/account';
 
 // @ts-ignore
@@ -20,6 +21,8 @@ export class AccountSettingsPanel {
     private static currentPanel: AccountSettingsPanel | undefined;
     private readonly panel: vscode.WebviewPanel;
     private disposables: vscode.Disposable[] = [];
+    /** Stable account id; pre-assigned for new accounts so OAuth tokens can be stored before save. */
+    private readonly accountId: string;
 
     private constructor(
         panel: vscode.WebviewPanel,
@@ -28,6 +31,7 @@ export class AccountSettingsPanel {
         private readonly existingAccount?: IMailAccount,
     ) {
         this.panel = panel;
+        this.accountId = existingAccount?.id || accountManager.generateId();
         this.panel.webview.html = this.getHtmlContent();
 
         // Handle messages from the webview
@@ -91,10 +95,32 @@ export class AccountSettingsPanel {
             type: 'loadAccount',
             account: {
                 ...account,
+                authType: account.authType || 'basic',
                 password: password || '',
                 smtpPassword: smtpPassword || '',
             },
         });
+    }
+
+    private async handleOAuthSignIn(provider: OAuthProvider): Promise<void> {
+        try {
+            const result = await OAuthService.getInstance().signIn(provider, this.accountId);
+            // Persist the refresh token immediately so the test buttons work even
+            // before the account is saved.
+            await OAuthService.getInstance().storeRefreshToken(this.accountId, result.refreshToken);
+            this.panel.webview.postMessage({
+                type: 'oauthSignInResult',
+                success: true,
+                email: result.email,
+            });
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Sign-in failed';
+            this.panel.webview.postMessage({
+                type: 'oauthSignInResult',
+                success: false,
+                error: errorMsg,
+            });
+        }
     }
 
     private async handleMessage(message: any): Promise<void> {
@@ -108,6 +134,9 @@ export class AccountSettingsPanel {
             case 'testSmtpConnection':
                 await this.handleTestSmtpConnection(message.data);
                 break;
+            case 'oauthSignIn':
+                await this.handleOAuthSignIn(message.provider);
+                break;
             case 'cancel':
                 this.panel.dispose();
                 break;
@@ -120,9 +149,11 @@ export class AccountSettingsPanel {
     private async handleSave(data: any): Promise<void> {
         try {
             const account: IMailAccount = {
-                id: this.existingAccount?.id || this.accountManager.generateId(),
+                id: this.accountId,
                 name: data.name,
                 senderName: data.senderName || undefined,
+                authType: data.authType === 'oauth2' ? 'oauth2' : 'basic',
+                oauthProvider: data.authType === 'oauth2' ? data.oauthProvider : undefined,
                 host: data.host,
                 port: parseInt(data.port, 10),
                 secure: data.secure,
@@ -172,8 +203,10 @@ export class AccountSettingsPanel {
     private async handleTestConnection(data: any): Promise<void> {
         try {
             const account: IMailAccount = {
-                id: 'test',
+                id: this.accountId,
                 name: data.name,
+                authType: data.authType === 'oauth2' ? 'oauth2' : 'basic',
+                oauthProvider: data.authType === 'oauth2' ? data.oauthProvider : undefined,
                 host: data.host,
                 port: parseInt(data.port, 10),
                 secure: data.secure,
@@ -203,8 +236,10 @@ export class AccountSettingsPanel {
     private async handleTestSmtpConnection(data: any): Promise<void> {
         try {
             const account: IMailAccount = {
-                id: 'test_smtp',
+                id: this.accountId,
                 name: data.name,
+                authType: data.authType === 'oauth2' ? 'oauth2' : 'basic',
+                oauthProvider: data.authType === 'oauth2' ? data.oauthProvider : undefined,
                 host: data.host,
                 port: parseInt(data.port, 10),
                 secure: data.secure,
@@ -235,8 +270,10 @@ export class AccountSettingsPanel {
     private async handleListFolders(data: any): Promise<void> {
         try {
             const account: IMailAccount = {
-                id: 'temp',
+                id: this.accountId,
                 name: data.name,
+                authType: data.authType === 'oauth2' ? 'oauth2' : 'basic',
+                oauthProvider: data.authType === 'oauth2' ? data.oauthProvider : undefined,
                 host: data.host,
                 port: parseInt(data.port, 10),
                 secure: data.secure,

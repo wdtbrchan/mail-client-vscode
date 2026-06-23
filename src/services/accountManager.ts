@@ -76,6 +76,7 @@ export class AccountManager {
         await this.context.globalState.update(ACCOUNTS_KEY, accounts);
         await this.context.secrets.delete(this.getPasswordKey(id));
         await this.context.secrets.delete(this.getSmtpPasswordKey(id));
+        await this.context.secrets.delete(this.getOAuthRefreshKey(id));
         this._onAccountsChanged.fire();
     }
 
@@ -106,6 +107,11 @@ export class AccountManager {
 
     private getSmtpPasswordKey(accountId: string): string {
         return `mailClient.smtpPassword.${accountId}`;
+    }
+
+    /** Must match OAuthService's refresh-token key format. */
+    private getOAuthRefreshKey(accountId: string): string {
+        return `mailClient.oauthRefresh.${accountId}`;
     }
 
     dispose(): void {

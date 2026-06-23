@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { AccountManager } from './services/accountManager';
+import { OAuthService } from './services/oauthService';
 import { MailExplorerProvider } from './providers/mailExplorerProvider';
 import { registerAccountCommands } from './commands/accountCommands';
 import { registerMessageCommands } from './commands/messageCommands';
@@ -14,6 +15,7 @@ let explorerProvider: MailExplorerProvider | undefined;
  */
 export function activate(context: vscode.ExtensionContext): void {
     const accountManager = new AccountManager(context);
+    OAuthService.init(context);
     explorerProvider = new MailExplorerProvider(accountManager);
 
     // Register the Mail Explorer tree view
@@ -116,8 +118,8 @@ async function autoConnect(
 
     for (const account of accounts) {
         try {
-            const password = await accountManager.getPassword(account.id);
-            if (password) {
+            const password = await explorerProvider.resolveCredential(account);
+            if (password !== undefined) {
                 await explorerProvider.connectAccount(account, password);
                 // Auto-expand the account's folder subtree
                 const accountItems = explorerProvider.getAccountItems();

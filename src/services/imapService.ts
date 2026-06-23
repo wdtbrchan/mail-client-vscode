@@ -5,6 +5,22 @@ import { IMailAccount } from '../types/account';
 import { IMailFolder } from '../types/folder';
 import { IMailMessage, IMailMessageDetail, IMailAddress, IMailAttachment } from '../types/message';
 import { parseIcs } from '../utils/icsParser';
+import { OAuthService } from './oauthService';
+
+/**
+ * Builds the imapflow auth object for an account, using XOAUTH2 access tokens
+ * for OAuth2 accounts and a password otherwise.
+ */
+async function buildImapAuth(
+    account: IMailAccount,
+    password: string,
+): Promise<{ user: string; pass?: string; accessToken?: string }> {
+    if (account.authType === 'oauth2') {
+        const accessToken = await OAuthService.getInstance().getAccessToken(account);
+        return { user: account.username, accessToken };
+    }
+    return { user: account.username, pass: password };
+}
 
 /**
  * Handles IMAP communication for a single mail account.
@@ -34,10 +50,7 @@ export class ImapService {
             host: account.host,
             port: account.port,
             secure: account.secure,
-            auth: {
-                user: account.username,
-                pass: password,
-            },
+            auth: await buildImapAuth(account, password),
             logger: false,
         });
 
@@ -399,10 +412,7 @@ export class ImapService {
             host: account.host,
             port: account.port,
             secure: account.secure,
-            auth: {
-                user: account.username,
-                pass: password,
-            },
+            auth: await buildImapAuth(account, password),
             logger: false,
             verifyOnly: true, // Optimizes for connection testing
         });
@@ -578,12 +588,23 @@ export class ImapService {
      * Throws if credentials are unavailable or reconnect fails.
      */
     async forceReconnect(): Promise<void> {
-        if (!this.account || !this.password) {
+        if (!this.hasCredentials()) {
             throw new Error('No credentials available for reconnection.');
         }
         this.hasConnectionError = false;
         this.lastConnectionError = undefined;
-        await this.connect(this.account, this.password);
+        await this.connect(this.account!, this.password ?? '');
+    }
+
+    /**
+     * Whether credentials are available to (re)connect. OAuth2 accounts need no
+     * password – tokens are obtained on demand via OAuthService.
+     */
+    private hasCredentials(): boolean {
+        if (!this.account) {
+            return false;
+        }
+        return this.account.authType === 'oauth2' || !!this.password;
     }
 
     private async ensureConnected(): Promise<void> {
@@ -591,9 +612,9 @@ export class ImapService {
             // Only attempt reconnect if no prior error this refresh cycle.
             // hasConnectionError is cleared by the auto-refresh timer on each tick,
             // so a failed reconnect won't be retried until the next refresh.
-            if (!this.hasConnectionError && this.account && this.password) {
+            if (!this.hasConnectionError && this.hasCredentials()) {
                 try {
-                    await this.connect(this.account, this.password);
+                    await this.connect(this.account!, this.password ?? '');
                     return; // Reconnected successfully
                 } catch (e) {
                     console.error('Auto-reconnect failed:', e);

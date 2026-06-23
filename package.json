@@ -268,6 +268,26 @@
           "editPresentation": "multilineText",
           "default": "* TODO {subject}\n  :PROPERTIES:\n  :MSGID: {msgid}\n  :FROM: {from}\n  :DATE: {date}\n  :LINK: {link}\n  :END:",
           "description": "Template appended to the capture file. Placeholders: {subject}, {msgid}, {from}, {date}, {link} (vscode:// open link), {body} (first 200 chars of the plain-text body)."
+        },
+        "mailClient.oauth.microsoftClientId": {
+          "type": "string",
+          "default": "",
+          "description": "Azure AD application (client) ID for Microsoft/Office 365 OAuth2 sign-in. Register a 'Mobile and desktop applications' app with redirect URI 'http://localhost' and delegated permissions IMAP.AccessAsUser.All, SMTP.Send, offline_access."
+        },
+        "mailClient.oauth.microsoftTenant": {
+          "type": "string",
+          "default": "common",
+          "description": "Microsoft OAuth2 tenant: 'common', 'organizations', 'consumers', or a specific tenant ID."
+        },
+        "mailClient.oauth.googleClientId": {
+          "type": "string",
+          "default": "",
+          "description": "Google Cloud OAuth client ID (Desktop app type) for Gmail OAuth2 sign-in. Enable the Gmail API and add the scope https://mail.google.com/."
+        },
+        "mailClient.oauth.googleClientSecret": {
+          "type": "string",
+          "default": "",
+          "description": "Google OAuth client secret for the Desktop app client. Required by Google's token endpoint (not confidential for installed apps)."
         }
       }
     },

@@ -3,6 +3,8 @@ const vscode = acquireVsCodeApi();
 const fields = {
     name: document.getElementById('name'),
     senderName: document.getElementById('senderName'),
+    authType: document.getElementById('authType'),
+    oauthProvider: document.getElementById('oauthProvider'),
     host: document.getElementById('host'),
     port: document.getElementById('port'),
     secure: document.getElementById('secure'),
@@ -42,6 +44,8 @@ function getFormData() {
     return {
         name: fields.name.value.trim(),
         senderName: fields.senderName.value.trim(),
+        authType: fields.authType.value,
+        oauthProvider: fields.oauthProvider.value,
         host: fields.host.value.trim(),
         port: fields.port.value,
         secure: fields.secure.checked,
@@ -71,7 +75,11 @@ function validate() {
     if (!data.name) { showStatus('Account Name is required.', 'error'); return false; }
     if (!data.host) { showStatus('IMAP Server is required.', 'error'); return false; }
     if (!data.username) { showStatus('Username is required.', 'error'); return false; }
-    if (!data.password) { showStatus('Password is required.', 'error'); return false; }
+    if (data.authType === 'oauth2') {
+        if (!window.oauthSignedIn) { showStatus('Please sign in with your provider before saving.', 'error'); return false; }
+    } else if (!data.password) {
+        showStatus('Password is required.', 'error'); return false;
+    }
     if (!data.smtpHost) { showStatus('SMTP Server is required.', 'error'); return false; }
     return true;
 }
@@ -81,6 +89,10 @@ function validateImap() {
     const data = getFormData();
     if (!data.host) { showInlineStatus('imapTestStatus', 'IMAP Server is required.', 'error'); return false; }
     if (!data.username) { showInlineStatus('imapTestStatus', 'Username is required.', 'error'); return false; }
+    if (data.authType === 'oauth2') {
+        if (!window.oauthSignedIn) { showInlineStatus('imapTestStatus', 'Please sign in first.', 'error'); return false; }
+        return true;
+    }
     if (!data.password) { showInlineStatus('imapTestStatus', 'Password is required.', 'error'); return false; }
     return true;
 }
@@ -90,11 +102,39 @@ function validateImap() {
 function validateSmtp() {
     const data = getFormData();
     if (!data.smtpHost) { showInlineStatus('smtpTestStatus', 'SMTP Server is required.', 'error'); return false; }
+    if (data.authType === 'oauth2') {
+        if (!window.oauthSignedIn) { showInlineStatus('smtpTestStatus', 'Please sign in first.', 'error'); return false; }
+        return true;
+    }
     const smtpUser = data.smtpUsername || data.username;
     const smtpPass = data.smtpPassword || data.password;
     if (!smtpUser) { showInlineStatus('smtpTestStatus', 'SMTP Username is required.', 'error'); return false; }
     if (!smtpPass) { showInlineStatus('smtpTestStatus', 'SMTP Password is required.', 'error'); return false; }
     return true;
+}
+
+// Provider connection presets applied when selecting an OAuth provider.
+const OAUTH_PRESETS = {
+    microsoft: { host: 'outlook.office365.com', port: 993, secure: true, smtpHost: 'smtp.office365.com', smtpPort: 587, smtpSecure: false },
+    google: { host: 'imap.gmail.com', port: 993, secure: true, smtpHost: 'smtp.gmail.com', smtpPort: 465, smtpSecure: true },
+};
+
+function applyProviderPreset(provider) {
+    const p = OAUTH_PRESETS[provider];
+    if (!p) return;
+    fields.host.value = p.host;
+    fields.port.value = p.port;
+    fields.secure.checked = p.secure;
+    fields.smtpHost.value = p.smtpHost;
+    fields.smtpPort.value = p.smtpPort;
+    fields.smtpSecure.checked = p.smtpSecure;
+}
+
+// Shows/hides Basic vs OAuth2 rows and toggles the 'required' flag on password fields.
+function updateAuthVisibility() {
+    const isOauth = fields.authType.value === 'oauth2';
+    document.body.classList.toggle('auth-oauth', isOauth);
+    fields.password.required = !isOauth;
 }
 
 function showStatus(message, type) {
@@ -136,6 +176,32 @@ document.getElementById('btnTestSmtp').addEventListener('click', () => {
     showInlineStatus('smtpTestStatus', 'Testing...', 'loading');
     document.getElementById('btnTestSmtp').disabled = true;
     vscode.postMessage({ type: 'testSmtpConnection', data: getFormData() });
+});
+
+fields.authType.addEventListener('change', () => {
+    updateAuthVisibility();
+    // Reset sign-in state when switching providers/modes.
+    window.oauthSignedIn = false;
+    showInlineStatus('oauthStatus', '', '');
+    if (fields.authType.value === 'oauth2') {
+        applyProviderPreset(fields.oauthProvider.value);
+    }
+});
+
+fields.oauthProvider.addEventListener('change', () => {
+    window.oauthSignedIn = false;
+    showInlineStatus('oauthStatus', '', '');
+    applyProviderPreset(fields.oauthProvider.value);
+});
+
+document.getElementById('btnOAuthSignIn').addEventListener('click', () => {
+    if (!fields.username.value.trim()) {
+        showInlineStatus('oauthStatus', 'Enter the account email (Username) first.', 'error');
+        return;
+    }
+    showInlineStatus('oauthStatus', 'Signing in…', 'loading');
+    document.getElementById('btnOAuthSignIn').disabled = true;
+    vscode.postMessage({ type: 'oauthSignIn', provider: fields.oauthProvider.value });
 });
 
 document.getElementById('btnListFolders').addEventListener('click', () => {
@@ -261,6 +327,15 @@ window.addEventListener('message', (event) => {
             fields.signature.innerHTML = message.account.signature || '';
             fields.markdownSignature.value = message.account.markdownSignature || '';
 
+            fields.authType.value = message.account.authType || 'basic';
+            fields.oauthProvider.value = message.account.oauthProvider || 'microsoft';
+            updateAuthVisibility();
+            // Existing OAuth accounts already have a stored refresh token.
+            window.oauthSignedIn = message.account.authType === 'oauth2';
+            if (window.oauthSignedIn) {
+                showInlineStatus('oauthStatus', 'Signed in', 'success');
+            }
+
             customFoldersContainer.innerHTML = '';
             if (message.account.customFolders) {
                 message.account.customFolders.forEach(cf => {
@@ -275,6 +350,16 @@ window.addEventListener('message', (event) => {
         case 'testSmtpResult':
             document.getElementById('btnTestSmtp').disabled = false;
             showInlineStatus('smtpTestStatus', message.message, message.success ? 'success' : 'error');
+            break;
+        case 'oauthSignInResult':
+            document.getElementById('btnOAuthSignIn').disabled = false;
+            if (message.success) {
+                window.oauthSignedIn = true;
+                showInlineStatus('oauthStatus', message.email ? ('Signed in as ' + message.email) : 'Signed in', 'success');
+            } else {
+                window.oauthSignedIn = false;
+                showInlineStatus('oauthStatus', 'Sign-in failed: ' + (message.error || ''), 'error');
+            }
             break;
         case 'foldersList':
             document.getElementById('btnListFolders').disabled = false;
@@ -294,3 +379,6 @@ window.addEventListener('message', (event) => {
             break;
     }
 });
+
+// Initialize auth-type visibility for new accounts (edit mode runs it on loadAccount).
+updateAuthVisibility();

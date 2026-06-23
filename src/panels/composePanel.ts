@@ -409,16 +409,21 @@ export class ComposePanel {
             this.panel.webview.postMessage({ type: 'sending' });
 
             const account = this.options.account;
-            const smtpPassword = await this.accountManager.getSmtpPassword(account.id);
-            if (!smtpPassword) {
-                // Fallback to IMAP password
-                const imapPassword = await this.accountManager.getPassword(account.id);
-                if (!imapPassword) {
-                    throw new Error('No SMTP password found for this account.');
-                }
-                await this.doSend(account, imapPassword, to, cc, bcc, subject, archiveOriginal);
+            if (account.authType === 'oauth2') {
+                // OAuth2: no password needed, the SMTP service resolves an access token.
+                await this.doSend(account, '', to, cc, bcc, subject, archiveOriginal);
             } else {
-                await this.doSend(account, smtpPassword, to, cc, bcc, subject, archiveOriginal);
+                const smtpPassword = await this.accountManager.getSmtpPassword(account.id);
+                if (!smtpPassword) {
+                    // Fallback to IMAP password
+                    const imapPassword = await this.accountManager.getPassword(account.id);
+                    if (!imapPassword) {
+                        throw new Error('No SMTP password found for this account.');
+                    }
+                    await this.doSend(account, imapPassword, to, cc, bcc, subject, archiveOriginal);
+                } else {
+                    await this.doSend(account, smtpPassword, to, cc, bcc, subject, archiveOriginal);
+                }
             }
 
             vscode.window.showInformationMessage('Message sent.');
@@ -556,9 +561,12 @@ export class ComposePanel {
         // 3. Append to Sent Folder (IMAP)
         try {
             const imapService = new ImapService();
-            // We need IMAP password (which might be different from SMTP password provided as 'password' arg)
-            const imapPassword = await this.accountManager.getPassword(account.id);
-            if (imapPassword) {
+            // We need IMAP credentials (which might differ from the SMTP password 'password' arg).
+            // OAuth2 accounts need no password – the access token is resolved by ImapService.
+            const imapPassword = account.authType === 'oauth2'
+                ? ''
+                : await this.accountManager.getPassword(account.id);
+            if (imapPassword !== undefined) {
                 await imapService.connect(account, imapPassword);
                 try {
                     let sentFolder = account.sentFolder;

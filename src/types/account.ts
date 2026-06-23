@@ -11,6 +11,17 @@ export interface IMailAccount {
     /** Sender display name to be used in From header */
     senderName?: string;
 
+    /**
+     * Authentication type.
+     * - 'basic' (default): username + password (stored in SecretStorage).
+     * - 'oauth2': XOAUTH2 access tokens obtained via OAuthService. The password
+     *   slots are unused; a refresh token is stored separately.
+     */
+    authType?: 'basic' | 'oauth2';
+
+    /** OAuth2 provider, required when authType === 'oauth2'. */
+    oauthProvider?: 'microsoft' | 'google';
+
     // --- IMAP (incoming) ---
     /** IMAP server hostname */
     host: string;

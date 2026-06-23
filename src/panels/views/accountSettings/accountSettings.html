@@ -25,6 +25,30 @@
         <hr class="section-divider">
 
         <div class="form-group">
+            <label for="authType">Authentication</label>
+            <select id="authType">
+                <option value="basic">Password (Basic)</option>
+                <option value="oauth2">OAuth2 (Office 365 / Gmail)</option>
+            </select>
+        </div>
+        <div class="form-group oauth-only">
+            <label for="oauthProvider">Provider</label>
+            <select id="oauthProvider">
+                <option value="microsoft">Microsoft (Office 365)</option>
+                <option value="google">Google (Gmail)</option>
+            </select>
+        </div>
+        <div class="form-group oauth-only">
+            <label></label>
+            <div class="flex-row flex-gap-10">
+                <button class="btn-test width-fit" id="btnOAuthSignIn" type="button">Sign in</button>
+                <span id="oauthStatus" class="status-inline"></span>
+            </div>
+        </div>
+
+        <hr class="section-divider">
+
+        <div class="form-group">
             <label for="host">IMAP Server</label>
             <input type="text" id="host" placeholder="imap.example.com" required>
         </div>
@@ -46,7 +70,7 @@
             <label for="username">Username</label>
             <input type="text" id="username" placeholder="user@example.com" required>
         </div>
-        <div class="form-group">
+        <div class="form-group basic-only">
             <label for="password">Password</label>
             <input type="password" id="password" placeholder="••••••••" required>
         </div>
@@ -83,7 +107,7 @@
             <label for="smtpUsername">SMTP Username</label>
             <input type="text" id="smtpUsername" placeholder="Leave empty = same as IMAP">
         </div>
-        <div class="form-group">
+        <div class="form-group basic-only">
             <label for="smtpPassword">SMTP Password</label>
             <input type="password" id="smtpPassword" placeholder="Leave empty = same as IMAP">
         </div>

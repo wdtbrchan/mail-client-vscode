@@ -241,8 +241,8 @@ export class MailExplorerProvider implements vscode.TreeDataProvider<MailTreeIte
 
             if (!service.connected) {
                 try {
-                    const password = await this.accountManager.getPassword(account.id);
-                    if (!password) {
+                    const password = await this.resolveCredential(account);
+                    if (password === undefined) {
                         continue;
                     }
                     await service.connect(account, password);
@@ -273,6 +273,18 @@ export class MailExplorerProvider implements vscode.TreeDataProvider<MailTreeIte
         if (!service.connected) {
             await service.connect(account, password);
         }
+    }
+
+    /**
+     * Resolves the credential needed to connect an account.
+     * - OAuth2 accounts need no password (tokens are obtained on demand) → returns ''.
+     * - Basic accounts return the stored password, or undefined if none is set.
+     */
+    async resolveCredential(account: IMailAccount): Promise<string | undefined> {
+        if (account.authType === 'oauth2') {
+            return '';
+        }
+        return this.accountManager.getPassword(account.id);
     }
 
     /**
@@ -327,8 +339,8 @@ export class MailExplorerProvider implements vscode.TreeDataProvider<MailTreeIte
                 return [];
             }
 
-            const password = await this.accountManager.getPassword(accountId);
-            if (!password) {
+            const password = await this.resolveCredential(account);
+            if (password === undefined) {
                 return [new MailTreeItem('folder', accountId, '⚠ No password configured', vscode.TreeItemCollapsibleState.None)];
             }
 

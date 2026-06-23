@@ -1,5 +1,19 @@
 import * as nodemailer from 'nodemailer';
 import { IMailAccount } from '../types/account';
+import { OAuthService } from './oauthService';
+
+/**
+ * Builds the nodemailer auth object for an account, using XOAUTH2 access tokens
+ * for OAuth2 accounts and a password otherwise.
+ */
+async function buildSmtpAuth(account: IMailAccount, smtpPassword: string): Promise<any> {
+    const user = account.smtpUsername || account.username;
+    if (account.authType === 'oauth2') {
+        const accessToken = await OAuthService.getInstance().getAccessToken(account);
+        return { type: 'OAuth2', user, accessToken };
+    }
+    return { user, pass: smtpPassword };
+}
 
 export interface ISendMailOptions {
     /** Sender display name + address, e.g. "John <john@x.com>" */
@@ -42,10 +56,7 @@ export class SmtpService {
             host: account.smtpHost,
             port: account.smtpPort,
             secure: account.smtpSecure,
-            auth: {
-                user: account.smtpUsername || account.username,
-                pass: smtpPassword,
-            },
+            auth: await buildSmtpAuth(account, smtpPassword),
         });
 
         try {
@@ -88,10 +99,7 @@ export class SmtpService {
             host: account.smtpHost,
             port: account.smtpPort,
             secure: account.smtpSecure,
-            auth: {
-                user: account.smtpUsername || account.username,
-                pass: smtpPassword,
-            },
+            auth: await buildSmtpAuth(account, smtpPassword),
         });
 
         try {

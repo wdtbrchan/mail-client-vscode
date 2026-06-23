@@ -60,8 +60,8 @@ export function registerAccountCommands(
                 return;
             }
 
-            const password = await accountManager.getPassword(account.id);
-            if (!password) {
+            const password = await explorerProvider.resolveCredential(account);
+            if (password === undefined) {
                 vscode.window.showErrorMessage('No password configured for this account.');
                 return;
             }
