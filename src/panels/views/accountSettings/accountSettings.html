@@ -31,20 +31,6 @@
                 <option value="oauth2">OAuth2 (Office 365 / Gmail)</option>
             </select>
         </div>
-        <div class="form-group oauth-only">
-            <label for="oauthProvider">Provider</label>
-            <select id="oauthProvider">
-                <option value="microsoft">Microsoft (Office 365)</option>
-                <option value="google">Google (Gmail)</option>
-            </select>
-        </div>
-        <div class="form-group oauth-only">
-            <label></label>
-            <div class="flex-row flex-gap-10">
-                <button class="btn-test width-fit" id="btnOAuthSignIn" type="button">Sign in</button>
-                <span id="oauthStatus" class="status-inline"></span>
-            </div>
-        </div>
 
         <hr class="section-divider">
 
@@ -69,6 +55,20 @@
         <div class="form-group">
             <label for="username">Username</label>
             <input type="text" id="username" placeholder="user@example.com" required>
+        </div>
+        <div class="form-group oauth-only">
+            <label for="oauthProvider">Provider</label>
+            <select id="oauthProvider">
+                <option value="microsoft">Microsoft (Office 365)</option>
+                <option value="google">Google (Gmail)</option>
+            </select>
+        </div>
+        <div class="form-group oauth-only">
+            <label></label>
+            <div class="flex-row flex-gap-10">
+                <button class="btn-test width-fit" id="btnOAuthSignIn" type="button">Sign in</button>
+                <span id="oauthStatus" class="status-inline"></span>
+            </div>
         </div>
         <div class="form-group basic-only">
             <label for="password">Password</label>
