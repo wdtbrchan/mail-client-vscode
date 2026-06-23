@@ -76,6 +76,27 @@ function validate() {
     return true;
 }
 
+// Validates only IMAP-related fields, reporting errors inline next to the IMAP test button.
+function validateImap() {
+    const data = getFormData();
+    if (!data.host) { showInlineStatus('imapTestStatus', 'IMAP Server is required.', 'error'); return false; }
+    if (!data.username) { showInlineStatus('imapTestStatus', 'Username is required.', 'error'); return false; }
+    if (!data.password) { showInlineStatus('imapTestStatus', 'Password is required.', 'error'); return false; }
+    return true;
+}
+
+// Validates only SMTP-related fields, reporting errors inline next to the SMTP test button.
+// SMTP username/password fall back to IMAP credentials when left empty.
+function validateSmtp() {
+    const data = getFormData();
+    if (!data.smtpHost) { showInlineStatus('smtpTestStatus', 'SMTP Server is required.', 'error'); return false; }
+    const smtpUser = data.smtpUsername || data.username;
+    const smtpPass = data.smtpPassword || data.password;
+    if (!smtpUser) { showInlineStatus('smtpTestStatus', 'SMTP Username is required.', 'error'); return false; }
+    if (!smtpPass) { showInlineStatus('smtpTestStatus', 'SMTP Password is required.', 'error'); return false; }
+    return true;
+}
+
 function showStatus(message, type) {
     statusEl.textContent = message;
     statusEl.className = 'status-message ' + type;
@@ -104,17 +125,15 @@ document.getElementById('btnSave').addEventListener('click', () => {
 });
 
 document.getElementById('btnTest').addEventListener('click', () => {
-    if (!validate()) return;
+    if (!validateImap()) return;
     showInlineStatus('imapTestStatus', 'Testing...', 'loading');
-    showStatus('', ''); // clear global
     document.getElementById('btnTest').disabled = true;
     vscode.postMessage({ type: 'testConnection', data: getFormData() });
 });
 
 document.getElementById('btnTestSmtp').addEventListener('click', () => {
-    if (!validate()) return;
+    if (!validateSmtp()) return;
     showInlineStatus('smtpTestStatus', 'Testing...', 'loading');
-    showStatus('', ''); // clear global
     document.getElementById('btnTestSmtp').disabled = true;
     vscode.postMessage({ type: 'testSmtpConnection', data: getFormData() });
 });
