@@ -271,13 +271,13 @@
         },
         "mailClient.oauth.microsoftClientId": {
           "type": "string",
-          "default": "6d3ec133-889c-4f03-97b0-a5358d9b449c",
-          "description": "Azure AD application (public client) ID for Microsoft/Office 365 OAuth2 sign-in. A default is provided; override only to use your own 'Mobile and desktop applications' app (redirect URI 'http://localhost', delegated permissions IMAP.AccessAsUser.All, SMTP.Send, offline_access). This is a public client ID, not a secret."
+          "default": "7b096ead-f5cf-494b-a958-372ba886eb6f",
+          "description": "Azure AD application (public client) ID for Microsoft/Office 365 OAuth2 sign-in. A default multitenant+personal app is provided; override only to use your own 'Mobile and desktop applications' app (redirect URI 'http://localhost', delegated permissions IMAP.AccessAsUser.All, SMTP.Send, offline_access). This is a public client ID, not a secret."
         },
         "mailClient.oauth.microsoftTenant": {
           "type": "string",
-          "default": "99d81be7-80fc-4eec-ab8f-1145579f2f1b",
-          "description": "Microsoft OAuth2 tenant: 'common', 'organizations', 'consumers', or a specific tenant ID. Defaults to the tenant of the bundled app registration; set to 'common' if you use your own multitenant app."
+          "default": "common",
+          "description": "Microsoft OAuth2 tenant: 'common' (any work/school + personal account, default), 'organizations', 'consumers', or a specific tenant ID for a single-tenant app."
         },
         "mailClient.oauth.googleClientId": {
           "type": "string",
