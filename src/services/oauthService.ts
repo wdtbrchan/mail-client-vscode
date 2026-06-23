@@ -53,11 +53,13 @@ const EXPIRY_SKEW_MS = 60_000;
  * Handles OAuth2 (XOAUTH2) authentication for Microsoft (Office 365) and Google
  * (Gmail).
  *
- * Both providers are **public clients secured by PKCE – no client secret** is
- * ever used or stored. Microsoft uses `@azure/msal-node` (`PublicClientApplication`)
- * with a SecretStorage-backed token cache (silent refresh handled by MSAL).
- * Google uses a hand-rolled Authorization Code + PKCE flow with a loopback
- * redirect; its refresh token lives in SecretStorage.
+ * Both providers are public clients secured by PKCE. Microsoft uses no client
+ * secret at all (`@azure/msal-node` `PublicClientApplication` with a
+ * SecretStorage-backed token cache, silent refresh handled by MSAL). Google uses
+ * a hand-rolled Authorization Code + PKCE flow with a loopback redirect; its
+ * token endpoint additionally requires the Desktop-app `client_secret` (which
+ * Google does not treat as confidential for installed apps). Refresh tokens /
+ * MSAL cache live in SecretStorage.
  */
 export class OAuthService {
     private static instance: OAuthService | undefined;
@@ -250,6 +252,17 @@ export class OAuthService {
         return clientId;
     }
 
+    /**
+     * Google's token endpoint requires a client_secret for Desktop app clients
+     * even with PKCE. Google does not treat this value as confidential for
+     * installed apps. Returns '' if not configured.
+     */
+    private googleClientSecret(): string {
+        return (vscode.workspace
+            .getConfiguration('mailClient.oauth')
+            .get<string>('googleClientSecret') || '').trim();
+    }
+
     private async getAccessTokenGoogle(account: IMailAccount): Promise<string> {
         const refreshToken = await this.context.secrets.get(this.googleRefreshKey(account.id));
         if (!refreshToken) {
@@ -316,8 +329,13 @@ export class OAuthService {
         return { email: this.extractEmail(token.id_token) };
     }
 
-    /** POSTs a form-encoded body to Google's token endpoint (no client secret). */
+    /** POSTs a form-encoded body to Google's token endpoint, adding the client secret. */
     private async postGoogleToken(body: Record<string, string>): Promise<IGoogleTokenResponse> {
+        const secret = this.googleClientSecret();
+        if (secret) {
+            body.client_secret = secret;
+        }
+
         const response = await fetch(GOOGLE_TOKEN_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

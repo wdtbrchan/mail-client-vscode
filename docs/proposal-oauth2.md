@@ -20,15 +20,16 @@ mechanism**. Without it, affected users cannot connect at all.
 - Persist only a long-lived **refresh token** in `SecretStorage`; obtain
   short-lived access tokens on demand and refresh transparently.
 
-## Security principle: no secrets in the extension
+## Security principle: no confidential secrets in the extension
 
 Both providers are configured as **public desktop/native clients secured by
-PKCE**. **No client secret** is ever embedded, configured, or stored — neither in
-the source, the VSIX, nor user settings. Only a `client_id` is needed, which is a
-*public* identifier (Microsoft and Google explicitly treat desktop/installed
-clients as unable to keep secrets). For Google we use the "Desktop app" client
-type and perform the token exchange with PKCE only (no `client_secret` in the
-request). Refresh tokens are persisted in VS Code `SecretStorage`.
+PKCE**. **Microsoft** uses no client secret at all. **Google's** token endpoint,
+however, requires a `client_secret` for "Desktop app" clients even with PKCE —
+Google explicitly documents that for installed/desktop apps this value is **not
+treated as confidential** (it is distributed with the app). It is therefore
+exposed via the `mailClient.oauth.googleClientSecret` setting, not treated as a
+true secret. No genuinely confidential credential is embedded. Refresh tokens are
+persisted in VS Code `SecretStorage`.
 
 ## Non-goals
 
@@ -88,7 +89,8 @@ slots: `mailClient.oauthRefresh.<accountId>` (Google refresh token) and
 - `mailClient.oauth.microsoftTenant` – tenant (`common`, `organizations`,
   `consumers`, or a tenant ID). Default `common`.
 - `mailClient.oauth.googleClientId` – Google Cloud OAuth client ID (Desktop app).
-  No client secret setting exists – the Google token exchange uses PKCE only.
+- `mailClient.oauth.googleClientSecret` – Google Desktop-app client secret
+  (non-confidential, required by Google's token endpoint even with PKCE).
 
 ## Provider endpoints & scopes
 
@@ -103,7 +105,8 @@ slots: `mailClient.oauthRefresh.<accountId>` (Google refresh token) and
   (`access_type=offline`, `prompt=consent` to force a refresh token)
 - Token: `https://oauth2.googleapis.com/token`
 - Scopes: `openid email https://mail.google.com/`
-- Desktop (public) client, **PKCE only, no client secret**.
+- Desktop client + PKCE; the token exchange also sends the (non-confidential)
+  Desktop-app `client_secret`, which Google requires.
 
 ## Setup (end user / distributor)
 
@@ -118,11 +121,12 @@ slots: `mailClient.oauthRefresh.<accountId>` (Google refresh token) and
 **Google (Google Cloud Console)**
 1. Enable the Gmail API.
 2. OAuth consent screen → add scope `https://mail.google.com/`.
-3. Credentials → Create OAuth client ID → *Desktop app*. Copy **only the client
-   ID** into `mailClient.oauth.googleClientId`. The client secret is **not** used
-   (PKCE-only token exchange) and must not be stored in the extension. Add test
-   users / publish the consent screen as needed (the `https://mail.google.com/`
-   scope is restricted and requires verification for public distribution).
+3. Credentials → Create OAuth client ID → *Desktop app*. Copy the client ID into
+   `mailClient.oauth.googleClientId` and the client secret into
+   `mailClient.oauth.googleClientSecret` (Google requires it in the token exchange
+   even with PKCE; for Desktop apps it is not confidential). Add test users /
+   publish the consent screen as needed — the `https://mail.google.com/` scope is
+   restricted and requires verification for public distribution.
 
 ## Default host/port presets
 

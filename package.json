@@ -282,7 +282,12 @@
         "mailClient.oauth.googleClientId": {
           "type": "string",
           "default": "627608066306-q2tsjno2spra48c3pnvf44se65l1m5n0.apps.googleusercontent.com",
-          "description": "Google Cloud OAuth client ID (Desktop app type) for Gmail OAuth2 sign-in (Gmail API + scope https://mail.google.com/). A default is provided; this is a public client ID (not a secret) and no client secret is used."
+          "description": "Google Cloud OAuth client ID (Desktop app type) for Gmail OAuth2 sign-in (Gmail API + scope https://mail.google.com/). A default is provided."
+        },
+        "mailClient.oauth.googleClientSecret": {
+          "type": "string",
+          "default": "",
+          "description": "Google OAuth client secret for the Desktop app client. Google requires it in the token exchange even with PKCE; for Desktop/installed apps Google does not treat it as confidential. Must match the configured googleClientId."
         }
       }
     },
