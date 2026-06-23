@@ -104,10 +104,9 @@ export class AccountSettingsPanel {
 
     private async handleOAuthSignIn(provider: OAuthProvider): Promise<void> {
         try {
+            // signIn persists the tokens under this.accountId, so the test buttons
+            // work even before the account is saved.
             const result = await OAuthService.getInstance().signIn(provider, this.accountId);
-            // Persist the refresh token immediately so the test buttons work even
-            // before the account is saved.
-            await OAuthService.getInstance().storeRefreshToken(this.accountId, result.refreshToken);
             this.panel.webview.postMessage({
                 type: 'oauthSignInResult',
                 success: true,

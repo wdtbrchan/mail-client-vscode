@@ -77,6 +77,7 @@ export class AccountManager {
         await this.context.secrets.delete(this.getPasswordKey(id));
         await this.context.secrets.delete(this.getSmtpPasswordKey(id));
         await this.context.secrets.delete(this.getOAuthRefreshKey(id));
+        await this.context.secrets.delete(this.getMsalCacheKey(id));
         this._onAccountsChanged.fire();
     }
 
@@ -109,9 +110,14 @@ export class AccountManager {
         return `mailClient.smtpPassword.${accountId}`;
     }
 
-    /** Must match OAuthService's refresh-token key format. */
+    /** Must match OAuthService's refresh-token key format (Google). */
     private getOAuthRefreshKey(accountId: string): string {
         return `mailClient.oauthRefresh.${accountId}`;
+    }
+
+    /** Must match OAuthService's MSAL cache key format (Microsoft). */
+    private getMsalCacheKey(accountId: string): string {
+        return `mailClient.msalCache.${accountId}`;
     }
 
     dispose(): void {

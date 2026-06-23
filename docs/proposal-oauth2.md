@@ -70,7 +70,7 @@ redirect URIs). Host: `localhost` for Microsoft, `127.0.0.1` for Google
 | Layer | Change |
 | --- | --- |
 | `types/account.ts` | `authType?: 'basic' \| 'oauth2'`, `oauthProvider?: 'microsoft' \| 'google'` |
-| `services/oauthService.ts` (new) | Singleton. PKCE sign-in, token refresh + rotation, access-token cache, refresh-token storage in `SecretStorage`, email extraction from `id_token` |
+| `services/oauthService.ts` (new) | Singleton. Microsoft via `@azure/msal-node` (`PublicClientApplication`, SecretStorage-backed cache plugin, silent refresh). Google via hand-rolled Authorization Code + PKCE flow with loopback redirect; refresh token in `SecretStorage`. Access-token cache, email extraction |
 | `services/imapService.ts` | `connect` / `testConnection` use `auth: { user, accessToken }` when `authType === 'oauth2'` |
 | `services/smtpService.ts` | `sendMail` / `testConnection` use nodemailer `auth: { type: 'OAuth2', user, accessToken }` |
 | `services/accountManager.ts` | Deletes the OAuth refresh token on `removeAccount` |
@@ -78,8 +78,9 @@ redirect URIs). Host: `localhost` for Microsoft, `127.0.0.1` for Google
 | `panels/views/accountSettings/*` | Auth-type selector, provider dropdown, "Sign in" button, autofill of known host/port presets |
 | `package.json` | OAuth client-id / tenant / secret settings |
 
-Token storage uses a dedicated secret key `mailClient.oauthRefresh.<accountId>`,
-independent of the Basic-auth password slots.
+Token storage uses dedicated secret keys, independent of the Basic-auth password
+slots: `mailClient.oauthRefresh.<accountId>` (Google refresh token) and
+`mailClient.msalCache.<accountId>` (Microsoft MSAL token cache).
 
 ## Settings (package.json)
 
@@ -91,11 +92,11 @@ independent of the Basic-auth password slots.
 
 ## Provider endpoints & scopes
 
-**Microsoft** (`{tenant}` from settings)
-- Authorize: `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize`
-- Token: `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token`
-- Scopes: `openid email offline_access https://outlook.office.com/IMAP.AccessAsUser.All https://outlook.office.com/SMTP.Send`
-- Public client (no secret), PKCE.
+**Microsoft** (`{tenant}` from settings) — handled by `@azure/msal-node`
+- Authority: `https://login.microsoftonline.com/{tenant}`
+- Scopes: `openid profile offline_access https://outlook.office.com/IMAP.AccessAsUser.All https://outlook.office.com/SMTP.Send`
+- Public client (no secret), PKCE. MSAL manages the token cache (serialized into
+  `SecretStorage` per account) and silent refresh.
 
 **Google**
 - Authorize: `https://accounts.google.com/o/oauth2/v2/auth`
@@ -141,10 +142,6 @@ independent of the Basic-auth password slots.
 
 ## Future work
 
-- Optionally adopt `@azure/msal-node` (`PublicClientApplication`) for the
-  Microsoft path. MSAL handles the token cache, silent refresh and MFA/conditional-
-  access edge cases more robustly than the hand-rolled flow, storing its cache via
-  a `SecretStorage`-backed `ICachePlugin`. Still a public client, still no secret.
 - Optionally use VS Code's built-in `microsoft` authentication provider to avoid
   Azure registration (blocked today by missing Outlook scope consent on the
   first-party app).
