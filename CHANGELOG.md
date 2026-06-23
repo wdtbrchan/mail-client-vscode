@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.20.0]
+- **Accounts**: Added **OAuth2 (XOAUTH2)** sign-in for Office 365 (Microsoft) and Gmail (Google), required now that both providers have disabled basic password auth for IMAP/SMTP. Choose "OAuth2" in account settings, pick the provider and sign in via the system browser; access tokens are obtained on demand and refresh/cache data is stored securely in SecretStorage. Microsoft uses MSAL (`@azure/msal-node`); public client IDs are bundled so it works out of the box.
+- **Account Settings**: The connection test now validates IMAP and SMTP independently, with results shown inline next to each button. The IMAP test no longer incorrectly reports "SMTP Server is required".
+
 ## [0.19.0]
 - **Cross-plugin integration**: Added a `vscode://wdtbrchan.mail-client-vscode/open?msgid=<id>` URI handler and a `mailClient.openByMessageId` command that locate an email by its `Message-ID` (via IMAP `SEARCH HEADER Message-ID` across all folders of all accounts) and open it. Enables org-mode link extensions (e.g. org-vscode `registerLinkType`) to link directly to specific emails.
 - **Message Detail**: Added a "Copy message link" button that copies a stable editor link to the message for pasting into notes. The URI scheme auto-detects the running editor (works in Cursor, VSCodium, Insiders, etc.); override with the optional `mailClient.linkScheme` setting.
