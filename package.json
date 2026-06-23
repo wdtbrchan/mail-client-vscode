@@ -271,18 +271,18 @@
         },
         "mailClient.oauth.microsoftClientId": {
           "type": "string",
-          "default": "",
-          "description": "Azure AD application (client) ID for Microsoft/Office 365 OAuth2 sign-in. Register a 'Mobile and desktop applications' app with redirect URI 'http://localhost' and delegated permissions IMAP.AccessAsUser.All, SMTP.Send, offline_access."
+          "default": "6d3ec133-889c-4f03-97b0-a5358d9b449c",
+          "description": "Azure AD application (public client) ID for Microsoft/Office 365 OAuth2 sign-in. A default is provided; override only to use your own 'Mobile and desktop applications' app (redirect URI 'http://localhost', delegated permissions IMAP.AccessAsUser.All, SMTP.Send, offline_access). This is a public client ID, not a secret."
         },
         "mailClient.oauth.microsoftTenant": {
           "type": "string",
-          "default": "common",
-          "description": "Microsoft OAuth2 tenant: 'common', 'organizations', 'consumers', or a specific tenant ID."
+          "default": "99d81be7-80fc-4eec-ab8f-1145579f2f1b",
+          "description": "Microsoft OAuth2 tenant: 'common', 'organizations', 'consumers', or a specific tenant ID. Defaults to the tenant of the bundled app registration; set to 'common' if you use your own multitenant app."
         },
         "mailClient.oauth.googleClientId": {
           "type": "string",
-          "default": "",
-          "description": "Google Cloud OAuth client ID (Desktop app type) for Gmail OAuth2 sign-in. Enable the Gmail API and add the scope https://mail.google.com/. This is a public client ID (not a secret); no client secret is used."
+          "default": "627608066306-q2tsjno2spra48c3pnvf44se65l1m5n0.apps.googleusercontent.com",
+          "description": "Google Cloud OAuth client ID (Desktop app type) for Gmail OAuth2 sign-in (Gmail API + scope https://mail.google.com/). A default is provided; this is a public client ID (not a secret) and no client secret is used."
         }
       }
     },
