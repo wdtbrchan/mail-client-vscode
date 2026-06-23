@@ -286,8 +286,8 @@
         },
         "mailClient.oauth.googleClientSecret": {
           "type": "string",
-          "default": "",
-          "description": "Google OAuth client secret for the Desktop app client. Google requires it in the token exchange even with PKCE; for Desktop/installed apps Google does not treat it as confidential. Must match the configured googleClientId."
+          "default": "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",
+          "description": "Google OAuth client secret for the Desktop app client. Google requires it in the token exchange even with PKCE; for Desktop/installed apps Google does not treat it as confidential. A default is provided; must match the configured googleClientId."
         }
       }
     },
