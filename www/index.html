@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mail Client for VS Code</title>
+  <meta name="description" content="Mail Client is an open-source IMAP/SMTP email client extension for Visual Studio Code, with OAuth2 sign-in for Gmail and Microsoft 365.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap hero">
+      <img class="logo" src="logo.png" alt="Mail Client logo" width="160" height="160">
+      <h1>Mail Client <span class="badge">for VS Code</span></h1>
+      <p class="tagline">
+        A simple and efficient IMAP email client directly within VS Code — or any compatible
+        editor like Cursor or Antigravity. In Markdown mode you can even leverage AI
+        autocomplete to help write your email text.
+      </p>
+      <p class="cta">
+        <a class="button" href="https://github.com/wdtbrchan/mail-client-vscode">View on GitHub</a>
+      </p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section>
+      <img class="screenshot" src="screenshot.jpg" alt="Mail Client screenshot in VS Code">
+    </section>
+
+    <section>
+      <h2>What it is</h2>
+      <p>
+        Mail Client is an open-source extension for Visual Studio Code that lets you read,
+        write, and manage email without leaving your editor. It connects directly to your
+        mailbox over IMAP and SMTP. Everything runs locally on your own machine — there is
+        no intermediate server operated by us.
+      </p>
+    </section>
+
+    <section>
+      <h2>Features</h2>
+      <ul class="features">
+        <li><strong>Account Management:</strong> Add, edit, and remove IMAP accounts through a user-friendly interface.</li>
+        <li><strong>Email Browsing &amp; Search:</strong> Access folders from the sidebar, browse messages, and search within folders using IMAP search features.</li>
+        <li><strong>Compose Interface:</strong> WYSIWYG rich text editor with Markdown fallback mode.</li>
+        <li><strong>Basic Operations:</strong> Reply to messages, forward, and delete emails.</li>
+        <li><strong>Attachments:</strong> Upload and download email attachments — including local file selection even when connected over Remote SSH.</li>
+        <li><strong>Folder Management:</strong> Map special folders and create custom folder buttons.</li>
+        <li><strong>Image Whitelist:</strong> Whitelist trusted senders to automatically load remote images in future emails.</li>
+        <li><strong>Organize Messages:</strong> Archive, Spam, Trash, and Inbox actions with context-aware buttons.</li>
+        <li><strong>Address Book:</strong> Manage contacts and use autocomplete in the <code>To</code>, <code>Cc</code>, and <code>Bcc</code> fields. Add unknown contacts with a single click.</li>
+        <li><strong>Jira Integration:</strong> Pair emails with Jira issues, post comments, and open issues directly in the browser from the message detail view.</li>
+        <li><strong>Notes &amp; Org Integration:</strong> Copy a stable link to an email or capture it as a task (org-mode TODO by default) into a configurable file. Links reopen the exact email later via a URI handler — works with org-mode link extensions and across editors (Cursor, VSCodium, …).</li>
+        <li><strong>Print Support:</strong> Print messages via the native OS prompt directly from the UI.</li>
+        <li><strong>Customizable Layout:</strong> Choose between a Side or Bottom panel for viewing message details in Split View.</li>
+        <li><strong>Calendar Support:</strong> View calendar invite (ICS) details directly in the email, including time, location, and attendees.</li>
+        <li><strong>Connection Reliability:</strong> Configurable keepalive mechanism using IMAP <code>NOOP</code> commands to prevent session timeouts.</li>
+        <li><strong>OAuth2 Sign-in:</strong> Secure OAuth2 sign-in for <strong>Gmail</strong> and <strong>Microsoft 365</strong>, or classic username/password. Credentials are stored in the VS Code Secret Storage.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Requirements</h2>
+      <ul>
+        <li>VS Code version 1.85.0 or newer.</li>
+        <li>An IMAP account (e.g. Gmail, Outlook, or a custom server).</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>OAuth2 and your Google account</h2>
+      <p>
+        When you choose Gmail, the extension uses Google's OAuth2 to obtain permission to
+        access your mailbox over IMAP/SMTP. Your email content is processed locally on your
+        computer to display it in the editor. We do not operate any backend, we do not
+        collect your data, and we do not share it with anyone. See our
+        <a href="privacy.html">Privacy Policy</a> for full details.
+      </p>
+    </section>
+
+    <section>
+      <h2>Get it</h2>
+      <p>
+        Source code, installation instructions, and the issue tracker are on GitHub:
+        <a href="https://github.com/wdtbrchan/mail-client-vscode">github.com/wdtbrchan/mail-client-vscode</a>
+      </p>
+    </section>
+
+    <section>
+      <h2>License</h2>
+      <p>
+        This project is licensed under the
+        <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>
+        &copy; 2026 Jan Brchan &nbsp;·&nbsp;
+        <a href="https://github.com/wdtbrchan/mail-client-vscode">GitHub</a> &nbsp;·&nbsp;
+        <a href="privacy.html">Privacy Policy</a> &nbsp;·&nbsp;
+        <a href="terms.html">Terms of Service</a> &nbsp;·&nbsp;
+        <a href="mailto:jan.brchan@gmail.com">Contact</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,5 +1,7 @@
 .vscode/**
 src/**
+www/**
+deploy_website.ps1
 node_modules/**
 .agents/**
 .claude/**

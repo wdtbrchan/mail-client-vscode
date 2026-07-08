@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — Mail Client for VS Code</title>
+  <meta name="description" content="Privacy Policy for the Mail Client extension for Visual Studio Code.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1>Privacy Policy</h1>
+      <p class="tagline">Mail Client for VS Code</p>
+    </div>
+  </header>
+
+  <main class="wrap prose">
+    <p><strong>Last updated:</strong> 8 July 2026</p>
+
+    <p>
+      This Privacy Policy describes how the <strong>Mail Client</strong> extension for
+      Visual Studio Code (the &ldquo;Extension&rdquo;), published by Jan Brchan (the
+      &ldquo;Developer&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;), handles your information.
+    </p>
+
+    <h2>1. Summary</h2>
+    <p>
+      The Extension is a client-side application that runs entirely on your own device
+      inside Visual Studio Code. <strong>We do not operate any server</strong>, we do not
+      collect, store, or transmit your personal data or email content to ourselves or to any
+      third party, and we do not use it for advertising or analytics.
+    </p>
+
+    <h2>2. Information the Extension accesses</h2>
+    <p>To provide email functionality, the Extension accesses, on your device only:</p>
+    <ul>
+      <li>
+        <strong>Your mailbox contents</strong> (messages, folders, attachments, and
+        related metadata) retrieved from your email provider over IMAP, and messages you
+        send over SMTP.
+      </li>
+      <li>
+        <strong>Account configuration</strong> you enter (email address, server host and
+        port, display name).
+      </li>
+      <li>
+        <strong>Authentication credentials</strong> — either a password or, for OAuth2
+        accounts, an OAuth refresh/access token.
+      </li>
+    </ul>
+
+    <h2>3. Google user data</h2>
+    <p>
+      If you connect a Gmail account, the Extension requests the Google OAuth scope
+      <code>https://mail.google.com/</code>, which permits access to your Gmail mailbox over
+      IMAP and SMTP. This access is used <strong>solely</strong> to let you read, search,
+      compose, and send email from within your editor.
+    </p>
+    <ul>
+      <li>Google user data is processed <strong>locally, in memory,</strong> on your device to display and send mail.</li>
+      <li>Google user data is <strong>never</strong> transmitted to the Developer or to any third-party server.</li>
+      <li>Google user data is <strong>not</strong> sold, and is <strong>not</strong> used for advertising or any purpose other than providing the email features you request.</li>
+      <li>The only credential retained is the OAuth refresh token, stored locally (see Section 4). No email content is persisted by the Extension beyond your current session.</li>
+    </ul>
+    <p>
+      The Extension's use and transfer of information received from Google APIs adheres to the
+      <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
+      including the <strong>Limited Use</strong> requirements.
+    </p>
+
+    <h2>4. Where data is stored</h2>
+    <ul>
+      <li>
+        <strong>Credentials and OAuth tokens</strong> are stored using the
+        <a href="https://code.visualstudio.com/api/references/vscode-api#SecretStorage">VS Code Secret Storage</a>,
+        which uses your operating system's secure credential store (Keychain, Windows
+        Credential Manager, or libsecret).
+      </li>
+      <li>
+        <strong>Non-sensitive settings</strong> (account list, server addresses, preferences)
+        are stored in VS Code's local extension storage on your device.
+      </li>
+      <li>
+        <strong>Email content</strong> is held only transiently in memory while you view or
+        send it, and is not written to any database or sent to us.
+      </li>
+    </ul>
+
+    <h2>5. Data sharing</h2>
+    <p>
+      We do not share your data with anyone, because we never receive it. Email data flows
+      directly between your device and your email provider (e.g. Google, Microsoft, or your
+      own IMAP/SMTP server) over encrypted connections (TLS).
+    </p>
+
+    <h2>6. Data retention and deletion</h2>
+    <p>
+      Because data is stored only on your device, you are in full control. Removing an account
+      in the Extension deletes its stored credentials and OAuth token. Uninstalling the
+      Extension removes its local data. You can also revoke the Extension's access to your
+      Google account at any time at
+      <a href="https://myaccount.google.com/permissions">Google Account &rsaquo; Third-party access</a>.
+    </p>
+
+    <h2>7. Security</h2>
+    <p>
+      Connections to mail servers use TLS. Credentials are held in the operating system's
+      secure store. OAuth sign-in uses the industry-standard Authorization Code flow with
+      PKCE. However, no method of transmission or storage is completely secure, and we cannot
+      guarantee absolute security.
+    </p>
+
+    <h2>8. Children</h2>
+    <p>The Extension is not directed to children under the age of 13.</p>
+
+    <h2>9. Changes to this policy</h2>
+    <p>
+      We may update this Privacy Policy from time to time. Changes will be posted on this page
+      with an updated &ldquo;Last updated&rdquo; date.
+    </p>
+
+    <h2>10. Contact</h2>
+    <p>
+      Questions about this policy can be sent to
+      <a href="mailto:jan.brchan@gmail.com">jan.brchan@gmail.com</a>.
+    </p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>
+        &copy; 2026 Jan Brchan &nbsp;·&nbsp;
+        <a href="index.html">Home</a> &nbsp;·&nbsp;
+        <a href="terms.html">Terms of Service</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>
