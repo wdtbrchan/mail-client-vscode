@@ -129,9 +129,9 @@ if (!$env:OVSX_PAT) {
 }
 
 Write-Step "Publishing to Open VSX"
-ovsx publish $vsix
+npx --yes ovsx publish $vsix
 
 Write-Step "Publishing to VS Code Marketplace"
-vsce publish
+npx --yes vsce publish --packagePath $vsix
 
 Write-Step "Release $version complete"
