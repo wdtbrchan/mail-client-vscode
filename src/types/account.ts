@@ -19,8 +19,9 @@ export interface IMailAccount {
      */
     authType?: 'basic' | 'oauth2';
 
-    /** OAuth2 provider, required when authType === 'oauth2'. */
-    oauthProvider?: 'microsoft' | 'google';
+    /** OAuth2 provider, required when authType === 'oauth2'. Only Microsoft is
+     * supported; Gmail uses an App Password (basic auth) instead. */
+    oauthProvider?: 'microsoft';
 
     // --- IMAP (incoming) ---
     /** IMAP server hostname */

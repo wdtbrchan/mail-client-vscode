@@ -5,21 +5,12 @@ import { AddressInfo } from 'net';
 import * as msal from '@azure/msal-node';
 import { IMailAccount } from '../types/account';
 
-export type OAuthProvider = 'microsoft' | 'google';
+export type OAuthProvider = 'microsoft';
 
 /** Result of an interactive sign-in. */
 export interface IOAuthSignInResult {
     /** Account email address, if it could be determined. */
     email?: string;
-}
-
-interface IGoogleTokenResponse {
-    access_token: string;
-    refresh_token?: string;
-    expires_in?: number;
-    id_token?: string;
-    error?: string;
-    error_description?: string;
 }
 
 interface ICachedToken {
@@ -37,29 +28,23 @@ const MS_SCOPES = [
     'https://outlook.office.com/SMTP.Send',
 ];
 
-/** Google scope for full IMAP/POP/SMTP access. */
-const GOOGLE_SCOPE = 'https://mail.google.com/';
-const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
-
-/** SecretStorage key prefixes. */
-const GOOGLE_REFRESH_KEY_PREFIX = 'mailClient.oauthRefresh.';
+/** SecretStorage key prefix for the MSAL token cache. */
 const MSAL_CACHE_KEY_PREFIX = 'mailClient.msalCache.';
 
 /** Refresh access tokens this many ms before their real expiry. */
 const EXPIRY_SKEW_MS = 60_000;
 
 /**
- * Handles OAuth2 (XOAUTH2) authentication for Microsoft (Office 365) and Google
- * (Gmail).
+ * Handles OAuth2 (XOAUTH2) authentication for Microsoft (Office 365 / Outlook).
  *
- * Both providers are public clients secured by PKCE. Microsoft uses no client
- * secret at all (`@azure/msal-node` `PublicClientApplication` with a
- * SecretStorage-backed token cache, silent refresh handled by MSAL). Google uses
- * a hand-rolled Authorization Code + PKCE flow with a loopback redirect; its
- * token endpoint additionally requires the Desktop-app `client_secret` (which
- * Google does not treat as confidential for installed apps). Refresh tokens /
- * MSAL cache live in SecretStorage.
+ * The app is a public client secured by PKCE with no client secret at all
+ * (`@azure/msal-node` `PublicClientApplication` with a SecretStorage-backed token
+ * cache; silent refresh handled by MSAL). Client ID + tenant come from settings.
+ *
+ * Gmail is intentionally NOT supported via OAuth2: Google's `https://mail.google.com/`
+ * is a restricted scope whose public distribution requires a paid annual CASA
+ * security assessment. Gmail users authenticate with an App Password (basic auth)
+ * instead — see the README.
  */
 export class OAuthService {
     private static instance: OAuthService | undefined;
@@ -82,18 +67,13 @@ export class OAuthService {
         return OAuthService.instance;
     }
 
-    private googleRefreshKey(accountId: string): string {
-        return `${GOOGLE_REFRESH_KEY_PREFIX}${accountId}`;
-    }
-
     private msalCacheKey(accountId: string): string {
         return `${MSAL_CACHE_KEY_PREFIX}${accountId}`;
     }
 
-    /** Removes all stored tokens (refresh token / MSAL cache) for an account. */
+    /** Removes all stored tokens (MSAL cache) for an account. */
     async clearTokens(accountId: string): Promise<void> {
         this.tokenCache.delete(accountId);
-        await this.context.secrets.delete(this.googleRefreshKey(accountId));
         await this.context.secrets.delete(this.msalCacheKey(accountId));
     }
 
@@ -104,7 +84,7 @@ export class OAuthService {
      * Throws if the account has not been signed in.
      */
     async getAccessToken(account: IMailAccount): Promise<string> {
-        if (account.authType !== 'oauth2' || !account.oauthProvider) {
+        if (account.authType !== 'oauth2') {
             throw new Error('Account is not configured for OAuth2.');
         }
 
@@ -113,10 +93,7 @@ export class OAuthService {
             return cached.accessToken;
         }
 
-        if (account.oauthProvider === 'microsoft') {
-            return this.getAccessTokenMicrosoft(account);
-        }
-        return this.getAccessTokenGoogle(account);
+        return this.getAccessTokenMicrosoft(account);
     }
 
     // ---- Sign-in ----
@@ -124,18 +101,16 @@ export class OAuthService {
     /**
      * Runs the interactive sign-in flow in the system browser, persists the
      * resulting tokens for the account, and returns the account email if known.
+     * `provider` is always `'microsoft'`; the parameter is kept for API stability.
      */
-    async signIn(provider: OAuthProvider, accountId: string): Promise<IOAuthSignInResult> {
+    async signIn(_provider: OAuthProvider, accountId: string): Promise<IOAuthSignInResult> {
         return vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
-                title: `Signing in to ${provider === 'microsoft' ? 'Microsoft' : 'Google'}…`,
+                title: 'Signing in to Microsoft…',
                 cancellable: true,
             },
-            (_progress, cancelToken) =>
-                provider === 'microsoft'
-                    ? this.signInMicrosoft(accountId, cancelToken)
-                    : this.signInGoogle(accountId, cancelToken),
+            (_progress, cancelToken) => this.signInMicrosoft(accountId, cancelToken),
         );
     }
 
@@ -238,118 +213,6 @@ export class OAuthService {
         return { email: result.account?.username };
     }
 
-    // ---- Google (manual PKCE) ----
-
-    private googleClientId(): string {
-        const clientId = (vscode.workspace
-            .getConfiguration('mailClient.oauth')
-            .get<string>('googleClientId') || '').trim();
-        if (!clientId) {
-            throw new Error(
-                'Google OAuth client ID is not set. Configure "mailClient.oauth.googleClientId".',
-            );
-        }
-        return clientId;
-    }
-
-    /**
-     * Google's token endpoint requires a client_secret for Desktop app clients
-     * even with PKCE. Google does not treat this value as confidential for
-     * installed apps. Returns '' if not configured.
-     */
-    private googleClientSecret(): string {
-        return (vscode.workspace
-            .getConfiguration('mailClient.oauth')
-            .get<string>('googleClientSecret') || '').trim();
-    }
-
-    private async getAccessTokenGoogle(account: IMailAccount): Promise<string> {
-        const refreshToken = await this.context.secrets.get(this.googleRefreshKey(account.id));
-        if (!refreshToken) {
-            throw new Error(
-                `Account "${account.name}" is not signed in. Open account settings and sign in again.`,
-            );
-        }
-
-        const token = await this.postGoogleToken({
-            client_id: this.googleClientId(),
-            grant_type: 'refresh_token',
-            refresh_token: refreshToken,
-        });
-
-        this.cacheResult(account.id, token.access_token, this.expiryDate(token.expires_in));
-        // Google normally keeps the same refresh token, but persist a rotated one.
-        if (token.refresh_token && token.refresh_token !== refreshToken) {
-            await this.context.secrets.store(this.googleRefreshKey(account.id), token.refresh_token);
-        }
-        return token.access_token;
-    }
-
-    private async signInGoogle(
-        accountId: string,
-        cancelToken: vscode.CancellationToken,
-    ): Promise<IOAuthSignInResult> {
-        const verifier = crypto.randomBytes(32).toString('base64url');
-        const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
-        const state = crypto.randomBytes(16).toString('hex');
-        const clientId = this.googleClientId();
-
-        const { code, redirectUri } = await this.runLoopbackAuth(
-            '127.0.0.1',
-            state,
-            cancelToken,
-            (redirect) => {
-                const url = new URL(GOOGLE_AUTH_URL);
-                url.searchParams.set('client_id', clientId);
-                url.searchParams.set('redirect_uri', redirect);
-                url.searchParams.set('response_type', 'code');
-                url.searchParams.set('scope', GOOGLE_SCOPE);
-                url.searchParams.set('state', state);
-                url.searchParams.set('code_challenge', challenge);
-                url.searchParams.set('code_challenge_method', 'S256');
-                url.searchParams.set('access_type', 'offline');
-                url.searchParams.set('prompt', 'consent');
-                return url.toString();
-            },
-        );
-
-        const token = await this.postGoogleToken({
-            client_id: clientId,
-            grant_type: 'authorization_code',
-            code,
-            code_verifier: verifier,
-            redirect_uri: redirectUri,
-        });
-        if (!token.refresh_token) {
-            throw new Error('Google did not return a refresh token. Ensure offline access is granted.');
-        }
-
-        await this.context.secrets.store(this.googleRefreshKey(accountId), token.refresh_token);
-        this.cacheResult(accountId, token.access_token, this.expiryDate(token.expires_in));
-        return { email: this.extractEmail(token.id_token) };
-    }
-
-    /** POSTs a form-encoded body to Google's token endpoint, adding the client secret. */
-    private async postGoogleToken(body: Record<string, string>): Promise<IGoogleTokenResponse> {
-        const secret = this.googleClientSecret();
-        if (secret) {
-            body.client_secret = secret;
-        }
-
-        const response = await fetch(GOOGLE_TOKEN_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(body).toString(),
-        });
-
-        const data = (await response.json()) as IGoogleTokenResponse;
-        if (!response.ok || data.error || !data.access_token) {
-            const detail = data.error_description || data.error || `HTTP ${response.status}`;
-            throw new Error(`Google token request failed: ${detail}`);
-        }
-        return data;
-    }
-
     // ---- Shared helpers ----
 
     /**
@@ -437,24 +300,5 @@ export class OAuthService {
     private cacheResult(accountId: string, accessToken: string, expiresOn: Date | null | undefined): void {
         const expiresAt = expiresOn ? expiresOn.getTime() : Date.now() + 3600_000;
         this.tokenCache.set(accountId, { accessToken, expiresAt });
-    }
-
-    private expiryDate(expiresIn?: number): Date {
-        return new Date(Date.now() + (expiresIn ?? 3600) * 1000);
-    }
-
-    /** Extracts the email/username claim from an id_token JWT, if present. */
-    private extractEmail(idToken?: string): string | undefined {
-        if (!idToken) {
-            return undefined;
-        }
-        try {
-            const payload = idToken.split('.')[1];
-            const json = Buffer.from(payload, 'base64url').toString('utf8');
-            const claims = JSON.parse(json);
-            return claims.email || claims.preferred_username || claims.upn || undefined;
-        } catch {
-            return undefined;
-        }
     }
 }

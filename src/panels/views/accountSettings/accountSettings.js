@@ -4,7 +4,6 @@ const fields = {
     name: document.getElementById('name'),
     senderName: document.getElementById('senderName'),
     authType: document.getElementById('authType'),
-    oauthProvider: document.getElementById('oauthProvider'),
     host: document.getElementById('host'),
     port: document.getElementById('port'),
     secure: document.getElementById('secure'),
@@ -45,7 +44,6 @@ function getFormData() {
         name: fields.name.value.trim(),
         senderName: fields.senderName.value.trim(),
         authType: fields.authType.value,
-        oauthProvider: fields.oauthProvider.value,
         host: fields.host.value.trim(),
         port: fields.port.value,
         secure: fields.secure.checked,
@@ -113,14 +111,15 @@ function validateSmtp() {
     return true;
 }
 
-// Provider connection presets applied when selecting an OAuth provider.
-const OAUTH_PRESETS = {
-    microsoft: { host: 'outlook.office365.com', port: 993, secure: true, smtpHost: 'smtp.office365.com', smtpPort: 587, smtpSecure: false },
-    google: { host: 'imap.gmail.com', port: 993, secure: true, smtpHost: 'smtp.gmail.com', smtpPort: 465, smtpSecure: true },
+// Connection presets applied when selecting an account type.
+// 'gmail' is basic auth (App Password); 'oauth2' is Microsoft 365.
+const PRESETS = {
+    gmail: { host: 'imap.gmail.com', port: 993, secure: true, smtpHost: 'smtp.gmail.com', smtpPort: 465, smtpSecure: true },
+    oauth2: { host: 'outlook.office365.com', port: 993, secure: true, smtpHost: 'smtp.office365.com', smtpPort: 587, smtpSecure: false },
 };
 
-function applyProviderPreset(provider) {
-    const p = OAUTH_PRESETS[provider];
+function applyPreset(type) {
+    const p = PRESETS[type];
     if (!p) return;
     fields.host.value = p.host;
     fields.port.value = p.port;
@@ -130,11 +129,16 @@ function applyProviderPreset(provider) {
     fields.smtpSecure.checked = p.smtpSecure;
 }
 
-// Shows/hides Basic vs OAuth2 rows and toggles the 'required' flag on password fields.
+// Toggles Basic/Gmail/OAuth2 rows, the App Password label, and the password 'required' flag.
 function updateAuthVisibility() {
-    const isOauth = fields.authType.value === 'oauth2';
+    const type = fields.authType.value;
+    const isOauth = type === 'oauth2';
+    const isGmail = type === 'gmail';
     document.body.classList.toggle('auth-oauth', isOauth);
+    document.body.classList.toggle('auth-gmail', isGmail);
     fields.password.required = !isOauth;
+    const pwLabel = document.getElementById('passwordLabel');
+    if (pwLabel) pwLabel.textContent = isGmail ? 'App Password' : 'Password';
 }
 
 function showStatus(message, type) {
@@ -180,18 +184,10 @@ document.getElementById('btnTestSmtp').addEventListener('click', () => {
 
 fields.authType.addEventListener('change', () => {
     updateAuthVisibility();
-    // Reset sign-in state when switching providers/modes.
+    // Reset sign-in state when switching account types.
     window.oauthSignedIn = false;
     showInlineStatus('oauthStatus', '', '');
-    if (fields.authType.value === 'oauth2') {
-        applyProviderPreset(fields.oauthProvider.value);
-    }
-});
-
-fields.oauthProvider.addEventListener('change', () => {
-    window.oauthSignedIn = false;
-    showInlineStatus('oauthStatus', '', '');
-    applyProviderPreset(fields.oauthProvider.value);
+    applyPreset(fields.authType.value);
 });
 
 document.getElementById('btnOAuthSignIn').addEventListener('click', () => {
@@ -201,7 +197,7 @@ document.getElementById('btnOAuthSignIn').addEventListener('click', () => {
     }
     showInlineStatus('oauthStatus', 'Signing in…', 'loading');
     document.getElementById('btnOAuthSignIn').disabled = true;
-    vscode.postMessage({ type: 'oauthSignIn', provider: fields.oauthProvider.value });
+    vscode.postMessage({ type: 'oauthSignIn', provider: 'microsoft' });
 });
 
 document.getElementById('btnListFolders').addEventListener('click', () => {
@@ -327,8 +323,14 @@ window.addEventListener('message', (event) => {
             fields.signature.innerHTML = message.account.signature || '';
             fields.markdownSignature.value = message.account.markdownSignature || '';
 
-            fields.authType.value = message.account.authType || 'basic';
-            fields.oauthProvider.value = message.account.oauthProvider || 'microsoft';
+            // Map the stored authType to a UI account-type. Gmail is stored as
+            // 'basic' (App Password); infer the Gmail UI mode from the host so the
+            // hint and label show up on edit.
+            let uiAuthType = message.account.authType || 'basic';
+            if (uiAuthType === 'basic' && (message.account.host || '').toLowerCase().includes('gmail.com')) {
+                uiAuthType = 'gmail';
+            }
+            fields.authType.value = uiAuthType;
             updateAuthVisibility();
             // Existing OAuth accounts already have a stored refresh token.
             window.oauthSignedIn = message.account.authType === 'oauth2';

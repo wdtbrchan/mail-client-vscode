@@ -153,6 +153,9 @@ button {
 .oauth-only { display: none; }
 body.auth-oauth .oauth-only { display: grid; }
 body.auth-oauth .basic-only { display: none; }
+/* Gmail App Password hint: shown only in the Gmail account-type mode. */
+.gmail-only { display: none; }
+body.auth-gmail .gmail-only { display: grid; }
 .section-divider {
     border: none;
     border-top: 1px solid var(--vscode-widget-border);

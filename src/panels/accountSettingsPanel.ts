@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { AccountManager } from '../services/accountManager';
 import { ImapService } from '../services/imapService';
 import { SmtpService } from '../services/smtpService';
-import { OAuthService, OAuthProvider } from '../services/oauthService';
+import { OAuthService } from '../services/oauthService';
 import { IMailAccount } from '../types/account';
 
 // @ts-ignore
@@ -102,11 +102,11 @@ export class AccountSettingsPanel {
         });
     }
 
-    private async handleOAuthSignIn(provider: OAuthProvider): Promise<void> {
+    private async handleOAuthSignIn(): Promise<void> {
         try {
             // signIn persists the tokens under this.accountId, so the test buttons
-            // work even before the account is saved.
-            const result = await OAuthService.getInstance().signIn(provider, this.accountId);
+            // work even before the account is saved. Only Microsoft is supported.
+            const result = await OAuthService.getInstance().signIn('microsoft', this.accountId);
             this.panel.webview.postMessage({
                 type: 'oauthSignInResult',
                 success: true,
@@ -134,7 +134,7 @@ export class AccountSettingsPanel {
                 await this.handleTestSmtpConnection(message.data);
                 break;
             case 'oauthSignIn':
-                await this.handleOAuthSignIn(message.provider);
+                await this.handleOAuthSignIn();
                 break;
             case 'cancel':
                 this.panel.dispose();
@@ -152,7 +152,7 @@ export class AccountSettingsPanel {
                 name: data.name,
                 senderName: data.senderName || undefined,
                 authType: data.authType === 'oauth2' ? 'oauth2' : 'basic',
-                oauthProvider: data.authType === 'oauth2' ? data.oauthProvider : undefined,
+                oauthProvider: data.authType === 'oauth2' ? 'microsoft' : undefined,
                 host: data.host,
                 port: parseInt(data.port, 10),
                 secure: data.secure,
@@ -205,7 +205,7 @@ export class AccountSettingsPanel {
                 id: this.accountId,
                 name: data.name,
                 authType: data.authType === 'oauth2' ? 'oauth2' : 'basic',
-                oauthProvider: data.authType === 'oauth2' ? data.oauthProvider : undefined,
+                oauthProvider: data.authType === 'oauth2' ? 'microsoft' : undefined,
                 host: data.host,
                 port: parseInt(data.port, 10),
                 secure: data.secure,
@@ -238,7 +238,7 @@ export class AccountSettingsPanel {
                 id: this.accountId,
                 name: data.name,
                 authType: data.authType === 'oauth2' ? 'oauth2' : 'basic',
-                oauthProvider: data.authType === 'oauth2' ? data.oauthProvider : undefined,
+                oauthProvider: data.authType === 'oauth2' ? 'microsoft' : undefined,
                 host: data.host,
                 port: parseInt(data.port, 10),
                 secure: data.secure,
@@ -272,7 +272,7 @@ export class AccountSettingsPanel {
                 id: this.accountId,
                 name: data.name,
                 authType: data.authType === 'oauth2' ? 'oauth2' : 'basic',
-                oauthProvider: data.authType === 'oauth2' ? data.oauthProvider : undefined,
+                oauthProvider: data.authType === 'oauth2' ? 'microsoft' : undefined,
                 host: data.host,
                 port: parseInt(data.port, 10),
                 secure: data.secure,

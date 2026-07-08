@@ -1,5 +1,11 @@
 # Changelog
 
+## [ upcoming ]
+- **Accounts**: Gmail now connects with an **App Password** (Basic auth) instead of OAuth2. A new **"Gmail (App Password)"** account type pre-fills the Gmail IMAP/SMTP servers and shows an inline setup hint. Gmail OAuth2 was removed because Google's `https://mail.google.com/` is a restricted scope whose public distribution requires a paid annual security assessment (CASA).
+- **Accounts**: OAuth2 sign-in is now **Microsoft 365 / Outlook only**.
+- **Settings**: Removed `mailClient.oauth.googleClientId` and `mailClient.oauth.googleClientSecret` (this also removed the bundled Google client secret).
+- **Docs**: Added Gmail (App Password) and Outlook / Microsoft 365 (OAuth2) account setup guides to the README.
+
 ## [0.20.0]
 - **Accounts**: Added **OAuth2 (XOAUTH2)** sign-in for Office 365 (Microsoft) and Gmail (Google), required now that both providers have disabled basic password auth for IMAP/SMTP. Choose "OAuth2" in account settings, pick the provider and sign in via the system browser; access tokens are obtained on demand and refresh/cache data is stored securely in SecretStorage. Microsoft uses MSAL (`@azure/msal-node`); public client IDs are bundled so it works out of the box.
 - **Account Settings**: The connection test now validates IMAP and SMTP independently, with results shown inline next to each button. The IMAP test no longer incorrectly reports "SMTP Server is required".

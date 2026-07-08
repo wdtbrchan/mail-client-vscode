@@ -278,16 +278,6 @@
           "type": "string",
           "default": "common",
           "description": "Microsoft OAuth2 tenant: 'common' (any work/school + personal account, default), 'organizations', 'consumers', or a specific tenant ID for a single-tenant app."
-        },
-        "mailClient.oauth.googleClientId": {
-          "type": "string",
-          "default": "627608066306-q2tsjno2spra48c3pnvf44se65l1m5n0.apps.googleusercontent.com",
-          "description": "Google Cloud OAuth client ID (Desktop app type) for Gmail OAuth2 sign-in (Gmail API + scope https://mail.google.com/). A default is provided."
-        },
-        "mailClient.oauth.googleClientSecret": {
-          "type": "string",
-          "default": "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",
-          "description": "Google OAuth client secret for the Desktop app client. Google requires it in the token exchange even with PKCE; for Desktop/installed apps Google does not treat it as confidential. A default is provided; must match the configured googleClientId."
         }
       }
     },

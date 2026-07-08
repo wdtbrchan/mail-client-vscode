@@ -25,18 +25,20 @@
         <hr class="section-divider">
 
         <div class="form-group">
-            <label for="authType">Authentication</label>
+            <label for="authType">Account Type</label>
             <select id="authType">
-                <option value="basic">Password (Basic)</option>
-                <option value="oauth2">OAuth2 (Office 365 / Gmail)</option>
+                <option value="basic">IMAP + Password / App Password</option>
+                <option value="gmail">Gmail (App Password)</option>
+                <option value="oauth2">Microsoft 365 / Outlook (OAuth2)</option>
             </select>
         </div>
-        <div class="form-group oauth-only">
-            <label for="oauthProvider">Provider</label>
-            <select id="oauthProvider">
-                <option value="microsoft">Microsoft (Office 365)</option>
-                <option value="google">Google (Gmail)</option>
-            </select>
+        <div class="form-group gmail-only">
+            <label></label>
+            <span class="color-description font-small">
+                Gmail needs an <strong>App Password</strong> (not your normal password) with
+                2-Step Verification enabled. Follow the
+                <a href="https://github.com/wdtbrchan/mail-client-vscode#gmail-app-password">Gmail setup guide</a>.
+            </span>
         </div>
 
         <hr class="section-divider">
@@ -71,7 +73,7 @@
             </div>
         </div>
         <div class="form-group basic-only">
-            <label for="password">Password</label>
+            <label for="password" id="passwordLabel">Password</label>
             <input type="password" id="password" placeholder="••••••••" required>
         </div>
         <div class="form-group">
