@@ -1,6 +1,6 @@
 # Changelog
 
-## [ upcoming ]
+## [0.21.0]
 - **Accounts**: Gmail now connects with an **App Password** (Basic auth) instead of OAuth2. A new **"Gmail (App Password)"** account type pre-fills the Gmail IMAP/SMTP servers and shows an inline setup hint. Gmail OAuth2 was removed because Google's `https://mail.google.com/` is a restricted scope whose public distribution requires a paid annual security assessment (CASA).
 - **Accounts**: OAuth2 sign-in is now **Microsoft 365 / Outlook only**.
 - **Settings**: Removed `mailClient.oauth.googleClientId` and `mailClient.oauth.googleClientSecret` (this also removed the bundled Google client secret).
